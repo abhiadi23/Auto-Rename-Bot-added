@@ -611,34 +611,31 @@ async def auto_rename_file_concurrent(client, message, file_info):
 
             # --- START Clean up Extra Spaces, Brackets, and Separators (Hyphen Preservation Version) ---
 
-            # Standardize multiple spaces to single spaces
+            # Step 1: Standardize multiple spaces to single spaces
             template = re.sub(r'\s{2,}', ' ', template)
 
-            # Remove truly empty square brackets (e.g., "[]" or "[ ]")
+            # Step 2: Remove truly empty square brackets, parentheses, curly braces (e.g., "[]", "()", "{}")
             template = re.sub(r'\[\s*\]', '', template)
-
-            # Remove truly empty parentheses (e.g., "()" or "( )")
             template = re.sub(r'\(\s*\)', '', template)
-
-            # Remove truly empty curly braces (e.g., "{}" or "{ }")
             template = re.sub(r'\{\s*\}', '', template)
 
-            # Clean up common unwanted leading/trailing characters and overall whitespace
-            template = template.strip() # Remove leading/trailing whitespace
-            template = re.sub(r'^[._\s]+', '', template) # Remove leading dots, underscores, spaces
-            template = re.sub(r'[._\s]+\s*$', '', template) # Remove trailing dots, underscores, spaces
-
-            # Clean up dot spacing (e.g., "file . name" -> "file.name")
-            template = re.sub(r'\s*\.\s*', '.', template)
-            # Consolidate multiple dots (e.g., "file..name" -> "file.name")
+            # Step 3: Consolidate multiple dots and hyphens (e.g., "file..name" -> "file.name", "---" -> "-")
             template = re.sub(r'\.{2,}', '.', template)
+            template = re.sub(r'-{2,}', '-', template) # This consolidates multiple hyphens to one
 
-            # Consolidate multiple hyphens (e.g., "---" to "-")
-            # This should NOT affect your " - " if it's already a single hyphen with spaces.
-            template = re.sub(r'-{2,}', '-', template)
+            # Step 4: Remove leading/trailing spaces around dots and hyphens
+            # E.g., "file . name" -> "file.name", "film - name" -> "film-name"
+            # This ensures your "Sseason-EPepisode" format remains "S01-EP01" (no extra spaces)
+            template = re.sub(r'\s*\.\s*', '.', template)
+            template = re.sub(r'\s*-\s*', '-', template)
 
-            # Final trim just in case any new whitespace was introduced by other regexes
+            # Step 5: Trim overall leading/trailing whitespace
             template = template.strip()
+
+            # Step 6: Remove any leading/trailing *unwanted* characters (like isolated underscores, or dots)
+            # IMPORTANT CHANGE: Removed '\-' from the character set to preserve hyphens.
+            template = re.sub(r'^[._\s]+', '', template) # Remove leading dots, underscores, spaces
+            template = re.sub(r'[._\s]+$', '', template) # Remove trailing dots, underscores, spaces
 
             # --- END Clean up Extra Spaces, Brackets, and Separators ---
             _, file_extension = os.path.splitext(file_name)
