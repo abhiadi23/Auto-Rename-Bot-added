@@ -26,6 +26,7 @@ class Database:
             metadata=True,
             metadata_code="Telegram : @codeflixbots",
             format_template=None,
+            rename_count=0,
             ban_status=dict(
                 is_banned=False,
                 ban_duration=0,
