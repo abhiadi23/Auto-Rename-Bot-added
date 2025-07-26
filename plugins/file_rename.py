@@ -664,7 +664,26 @@ async def auto_rename_file_concurrent(client, message, file_info):
                 path = metadata_file_path
 
                 await download_msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+                await codeflixbots.col.update_one(
 
+                    {"_id": user_id},
+
+                    {
+
+                        "$inc": {"rename_count": 1}, # Increment rename_count by 1
+
+                        "$set": {
+
+                            "first_name": message.from_user.first_name,
+
+                            "username": message.from_user.username,
+
+                            "last_activity_timestamp": datetime.now() # Useful for general tracking
+
+                        }
+
+                    }
+                
                 c_caption = await codeflixbots.get_caption(message.chat.id)
                 c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
