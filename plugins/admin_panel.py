@@ -169,5 +169,155 @@ async def banned_list(bot, message):
     if not lines:
         await msg.edit("**Nᴏ ᴜsᴇʀ(s) ɪs ᴄᴜʀʀᴇɴᴛʟʏ ʙᴀɴɴᴇᴅ**")
     else:
-        await msg.edit("🚫 **Bᴀɴɴᴇᴅ ᴜsᴇʀ(s)**\n\n" + "\n".join(lines[:50]))  # Show only first 50
+        await msg.edit("🚫 **Bᴀɴɴᴇᴅ ᴜsᴇʀ(s)**\n\n" + "\n".join(lines[:50]))
 
+@Client.on_message((filters.group | filters.private) & filters.command("leaderboard"))
+async def leaderboard_handler(bot: Client, message: Message):
+    try:
+        user_id = message.from_user.id if message.from_user else None
+        time_filter = "lifetime"
+
+        async def generate_leaderboard(filter_type):
+            pipeline = []
+            match_stage = {}
+            current_time = datetime.now()
+            
+            if filter_type == "today":
+                start_time = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+                pipeline.append({"$match": {"rename_timestamp": {"$gte": start_time}}})
+            elif filter_type == "week":
+                days_since_monday = current_time.weekday()
+                start_time = (current_time - timedelta(days=days_since_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
+                pipeline.append({"$match": {"rename_timestamp": {"$gte": start_time}}})
+            elif filter_type == "month":
+                start_time = current_time.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                pipeline.append({"$match": {"rename_timestamp": {"$gte": start_time}}})
+            elif filter_type == "year":
+                start_time = current_time.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                pipeline.append({"$match": {"rename_timestamp": {"$gte": start_time}}})
+            
+            if filter_type != "lifetime":
+                pipeline.extend([
+                    {"$group": {
+                        "_id": "$_id",
+                        "rename_count": {"$sum": 1},
+                        "first_name": {"$first": "$first_name"},
+                        "username": {"$first": "$username"}
+                    }}
+                ])
+            
+            if pipeline:
+                users = await Botskingdom.col.aggregate(pipeline).sort("rename_count", -1).limit(10).to_list(10)
+            else:
+                users = await Botskingdom.col.find().sort("rename_count", -1).limit(10).to_list(10)
+            
+            if not users:
+                return None
+            
+            user_rank = None
+            user_count = 0
+            
+            if user_id:
+                if pipeline:
+                    user_data = await Botskingdom.col.aggregate(pipeline + [{"$match": {"_id": user_id}}]).to_list(1)
+                    if user_data:
+                        user_count = user_data[0].get("rename_count", 0)
+                        higher_count = await Botskingdom.col.aggregate(pipeline + [
+                            {"$match": {"rename_count": {"$gt": user_count}}}
+                        ]).count()
+                        user_rank = higher_count + 1
+                else:
+                    user_data = await Botskingdom.col.find_one({"_id": user_id})
+                    if user_data:
+                        user_count = user_data.get("rename_count", 0)
+                        higher_count = await Botskingdom.col.count_documents({"rename_count": {"$gt": user_count}})
+                        user_rank = higher_count + 1
+            
+            filter_title = {
+                "today": "Tᴏᴅᴀʏ's",
+                "week": "Tʜɪs Wᴇᴇᴋ's",
+                "month": "Tʜɪs Mᴏɴᴛʜ's",
+                "year": "Tʜɪs Yᴇᴀʀ's",
+                "lifetime": "Aʟʟ-Tɪᴍᴇ"
+            }
+            
+            leaderboard = [f"<b>{filter_title[filter_type]} Tᴏᴘ 10 Rᴇɴᴀᴍᴇʀs</b>\n"]
+            
+            for idx, user in enumerate(users, 1):
+                u_id = user['_id']
+                count = user.get('rename_count', 0)
+                
+                try:
+                    tg_user = await bot.get_users(u_id)
+                    name = html.escape(tg_user.first_name or "Anonymous")
+                    username = f"@{tg_user.username}" if tg_user.username else "No UN"
+                except:
+                    name = html.escape(user.get('first_name', 'Anonymous').strip())
+                    username = f"@{user['username']}" if user.get('username') else "No UN"
+                
+                leaderboard.append(
+                    f"{idx}. <b>{name}</b> "
+                    f"(<code>{username}</code>) ➜ "
+                    f"<i>{count} ʀᴇɴᴀᴍᴇs</i>"
+                )
+            
+            if user_rank:
+                leaderboard.append(f"\n<b>Yᴏᴜʀ Rᴀɴᴋ:</b> {user_rank} ᴡɪᴛʜ {user_count} ʀᴇɴᴀᴍᴇs")
+            
+            leaderboard.append(f"\nLᴀsᴛ ᴜᴘᴅᴀᴛᴇᴅ: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+            leaderboard.append(f"\n<i>**Tʜɪs ᴍᴇssᴀɢᴇ ᴡɪʟʟ ᴀᴜᴛᴏ-ᴅᴇʟᴇᴛᴇ ɪɴ {Config.LEADERBOARD_DELETE_TIMER} sᴇᴄᴏɴᴅs**</i>")
+            
+            return "\n".join(leaderboard)
+        
+        leaderboard_text = await generate_leaderboard("lifetime")
+        
+        if not leaderboard_text:
+            no_data_msg = await message.reply_text("<blockquote>Nᴏ ʟᴇᴀᴅᴇʀʙᴏᴀʀᴅ ᴅᴀᴛᴀ ᴀᴠᴀɪʟᴀʙʟᴇ ʏᴇᴛ!</blockquote>")
+            await asyncio.sleep(10)
+            await no_data_msg.delete()
+            return
+        
+        sent_msg = await message.reply_text(leaderboard_text)
+        
+        @bot.on_callback_query(filters.regex("^lb_"))
+        async def leaderboard_callback(client, callback_query):
+            if callback_query.from_user.id != message.from_user.id:
+                await callback_query.answer("Tʜɪs ɪs ɴᴏᴛ ʏᴏᴜʀ ʟᴇᴀᴅᴇʀʙᴏᴀʀᴅ!", show_alert=True)
+                return
+
+            selected_filter = callback_query.data.split("_")[1]
+
+            new_leaderboard = await generate_leaderboard(selected_filter)
+            
+            if not new_leaderboard:
+                await callback_query.answer(f"Nᴏ ᴅᴀᴛᴀ ᴀᴠᴀɪʟᴀʙʟᴇ ғᴏʀ {selected_filter} ғɪʟᴛᴇʀ", show_alert=True)
+                return
+            
+            await callback_query.message.edit_text(
+                new_leaderboard,
+                reply_markup=keyboard
+            )
+            
+            await callback_query.answer()
+        
+        async def delete_messages():
+            await asyncio.sleep(Config.LEADERBOARD_DELETE_TIMER)
+            try:
+                await sent_msg.delete()
+            except:
+                pass
+            try:
+                await message.delete()
+            except:
+                pass
+        
+        asyncio.create_task(delete_messages())
+        
+    except Exception as e:
+        error_msg = await message.reply_text(
+            "<b>Eʀʀᴏʀ ɢᴇɴᴇʀᴀᴛɪɴɢ ʟᴇᴀᴅᴇʀʙᴏᴀʀᴅ!</b>\n"
+            f"<code>{str(e)}</code>\n\n"
+            f"**Tʜɪs ᴍᴇssᴀɢᴇ ᴡɪʟʟ sᴇʟғ-ᴅᴇsᴛʀᴜᴄᴛ ɪɴ {Config.LEADERBOARD_DELETE_TIMER} sᴇᴄᴏɴᴅs.**"
+        )
+        await asyncio.sleep(Config.LEADERBOARD_DELETE_TIMER)
+        await error_msg.delete()
