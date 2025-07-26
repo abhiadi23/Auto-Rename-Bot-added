@@ -54,19 +54,13 @@ def check_ban(func):
     return wrapper
 
 
-def detect_quality(file_name):
-    """Detects quality for sorting, not for direct filename replacement."""
+def detect_quality(file_name)
     quality_order = {"360p": 0, "480p": 1, "720p": 2, "1080p": 3, "1440p": 4, "2160p": 5, "4k": 6} # Added more qualities
     match = re.search(r"(360p|480p|720p|1080p|1440p|2160p|4k)\b", file_name, re.IGNORECASE) # Added \b for word boundary
     return quality_order.get(match.group(1).lower(), 7) if match else 7 # Adjusted default sort order
 
 # --- REVISED extract_episode_number ---
 def extract_episode_number(filename):
-    """
-    Enhanced episode extraction with better pattern matching and validation.
-    Improved negative lookaheads to prevent various quality numbers (like 480p, 720p, 1080p, 4K)
-    and years from being misinterpreted as episode numbers.
-    """
     if not filename:
         return None
 
@@ -131,8 +125,6 @@ def extract_episode_number(filename):
 
                     # Validate episode number (should be reasonable)
                     if 1 <= episode_num <= 9999:
-                        # Final check to prevent very common quality numbers from being picked if the regex missed them
-                        # This acts as a last resort, but the lookahead should generally prevent this.
                         if episode_num in [360, 480, 720, 1080, 1440, 2160, 2020, 2021, 2022, 2023, 2024, 2025]: # Added common years
                             # If the filename contains this number IMMEDIATELY followed by 'p' or 'K'
                             # or followed by common quality/year keywords, it's likely a quality/year.
@@ -151,10 +143,6 @@ def extract_episode_number(filename):
 
 # --- MODIFIED: extract_season_number (added negative lookahead) ---
 def extract_season_number(filename):
-    """
-    Enhanced season extraction with better pattern matching and validation.
-    Added negative lookahead to prevent quality numbers (like 480p) from being misinterpreted.
-    """
     if not filename:
         return None
 
@@ -298,12 +286,6 @@ def extract_quality(filename):
 
 # --- Modified filename generation to NOT add UUID to filename ---
 def generate_unique_paths(renamed_file_name):
-    """
-    Generate file paths.
-    IMPORTANT: This version does NOT append a unique ID to the filename itself.
-    This means if two files are renamed to the exact same name, one will overwrite the other.
-    Ensure your renaming template creates unique names or be aware of this limitation.
-    """
     base_name, ext = os.path.splitext(renamed_file_name)
 
     if not ext.startswith('.'):
@@ -415,7 +397,6 @@ async def end_sequence(client, message: Message):
             print(f"Error deleting messages: {e}")
 
 async def process_thumb_async(ph_path):
-    """Process thumbnail in thread pool to avoid blocking"""
     def _resize_thumb(path):
         img = Image.open(path).convert("RGB")
         img = img.resize((320, 320))
@@ -425,7 +406,6 @@ async def process_thumb_async(ph_path):
     await loop.run_in_executor(thread_pool, _resize_thumb, ph_path)
 
 async def run_ffmpeg_async(metadata_command):
-    """Run FFmpeg in thread pool with semaphore control"""
     async with ffmpeg_semaphore:
         def _run_ffmpeg():
             import subprocess
@@ -440,7 +420,6 @@ async def run_ffmpeg_async(metadata_command):
         return await loop.run_in_executor(thread_pool, _run_ffmpeg)
 
 async def concurrent_download(client, message, renamed_file_path, progress_msg):
-    """Handle concurrent downloading with semaphore"""
     async with download_semaphore:
         try:
             path = await client.download_media(
@@ -454,7 +433,6 @@ async def concurrent_download(client, message, renamed_file_path, progress_msg):
             raise Exception(f"Download Error: {e}")
 
 async def concurrent_upload(client, message, path, media_type, caption, ph_path, progress_msg):
-    """Handle concurrent uploading with semaphore"""
     async with upload_semaphore:
         try:
             if media_type == "document":
@@ -490,10 +468,6 @@ async def concurrent_upload(client, message, path, media_type, caption, ph_path,
             raise Exception(f"Upload Error: {e}")
 
 async def auto_rename_file_concurrent(client, message, file_info):
-    """
-    MAIN CONCURRENT FUNCTION - Enhanced with better episode/season extraction
-    and proper placeholder handling
-    """
     async with processing_semaphore:  # Limit overall concurrent processing
         try:
             user_id = message.from_user.id
@@ -517,11 +491,11 @@ async def auto_rename_file_concurrent(client, message, file_info):
 
             if not media_type:
                 if file_name.endswith((".mp4", ".mkv", ".avi", ".webm")):
-                    media_type = "video"
+                    media_type = "document"
                 elif file_name.endswith((".mp3", ".flac", ".wav", ".ogg")):
                     media_type = "audio"
                 else:
-                    media_type = "document"
+                    media_type = "video"
 
             if not media_type:
                 media_type = "document"
@@ -571,10 +545,7 @@ async def auto_rename_file_concurrent(client, message, file_info):
 
             for pattern, replacement in season_replacements:
                 template = pattern.sub(replacement, template)
-
-            # NEW: Handle EPEpisode patterns specifically (e.g., EPEpisode -> EP01)
-            # This regex looks for 'EP' immediately followed by 'Episode' (case-insensitive).
-            # It replaces the matched "Episode" part with the formatted episode number, preserving 'EP'.
+                
             template = re.sub(r'EP(?:Episode|episode|EPISODE)', f'EP{episode_value_formatted}', template, flags=re.IGNORECASE)
 
             # 3. Episode placeholder replacement - Now correctly handles {episode}, {Episode}, and standalone "episode"
