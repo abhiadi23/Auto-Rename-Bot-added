@@ -419,7 +419,7 @@ async def run_ffmpeg_async(metadata_command):
 
 async def concurrent_download(client, message, renamed_file_path, progress_msg, file_info):
     asyncio.create_task(auto_rename_file_concurrent(client, message, file_info))
-        try:
+    try:
             path = await client.download_media(
                 message,
                 file_name=renamed_file_path,
