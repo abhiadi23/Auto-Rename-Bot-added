@@ -417,8 +417,8 @@ async def run_ffmpeg_async(metadata_command):
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(thread_pool, _run_ffmpeg)
 
-async def concurrent_download(client, message, renamed_file_path, progress_msg):
-    asyncio.create_task(auto_rename_file_concurrent(client, message, file_info)):
+async def concurrent_download(client, message, renamed_file_path, progress_msg, file_info):
+    asyncio.create_task(auto_rename_file_concurrent(client, message, file_info))
         try:
             path = await client.download_media(
                 message,
