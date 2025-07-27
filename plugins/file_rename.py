@@ -27,10 +27,6 @@ message_ids = {}
 renaming_operations = {}
 
 # --- Enhanced Semaphores for better concurrency ---
-download_semaphore = asyncio.Semaphore(3)    # Allow 3 concurrent downloads
-upload_semaphore = asyncio.Semaphore(3)      # Limit 3 concurrent uploads
-ffmpeg_semaphore = asyncio.Semaphore(3)      # Limit FFmpeg processes
-processing_semaphore = asyncio.Semaphore(3) # Overall processing limit
 
 # Thread pool for CPU-intensive operations
 thread_pool = ThreadPoolExecutor(max_workers=4)
@@ -400,23 +396,6 @@ async def process_thumb_async(ph_path):
         img = img.resize((320, 320))
         img.save(path, "JPEG")
 
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(thread_pool, _resize_thumb, ph_path)
-
-async def run_ffmpeg_async(metadata_command):
-    async with ffmpeg_semaphore:
-        def _run_ffmpeg():
-            import subprocess
-            result = subprocess.run(
-                metadata_command,
-                capture_output=True,
-                text=True
-            )
-            return result.returncode, result.stdout, result.stderr
-
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(thread_pool, _run_ffmpeg)
-
 async def concurrent_download(client, message, renamed_file_path, progress_msg, file_info):
     asyncio.create_task(auto_rename_file_concurrent(client, message, file_info))
     try:
@@ -656,18 +635,18 @@ async def auto_rename_file_concurrent(client, message, file_info):
                     '-map', '0',
                     '-c', 'copy',
                     '-loglevel', 'error',
-                    metadata_file_path
+                    output_path
                 ]
 
-                returncode, stdout, stderr = await run_ffmpeg_async(metadata_command)
-
-                if returncode != 0:
-                    error_message = stderr
-                    await download_msg.edit(f"Mᴇᴛᴀᴅᴀᴛᴀ Eʀʀᴏʀ:\n{error_message}")
-                    del renaming_operations[file_id]
-                    return
-
-                path = metadata_file_path
+                process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    _, stderr = await process.communicate()
+    
+    if process.returncode != 0:
+        raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
 
                 await download_msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
                 await codeflixbots.col.update_one(
