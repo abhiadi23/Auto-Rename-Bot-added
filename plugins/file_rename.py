@@ -27,9 +27,9 @@ message_ids = {}
 renaming_operations = {}
 
 # --- Enhanced Semaphores for better concurrency ---
-download_semaphore = asyncio.Semaphore(3)   # Allow 3 concurrent downloads
-upload_semaphore = asyncio.Semaphore(3)     # Limit 3 concurrent uploads
-ffmpeg_semaphore = asyncio.Semaphore(3)     # Limit FFmpeg processes
+download_semaphore = asyncio.Semaphore(3)    # Allow 3 concurrent downloads
+upload_semaphore = asyncio.Semaphore(3)      # Limit 3 concurrent uploads
+ffmpeg_semaphore = asyncio.Semaphore(3)      # Limit FFmpeg processes
 processing_semaphore = asyncio.Semaphore(3) # Overall processing limit
 
 # Thread pool for CPU-intensive operations
@@ -54,7 +54,7 @@ def check_ban(func):
     return wrapper
 
 
-def detect_quality(file_name)
+def detect_quality(file_name):
     quality_order = {"360p": 0, "480p": 1, "720p": 2, "1080p": 3, "1440p": 4, "2160p": 5, "4k": 6} # Added more qualities
     match = re.search(r"(360p|480p|720p|1080p|1440p|2160p|4k)\b", file_name, re.IGNORECASE) # Added \b for word boundary
     return quality_order.get(match.group(1).lower(), 7) if match else 7 # Adjusted default sort order
@@ -102,9 +102,9 @@ def extract_episode_number(filename):
         # Pattern 6: General number pattern with strong negative lookahead.
         # This is the most crucial part to avoid misidentifying quality/year numbers.
         re.compile(
-            r'(?:^|[^0-9A-Z])'      # Start of string or non-alphanumeric character before the number
-            r'(\d{1,4})'         # Capture 1 to 4 digits (potential episode number)
-            r'(?:[^0-9A-Z]|$)'      # End of string or non-alphanumeric character after the number
+            r'(?:^|[^0-9A-Z])'       # Start of string or non-alphanumeric character before the number
+            r'(\d{1,4})'           # Capture 1 to 4 digits (potential episode number)
+            r'(?:[^0-9A-Z]|$)'       # End of string or non-alphanumeric character after the number
             r'(?!' + quality_pattern_for_exclusion + r')' # IMPORTANT: Negative lookahead for quality/year patterns
             , re.IGNORECASE
         ),
@@ -358,7 +358,7 @@ async def end_sequence(client, message: Message):
             await message.reply_text("Nᴏ ғɪʟᴇs ᴡᴇʀᴇ sᴇɴᴛ ɪɴ ᴛʜɪs sᴇǫᴜᴇɴᴄᴇ....ʙʀᴏ...!!")
         else:
             file_list.sort(key=lambda x: x["episode_num"] if x["episode_num"] is not None else float('inf'))
-            await message.reply_text(f"Sᴇǫᴜᴇɴᴄᴇ ᴇɴᴅᴇᴅ. Nᴏᴡ sᴇɴᴅɪɴɢ ʏᴏᴜʀ {count} ғɪʟᴇ(s) ʙᴀᴄᴋ ɪɴ sᴇǫᴜᴇɴᴄᴇ...!!")
+            await message.reply_text(f"Sᴇǫᴜᴇɴᴄᴇ ᴇɴᴅᴇᴅ. Nᴏᴡ sᴇɴᴅɪɴɢ ʏᴏᴜʀ {count} ғɪʟe(s) ʙᴀᴄᴋ ɪɴ sᴇǫᴜᴇɴᴄᴇ...!!")
 
             for index, file_info in enumerate(file_list, 1):
                 try:
@@ -418,7 +418,7 @@ async def run_ffmpeg_async(metadata_command):
         return await loop.run_in_executor(thread_pool, _run_ffmpeg)
 
 async def concurrent_download(client, message, renamed_file_path, progress_msg):
-    task = asyncio.create_task(auto_rename_file_concurrent(client, message, file_info))
+    task = asyncio.create_task(auto_rename_file_concurrent(client, message, file_info)):
         try:
             path = await client.download_media(
                 message,
@@ -430,7 +430,7 @@ async def concurrent_download(client, message, renamed_file_path, progress_msg):
         except Exception as e:
             raise Exception(f"Download Error: {e}")
 
-async def concurrent_upload(client, message, path, media_type, caption, ph_path, progress_msg):
+async def concurrent_upload(client, message, path, media_type, caption, ph_path, progress_msg, duration=0): # Added duration parameter with default
     async with upload_semaphore:
         try:
             if media_type == "document":
@@ -448,7 +448,7 @@ async def concurrent_upload(client, message, path, media_type, caption, ph_path,
                     video=path,
                     caption=caption,
                     thumb=ph_path,
-                    duration=duration,
+                    duration=duration, # Use the passed duration
                     progress=progress_for_pyrogram,
                     progress_args=("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", progress_msg, time.time()),
                 )
@@ -458,7 +458,7 @@ async def concurrent_upload(client, message, path, media_type, caption, ph_path,
                     audio=path,
                     caption=caption,
                     thumb=ph_path,
-                    duration=duration,
+                    duration=duration, # Use the passed duration
                     progress=progress_for_pyrogram,
                     progress_args=("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", progress_msg, time.time()),
                 )
@@ -499,7 +499,7 @@ async def auto_rename_file_concurrent(client, message, file_info):
                 media_type = "document"
 
             if await check_anti_nsfw(file_name, message):
-                await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟᴇ ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
+                await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
                 return
 
             # ENHANCED EXTRACTION - Fixed to properly detect from actual filename
@@ -624,9 +624,17 @@ async def auto_rename_file_concurrent(client, message, file_info):
             download_msg = await message.reply_text("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
 
             ph_path = None
+            duration = 0 # Initialize duration
 
             try:
                 path = await concurrent_download(client, message, renamed_file_path, download_msg)
+
+                # Get duration after download for video/audio files
+                if message.video:
+                    duration = message.video.duration
+                elif message.audio:
+                    duration = message.audio.duration
+
 
                 await download_msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
 
@@ -681,6 +689,8 @@ async def auto_rename_file_concurrent(client, message, file_info):
                         }
 
                     }
+                    
+                )
                 
                 c_caption = await codeflixbots.get_caption(message.chat.id)
                 c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
@@ -689,7 +699,7 @@ async def auto_rename_file_concurrent(client, message, file_info):
                     c_caption.format(
                         filename=renamed_file_name,
                         filesize=humanbytes(message.document.file_size) if message.document else "Unknown",
-                        duration=convert(0),
+                        duration=convert(duration), # Use the fetched duration
                     )
                     if c_caption
                     else f"{renamed_file_name}"
@@ -703,30 +713,10 @@ async def auto_rename_file_concurrent(client, message, file_info):
                 if ph_path:
                     await process_thumb_async(ph_path)
 
-                await concurrent_upload(client, message, path, media_type, caption, ph_path, download_msg)
+                await concurrent_upload(client, message, path, media_type, caption, ph_path, download_msg, duration) # Pass duration here too
 
                 await download_msg.delete()
 
             except Exception as e:
                 await download_msg.edit(f"❌ Eʀʀᴏʀ: {str(e)}")
                 raise
-
-            finally:
-                cleanup_files = [path, renamed_file_path, metadata_file_path]
-                if ph_path:
-                    cleanup_files.append(ph_path)
-
-                for file_path in cleanup_files:
-                    if file_path and os.path.exists(file_path):
-                        try:
-                            os.remove(file_path)
-                        except Exception as cleanup_e:
-                            print(f"Error during file cleanup for {file_path}: {cleanup_e}")
-                            pass
-
-                if file_id in renaming_operations:
-                    del renaming_operations[file_id]
-
-        except Exception as e:
-            if 'file_id' in locals() and file_id in renaming_operations:
-                print(f"An error occurred during renaming for file_id {file_id}: {e}")
