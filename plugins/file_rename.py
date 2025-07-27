@@ -342,8 +342,6 @@ async def auto_rename_files(client, message):
         message_ids[user_id].append(reply_msg.id)
         return
 
-    task = asyncio.create_task(auto_rename_file_concurrent(client, message, file_info))
-
 
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
@@ -420,7 +418,7 @@ async def run_ffmpeg_async(metadata_command):
         return await loop.run_in_executor(thread_pool, _run_ffmpeg)
 
 async def concurrent_download(client, message, renamed_file_path, progress_msg):
-    async with download_semaphore:
+    task = asyncio.create_task(auto_rename_file_concurrent(client, message, file_info))
         try:
             path = await client.download_media(
                 message,
@@ -450,7 +448,7 @@ async def concurrent_upload(client, message, path, media_type, caption, ph_path,
                     video=path,
                     caption=caption,
                     thumb=ph_path,
-                    duration=0,
+                    duration=duration,
                     progress=progress_for_pyrogram,
                     progress_args=("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", progress_msg, time.time()),
                 )
@@ -460,7 +458,7 @@ async def concurrent_upload(client, message, path, media_type, caption, ph_path,
                     audio=path,
                     caption=caption,
                     thumb=ph_path,
-                    duration=0,
+                    duration=duration,
                     progress=progress_for_pyrogram,
                     progress_args=("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", progress_msg, time.time()),
                 )
