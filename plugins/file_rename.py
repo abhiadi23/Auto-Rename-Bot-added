@@ -427,8 +427,8 @@ async def concurrent_download(client, message, renamed_file_path, progress_msg, 
             progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ....!!", progress_msg, time.time()),
         )
         return path
-        except Exception as e:
-            raise Exception(f"Download Error: {e}")
+    except Exception as e:
+        raise Exception(f"Download Error: {e}")
 
 async def concurrent_upload(client, message, path, media_type, caption, ph_path, progress_msg, duration=0): # Added duration parameter with default
     async with upload_semaphore:
