@@ -720,3 +720,23 @@ async def auto_rename_file_concurrent(client, message, file_info):
             except Exception as e:
                 await download_msg.edit(f"❌ Eʀʀᴏʀ: {str(e)}")
                 raise
+
+            finally:
+                cleanup_files = [path, renamed_file_path, metadata_file_path]
+                if ph_path:
+                    cleanup_files.append(ph_path)
+
+                for file_path in cleanup_files:
+                    if file_path and os.path.exists(file_path):
+                        try:
+                            os.remove(file_path)
+                        except Exception as cleanup_e:
+                            print(f"Error during file cleanup for {file_path}: {cleanup_e}")
+                            pass
+
+                if file_id in renaming_operations:
+                    del renaming_operations[file_id]
+
+        except Exception as e:
+            if 'file_id' in locals() and file_id in renaming_operations:
+                print(f"An error occurred during renaming for file_id {file_id}: {e}")
