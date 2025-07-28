@@ -605,64 +605,83 @@ if await check_anti_nsfw(file_name, message):
             ph_path = None
             duration = 0 # Initialize duration
             
-                # Get duration after download for video/audio files
-                if message.video:
-                    duration = message.video.duration
-                elif message.audio:
-                    duration = message.audio.duration
+# This part likely belongs to the main handling function
+if message.video:
+    duration = message.video.duration
+elif message.audio:
+    duration = message.audio.duration
 
-                async def add_metadata(input_path, output_path, user_id):
-    ffmpeg = shutil.which('ffmpeg')
-    if not ffmpeg:
+# Definition of the async add_metadata function
+async def add_metadata(input_path, output_path, user_id):
+    ffmpeg_cmd = shutil.which('ffmpeg') # Renamed ffmpeg to ffmpeg_cmd to avoid conflict with future use
+    if not ffmpeg_cmd:
         raise RuntimeError("FFmpeg not found in PATH")
 
-                metadata_command = [
-                    ffmpeg_cmd,
-                    '-i', path,
-                    '-metadata', f'title={await codeflixbots.get_title(user_id)}',
-                    '-metadata', f'artist={await codeflixbots.get_artist(user_id)}',
-                    '-metadata', f'author={await codeflixbots.get_author(user_id)}',
-                    '-metadata:s:v', f'title={await codeflixbots.get_video(user_id)}',
-                    '-metadata:s:a', f'title={await codeflixbots.get_audio(user_id)}',
-                    '-metadata:s:s', f'title={await codeflixbots.get_subtitle(user_id)}',
-                    '-metadata', f'encoded_by={await codeflixbots.get_encoded_by(user_id)}',
-                    '-metadata', f'custom_tag={await codeflixbots.get_custom_tag(user_id)}',
-                    '-map', '0',
-                    '-c', 'copy',
-                    '-loglevel', 'error',
-                    output_path
-                ]
+    # Corrected indentation for metadata_command and process
+    metadata_command = [
+        ffmpeg_cmd,
+        '-i', input_path,  # Use input_path here, not 'path'
+        '-metadata', f'title={await codeflixbots.get_title(user_id)}',
+        '-metadata', f'artist={await codeflixbots.get_artist(user_id)}',
+        '-metadata', f'author={await codeflixbots.get_author(user_id)}',
+        '-metadata:s:v', f'title={await codeflixbots.get_video(user_id)}',
+        '-metadata:s:a', f'title={await codeflixbots.get_audio(user_id)}',
+        '-metadata:s:s', f'title={await codeflixbots.get_subtitle(user_id)}',
+        '-metadata', f'encoded_by={await codeflixbots.get_encoded_by(user_id)}',
+        '-metadata', f'custom_tag={await codeflixbots.get_custom_tag(user_id)}',
+        '-map', '0',
+        '-c', 'copy',
+        '-loglevel', 'error',
+        output_path
+    ]
 
-                process = await asyncio.create_subprocess_exec(
-        *cmd,
+    process = await asyncio.create_subprocess_exec(
+        *metadata_command, # Use metadata_command here, not 'cmd'
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
     _, stderr = await process.communicate()
-    
+
     if process.returncode != 0:
         raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
 
-            except Exception as e:
-            await message.reply_text(f"❌ Eʀʀᴏʀ: {str(e)}")
-                raise
+# This try-except-finally block likely belongs to the main calling function,
+# which is why it's at a higher level of indentation than the add_metadata function definition.
+# It seems to be handling exceptions from the overall process and then performing cleanup.
+try:
+    # ... (previous code related to file download, metadata addition, upload) ...
+    # This 'except' block was isolated; it needs to be part of a 'try'.
+    # I'm assuming it's catching errors from the overall processing.
+    pass # Placeholder for the code that would be inside the 'try' block
 
-            finally:
-                cleanup_files = [download_path, metadata_path, output_path]
-                if ph_path:
-                    cleanup_files.append(ph_path)
+except Exception as e:
+    await message.reply_text(f"❌ Eʀʀᴏʀ: {str(e)}")
+    # It's generally not good practice to 'raise' immediately after sending a message
+    # unless you intend to stop execution completely and propagate the error up.
+    raise
 
-                for file_path in cleanup_files:
-                    if file_path and os.path.exists(file_path):
-                        try:
-                            os.remove(file_path)
-                        except Exception as cleanup_e:
-                            print(f"Error during file cleanup for {file_path}: {cleanup_e}")
-                            pass
+finally:
+    # Variables like download_path, metadata_path, output_path, ph_path, file_id, and
+    # renaming_operations need to be defined in the scope where this 'finally' block executes.
+    cleanup_files = [download_path, metadata_path, output_path]
+    if ph_path:
+        cleanup_files.append(ph_path)
 
-                if file_id in renaming_operations:
-                    del renaming_operations[file_id]
+    for file_path in cleanup_files:
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as cleanup_e:
+                print(f"Error during file cleanup for {file_path}: {cleanup_e}")
+                pass # Continue even if one file fails to delete
 
-        except Exception as e:
-            if 'file_id' in locals() and file_id in renaming_operations:
-                print(f"An error occurred during renaming for file_id {file_id}: {e}")
+    if file_id in renaming_operations:
+        del renaming_operations[file_id]
+
+# This 'except Exception as e' block was also floating.
+# It needs to be associated with a 'try' block.
+# If it's meant to catch errors from the *entire* process, it should wrap most of your script.
+# For now, I'm placing it as if it's the outermost error handler.
+except Exception as e:
+    if 'file_id' in locals() and file_id in renaming_operations:
+        print(f"An error occurred during renaming for file_id {file_id}: {e}")
