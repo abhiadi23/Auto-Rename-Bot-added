@@ -486,8 +486,8 @@ if not media_type:
     media_type = "document"
 
 if await check_anti_nsfw(file_name, message):
-await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
-
+    await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
+    
     # ENHANCED EXTRACTION - Fixed to properly detect from actual filename
     episode_number = extract_episode_number(file_name)
     season_number = extract_season_number(file_name)
