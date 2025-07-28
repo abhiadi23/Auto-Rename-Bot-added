@@ -405,7 +405,7 @@ await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...
             await msg.edit(f"Metadata processing failed: {e}")
             raise
 
-                await download_msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+                await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
                 await codeflixbots.col.update_one(
 
                     {"_id": user_id},
@@ -657,11 +657,11 @@ await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...
         raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
 
             except Exception as e:
-                await download_msg.edit(f"❌ Eʀʀᴏʀ: {str(e)}")
+            await message.reply_text(f"❌ Eʀʀᴏʀ: {str(e)}")
                 raise
 
             finally:
-                cleanup_files = [path, renamed_file_path, metadata_file_path]
+                cleanup_files = [download_path, metadata_path, output_path]
                 if ph_path:
                     cleanup_files.append(ph_path)
 
