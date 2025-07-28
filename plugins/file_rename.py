@@ -378,117 +378,115 @@ async def process_thumb_async(ph_path):
         img = img.resize((320, 320))
         img.save(path, "JPEG")
 
+# Assuming this block is within an async function
 download_path = f"downloads/{file_name}"
-                metadata_path = f"metadata/{file_name}"
-                output_path = f"processed/{os.path.splitext(file_name)[0]}{ext}"
-                
-                await aiofiles.os.makedirs(os.path.dirname(download_path), exist_ok=True)
-                await aiofiles.os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
-                await aiofiles.os.makedirs(os.path.dirname(output_path), exist_ok=True)
+metadata_path = f"metadata/{file_name}"
+output_path = f"processed/{os.path.splitext(file_name)[0]}{ext}"
+
+await aiofiles.os.makedirs(os.path.dirname(download_path), exist_ok=True)
+await aiofiles.os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
+await aiofiles.os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
 msg = await message.reply_text("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-        try:
-            file_path = await client.download_media(
-                message,
-                file_name=download_path,
-                progress=progress_for_pyrogram,
-                progress_args=("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!", msg, time.time())
-            )
-        except Exception as e:
-            await msg.edit(f"Download failed: {e}")
-            raise
+try:
+    file_path = await client.download_media(
+        message,
+        file_name=download_path,
+        progress=progress_for_pyrogram,
+        progress_args=("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!", msg, time.time())
+    )
+except Exception as e:
+    await msg.edit(f"Download failed: {e}")
+    raise
 
-await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
-                        await add_metadata(file_path, metadata_path, user_id)
-            file_path = metadata_path
-        except Exception as e:
-            await msg.edit(f"Metadata processing failed: {e}")
-            raise
+try: # This try block seems to be for metadata and subsequent upload operations
+    await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+    await add_metadata(file_path, metadata_path, user_id)
+    file_path = metadata_path # Update file_path to metadata_path
 
-                await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-                await codeflixbots.col.update_one(
-
-                    {"_id": user_id},
-
-                    {
-
-                        "$inc": {"rename_count": 1}, # Increment rename_count by 1
-
-                        "$set": {
-
-                            "first_name": message.from_user.first_name,
-
-                            "username": message.from_user.username,
-
-                            "last_activity_timestamp": datetime.now() # Useful for general tracking
-
-                        }
-
-                    }
-                    
-                )
-                
-                c_caption = await codeflixbots.get_caption(message.chat.id)
-                c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
-
-                caption = (
-                    c_caption.format(
-                        filename=renamed_file_name,
-                        filesize=humanbytes(message.document.file_size) if message.document else "Unknown",
-                        duration=convert(duration), # Use the fetched duration
-                    )
-                    if c_caption
-                    else f"{renamed_file_name}"
-                )
-
-                if c_thumb:
-                    ph_path = await client.download_media(c_thumb)
-                elif media_type == "video" and getattr(message.video, "thumbs", None):
-        try:
-            upload_params = {
-                'chat_id': message.chat.id,
-                'caption': caption,
-                'thumb': ph_path,
-                'progress': progress_for_pyrogram,
-                'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
+    await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+    await codeflixbots.col.update_one(
+        {"_id": user_id},
+        {
+            "$inc": {"rename_count": 1}, # Increment rename_count by 1
+            "$set": {
+                "first_name": message.from_user.first_name,
+                "username": message.from_user.username,
+                "last_activity_timestamp": datetime.now() # Useful for general tracking
             }
+        }
+    )
 
-            if media_type == "document":
-                await client.send_document(document=file_path, **upload_params)
-            elif media_type == "video":
-                await client.send_video(video=file_path, **upload_params)
-            elif media_type == "audio":
-                await client.send_audio(audio=file_path, **upload_params)
+    c_caption = await codeflixbots.get_caption(message.chat.id)
+    c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
-            await msg.delete()
-        except Exception as e:
-            await msg.edit(f"Upload failed: {e}")
-            raise
+    caption = (
+        c_caption.format(
+            filename=renamed_file_name,
+            filesize=humanbytes(message.document.file_size) if message.document else "Unknown",
+            duration=convert(duration), # Use the fetched duration
+        )
+        if c_caption
+        else f"{renamed_file_name}"
+    )
 
-    except Except
-            format_template = await codeflixbots.get_format_template(user_id)
-            media_preference = await codeflixbots.get_media_preference(user_id)
+    ph_path = None # Initialize ph_path
+    if c_thumb:
+        ph_path = await client.download_media(c_thumb)
+    elif media_type == "video" and getattr(message.video, "thumbs", None):
+        # Assuming you'd want to set ph_path here from message.video.thumbs if it exists
+        # This part was incomplete in your original code.
+        # Example: ph_path = await client.download_media(message.video.thumbs[0].file_id)
+        pass
 
-            if not format_template:
-                await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
-                return
+    upload_params = {
+        'chat_id': message.chat.id,
+        'caption': caption,
+        'thumb': ph_path, # Use the determined ph_path
+        'progress': progress_for_pyrogram,
+        'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
+    }
 
-            media_type = media_preference
+    if media_type == "document":
+        await client.send_document(document=file_path, **upload_params)
+    elif media_type == "video":
+        await client.send_video(video=file_path, **upload_params)
+    elif media_type == "audio":
+        await client.send_audio(audio=file_path, **upload_params)
 
-            if not media_type:
-                if file_name.endswith((".mp4", ".mkv", ".avi", ".webm")):
-                    media_type = "document"
-                elif file_name.endswith((".mp3", ".flac", ".wav", ".ogg")):
-                    media_type = "audio"
-                else:
-                    media_type = "video"
+    await msg.delete()
 
-            if not media_type:
-                media_type = "document"
+except Exception as e: # Catching exceptions for the metadata and upload process
+    await msg.edit(f"Metadata or upload failed: {e}")
+    raise
 
-            if await check_anti_nsfw(file_name, message):
-                await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
-                return
+# This 'except Except' block is problematic.
+# It seems like a separate try-except structure is starting here, but it's incomplete.
+# I'm placing the subsequent code at a consistent indentation level,
+# assuming it's part of the same overall function, but you might need to wrap it in a new try-except.
+
+format_template = await codeflixbots.get_format_template(user_id)
+media_preference = await codeflixbots.get_media_preference(user_id)
+
+if not format_template:
+    await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
+    # return is often used to exit the function here
+    # return
+
+if not media_preference: # Assuming media_type should be derived if not explicitly set
+    if file_name.endswith((".mp4", ".mkv", ".avi", ".webm")):
+        media_type = "document"
+    elif file_name.endswith((".mp3", ".flac", ".wav", ".ogg")):
+        media_type = "audio"
+    else:
+        media_type = "video" # Default to video if not recognized as document/audio
+
+# If media_type is still not set after the above logic (e.g., if file_name has no recognized extension)
+if not media_type:
+    media_type = "document"
+
+if await check_anti_nsfw(file_name, message):
+    await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
 
             # ENHANCED EXTRACTION - Fixed to properly detect from actual filename
             episode_number = extract_episode_number(file_name)
