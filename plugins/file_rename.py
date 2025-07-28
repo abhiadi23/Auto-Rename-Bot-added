@@ -280,24 +280,6 @@ def extract_quality(filename):
 
     return None
 
-# --- Modified filename generation to NOT add UUID to filename ---
-def generate_unique_paths(renamed_file_name):
-    base_name, ext = os.path.splitext(renamed_file_name)
-
-    if not ext.startswith('.'):
-        ext = '.' + ext if ext else ''
-
-    # Use the renamed_file_name directly as the unique_file_name_for_storage
-    unique_file_name_for_storage = renamed_file_name
-
-    renamed_file_path = os.path.join("downloads", unique_file_name_for_storage)
-    metadata_file_path = os.path.join("Metadata", unique_file_name_for_storage)
-
-    os.makedirs(os.path.dirname(renamed_file_path), exist_ok=True)
-    os.makedirs(os.path.dirname(metadata_file_path), exist_ok=True)
-
-    return renamed_file_path, metadata_file_path, unique_file_name_for_storage
-
 @Client.on_message(filters.command("start_sequence") & filters.private)
 @check_ban
 async def start_sequence(client, message: Message):
@@ -396,21 +378,72 @@ async def process_thumb_async(ph_path):
         img = img.resize((320, 320))
         img.save(path, "JPEG")
 
-async def concurrent_download(client, message, renamed_file_path, progress_msg, file_info):
-    asyncio.create_task(auto_rename_file_concurrent(client, message, file_info))
-    try:
-        path = await client.download_media(
-            message,
-            file_name=renamed_file_path,
-            progress=progress_for_pyrogram,
-            progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ....!!", progress_msg, time.time()),
-        )
-        return path
-    except Exception as e:
-        raise Exception(f"Download Error: {e}")
+download_path = f"downloads/{file_name}"
+                metadata_path = f"metadata/{file_name}"
+                output_path = f"processed/{os.path.splitext(file_name)[0]}{ext}"
+                
+                await aiofiles.os.makedirs(os.path.dirname(download_path), exist_ok=True)
+                await aiofiles.os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
+                await aiofiles.os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-async def concurrent_upload(client, message, path, media_type, caption, ph_path, progress_msg, duration=0): # Added duration parameter with default
-    async with upload_semaphore:
+msg = await message.reply_text("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+        try:
+            file_path = await client.download_media(
+                message,
+                file_name=download_path,
+                progress=progress_for_pyrogram,
+                progress_args=("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!", msg, time.time())
+            )
+        except Exception as e:
+            await msg.edit(f"Download failed: {e}")
+            raise
+
+await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+                        await add_metadata(file_path, metadata_path, user_id)
+            file_path = metadata_path
+        except Exception as e:
+            await msg.edit(f"Metadata processing failed: {e}")
+            raise
+
+                await download_msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+                await codeflixbots.col.update_one(
+
+                    {"_id": user_id},
+
+                    {
+
+                        "$inc": {"rename_count": 1}, # Increment rename_count by 1
+
+                        "$set": {
+
+                            "first_name": message.from_user.first_name,
+
+                            "username": message.from_user.username,
+
+                            "last_activity_timestamp": datetime.now() # Useful for general tracking
+
+                        }
+
+                    }
+                    
+                )
+                
+                c_caption = await codeflixbots.get_caption(message.chat.id)
+                c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
+
+                caption = (
+                    c_caption.format(
+                        filename=renamed_file_name,
+                        filesize=humanbytes(message.document.file_size) if message.document else "Unknown",
+                        duration=convert(duration), # Use the fetched duration
+                    )
+                    if c_caption
+                    else f"{renamed_file_name}"
+                )
+
+                if c_thumb:
+                    ph_path = await client.download_media(c_thumb)
+                elif media_type == "video" and getattr(message.video, "thumbs", None):
         try:
             if media_type == "document":
                 await client.send_document(
@@ -443,19 +476,6 @@ async def concurrent_upload(client, message, path, media_type, caption, ph_path,
                 )
         except Exception as e:
             raise Exception(f"Upload Error: {e}")
-
-async def auto_rename_file_concurrent(client, message, file_info):
-    async with processing_semaphore:  # Limit overall concurrent processing
-        try:
-            user_id = message.from_user.id
-            file_id = file_info["file_id"]
-            file_name = file_info["file_name"]
-
-            if file_id in renaming_operations:
-                elapsed_time = (datetime.now() - renaming_operations[file_id]).seconds
-                if elapsed_time < 10:
-                    return
-            renaming_operations[file_id] = datetime.now()
 
             format_template = await codeflixbots.get_format_template(user_id)
             media_preference = await codeflixbots.get_media_preference(user_id)
@@ -595,31 +615,19 @@ async def auto_rename_file_concurrent(client, message, file_info):
 
             print(f"DEBUG: Final renamed file: {renamed_file_name}")
 
-            # This is where the change is:
-            # We are now passing renamed_file_name directly without appending a unique_id
-            renamed_file_path, metadata_file_path, unique_file_name_for_storage = generate_unique_paths(renamed_file_name)
-
-
-            download_msg = await message.reply_text("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-
             ph_path = None
             duration = 0 # Initialize duration
-
-            try:
-                path = await concurrent_download(client, message, renamed_file_path, download_msg)
-
+            
                 # Get duration after download for video/audio files
                 if message.video:
                     duration = message.video.duration
                 elif message.audio:
                     duration = message.audio.duration
 
-
-                await download_msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
-
-                ffmpeg_cmd = shutil.which('ffmpeg')
-                if not ffmpeg_cmd:
-                    raise Exception("FFmpeg not found")
+                async def add_metadata(input_path, output_path, user_id):
+    ffmpeg = shutil.which('ffmpeg')
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg not found in PATH")
 
                 metadata_command = [
                     ffmpeg_cmd,
@@ -647,54 +655,6 @@ async def auto_rename_file_concurrent(client, message, file_info):
     
     if process.returncode != 0:
         raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
-
-                await download_msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-                await codeflixbots.col.update_one(
-
-                    {"_id": user_id},
-
-                    {
-
-                        "$inc": {"rename_count": 1}, # Increment rename_count by 1
-
-                        "$set": {
-
-                            "first_name": message.from_user.first_name,
-
-                            "username": message.from_user.username,
-
-                            "last_activity_timestamp": datetime.now() # Useful for general tracking
-
-                        }
-
-                    }
-                    
-                )
-                
-                c_caption = await codeflixbots.get_caption(message.chat.id)
-                c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
-
-                caption = (
-                    c_caption.format(
-                        filename=renamed_file_name,
-                        filesize=humanbytes(message.document.file_size) if message.document else "Unknown",
-                        duration=convert(duration), # Use the fetched duration
-                    )
-                    if c_caption
-                    else f"{renamed_file_name}"
-                )
-
-                if c_thumb:
-                    ph_path = await client.download_media(c_thumb)
-                elif media_type == "video" and getattr(message.video, "thumbs", None):
-                    ph_path = await client.download_media(message.video.thumbs[0].file_id)
-
-                if ph_path:
-                    await process_thumb_async(ph_path)
-
-                await concurrent_upload(client, message, path, media_type, caption, ph_path, download_msg, duration) # Pass duration here too
-
-                await download_msg.delete()
 
             except Exception as e:
                 await download_msg.edit(f"❌ Eʀʀᴏʀ: {str(e)}")
