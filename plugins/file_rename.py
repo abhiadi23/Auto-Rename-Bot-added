@@ -445,38 +445,27 @@ await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...
                     ph_path = await client.download_media(c_thumb)
                 elif media_type == "video" and getattr(message.video, "thumbs", None):
         try:
-            if media_type == "document":
-                await client.send_document(
-                    message.chat.id,
-                    document=path,
-                    thumb=ph_path,
-                    caption=caption,
-                    progress=progress_for_pyrogram,
-                    progress_args=("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", progress_msg, time.time()),
-                )
-            elif media_type == "video":
-                await client.send_video(
-                    message.chat.id,
-                    video=path,
-                    caption=caption,
-                    thumb=ph_path,
-                    duration=duration, # Use the passed duration
-                    progress=progress_for_pyrogram,
-                    progress_args=("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", progress_msg, time.time()),
-                )
-            elif media_type == "audio":
-                await client.send_audio(
-                    message.chat.id,
-                    audio=path,
-                    caption=caption,
-                    thumb=ph_path,
-                    duration=duration, # Use the passed duration
-                    progress=progress_for_pyrogram,
-                    progress_args=("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", progress_msg, time.time()),
-                )
-        except Exception as e:
-            raise Exception(f"Upload Error: {e}")
+            upload_params = {
+                'chat_id': message.chat.id,
+                'caption': caption,
+                'thumb': ph_path,
+                'progress': progress_for_pyrogram,
+                'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
+            }
 
+            if media_type == "document":
+                await client.send_document(document=file_path, **upload_params)
+            elif media_type == "video":
+                await client.send_video(video=file_path, **upload_params)
+            elif media_type == "audio":
+                await client.send_audio(audio=file_path, **upload_params)
+
+            await msg.delete()
+        except Exception as e:
+            await msg.edit(f"Upload failed: {e}")
+            raise
+
+    except Except
             format_template = await codeflixbots.get_format_template(user_id)
             media_preference = await codeflixbots.get_media_preference(user_id)
 
