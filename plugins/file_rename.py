@@ -486,15 +486,15 @@ if not media_type:
     media_type = "document"
 
 if await check_anti_nsfw(file_name, message):
-    await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
+await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
 
-            # ENHANCED EXTRACTION - Fixed to properly detect from actual filename
-            episode_number = extract_episode_number(file_name)
-            season_number = extract_season_number(file_name)
-            audio_info_extracted = extract_audio_info(file_name)
-            quality_extracted = extract_quality(file_name)
+    # ENHANCED EXTRACTION - Fixed to properly detect from actual filename
+    episode_number = extract_episode_number(file_name)
+    season_number = extract_season_number(file_name)
+    audio_info_extracted = extract_audio_info(file_name)
+    quality_extracted = extract_quality(file_name)
 
-            print(f"DEBUG: Final extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
+    print(f"DEBUG: Final extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
 
             template = format_template
 
