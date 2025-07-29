@@ -15,6 +15,7 @@ from helper.utils import progress_for_pyrogram, humanbytes, convert
 from helper.database import codeflixbots
 from config import Config
 from functools import wraps
+import aiofiles
 
 ADMIN_URL = Config.ADMIN_URL
 
@@ -64,17 +65,17 @@ def extract_episode_number(filename):
 
     # Define common quality and year indicators to exclude if they appear near a number.
     quality_and_year_indicators = [
-        r'\d{2,4}[pP]',    # e.g., 480p, 720p, 1080p, 2160p (case-insensitive 'p')
-        r'\dK',            # e.g., 4K, 2K
-        r'HD(?:RIP)?',     # e.g., HD, HDRip
-        r'WEB(?:-)?DL',    # e.g., WEB-DL, WEBDL
-        r'BLURAY',         # e.g., BLURAY
-        r'X264',           # e.g., X264
-        r'X265',           # e.g., X265
-        r'HEVC',           # e.g., HEVC
-        r'FHD',            # e.g., FHD (Full HD)
-        r'UHD',            # e.g., UHD (Ultra HD)
-        r'HDR',            # e.g., HDR
+        r'\d{2,4}[pP]',     # e.g., 480p, 720p, 1080p, 2160p (case-insensitive 'p')
+        r'\dK',             # e.g., 4K, 2K
+        r'HD(?:RIP)?',      # e.g., HD, HDRip
+        r'WEB(?:-)?DL',     # e.g., WEB-DL, WEBDL
+        r'BLURAY',          # e.g., BLURAY
+        r'X264',            # e.g., X264
+        r'X265',            # e.g., X265
+        r'HEVC',            # e.g., HEVC
+        r'FHD',             # e.g., FHD (Full HD)
+        r'UHD',             # e.g., UHD (Ultra HD)
+        r'HDR',             # e.g., HDR
         r'H\.264', r'H\.265', # common codec spellings
         r'(?:19|20)\d{2}', # Years like 19XX or 20XX
         r'Multi(?:audio)?', # Multi audio, as it can be near numbers
@@ -98,9 +99,9 @@ def extract_episode_number(filename):
         # Pattern 6: General number pattern with strong negative lookahead.
         # This is the most crucial part to avoid misidentifying quality/year numbers.
         re.compile(
-            r'(?:^|[^0-9A-Z])'       # Start of string or non-alphanumeric character before the number
-            r'(\d{1,4})'           # Capture 1 to 4 digits (potential episode number)
-            r'(?:[^0-9A-Z]|$)'       # End of string or non-alphanumeric character after the number
+            r'(?:^|[^0-9A-Z])'        # Start of string or non-alphanumeric character before the number
+            r'(\d{1,4})'            # Capture 1 to 4 digits (potential episode number)
+            r'(?:[^0-9A-Z]|$)'        # End of string or non-alphanumeric character after the number
             r'(?!' + quality_pattern_for_exclusion + r')' # IMPORTANT: Negative lookahead for quality/year patterns
             , re.IGNORECASE
         ),
@@ -146,17 +147,17 @@ def extract_season_number(filename):
 
     # Define common quality and year indicators (same as for episodes)
     quality_and_year_indicators = [
-        r'\d{2,4}[pP]',    # e.g., 480p, 720p, 1080p, 2160p (case-insensitive 'p')
-        r'\dK',            # e.g., 4K, 2K
-        r'HD(?:RIP)?',     # e.g., HD, HDRip
-        r'WEB(?:-)?DL',    # e.g., WEB-DL, WEBDL
-        r'BLURAY',         # e.g., BLURAY
-        r'X264',           # e.g., X264
-        r'X265',           # e.g., X265
-        r'HEVC',           # e.g., HEVC
-        r'FHD',            # e.g., FHD (Full HD)
-        r'UHD',            # e.g., UHD (Ultra HD)
-        r'HDR',            # e.g., HDR
+        r'\d{2,4}[pP]',     # e.g., 480p, 720p, 1080p, 2160p (case-insensitive 'p')
+        r'\dK',             # e.g., 4K, 2K
+        r'HD(?:RIP)?',      # e.g., HD, HDRip
+        r'WEB(?:-)?DL',     # e.g., WEB-DL, WEBDL
+        r'BLURAY',          # e.g., BLURAY
+        r'X264',            # e.g., X264
+        r'X265',            # e.g., X265
+        r'HEVC',            # e.g., HEVC
+        r'FHD',             # e.g., FHD (Full HD)
+        r'UHD',             # e.g., UHD (Ultra HD)
+        r'HDR',             # e.g., HDR
         r'H\.264', r'H\.265', # common codec spellings
         r'(?:19|20)\d{2}', # Years like 19XX or 20XX
         r'Multi(?:audio)?', # Multi audio, as it can be near numbers
@@ -320,6 +321,244 @@ async def auto_rename_files(client, message):
         message_ids[user_id].append(reply_msg.id)
         return
 
+    # If not part of a sequence, proceed with single file processing
+    # This block was previously at an inconsistent indentation level and
+    # seems intended for single file auto-renaming.
+    # It needs to be wrapped in a try-finally for cleanup.
+    download_path = None
+    metadata_path = None
+    output_path = None
+    ph_path = None
+    duration = 0
+    media_type = None
+
+    try:
+        if message.document:
+            media_type = "document"
+        elif message.video:
+            media_type = "video"
+            duration = message.video.duration
+        elif message.audio:
+            media_type = "audio"
+            duration = message.audio.duration
+
+        download_path = f"downloads/{file_name}"
+        metadata_path = f"metadata/{file_name}"
+        output_path = f"processed/{os.path.splitext(file_name)[0]}{os.path.splitext(file_name)[1]}" # Ensure correct extension
+
+        await aiofiles.os.makedirs(os.path.dirname(download_path), exist_ok=True)
+        await aiofiles.os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
+        await aiofiles.os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+
+        msg = await message.reply_text("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+        try:
+            file_path = await client.download_media(
+                message,
+                file_name=download_path,
+                progress=progress_for_pyrogram,
+                progress_args=("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!", msg, time.time())
+            )
+        except Exception as e:
+            await msg.edit(f"Download failed: {e}")
+            raise
+
+        try: # This try block seems to be for metadata and subsequent upload operations
+            await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+            await add_metadata(file_path, metadata_path, user_id)
+            file_path = metadata_path # Update file_path to metadata_path
+
+            await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+            await codeflixbots.col.update_one(
+                {"_id": user_id},
+                {
+                    "$inc": {"rename_count": 1}, # Increment rename_count by 1
+                    "$set": {
+                        "first_name": message.from_user.first_name,
+                        "username": message.from_user.username,
+                        "last_activity_timestamp": datetime.now() # Useful for general tracking
+                    }
+                }
+            )
+
+            c_caption = await codeflixbots.get_caption(message.chat.id)
+            c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
+
+            caption = (
+                c_caption.format(
+                    filename=file_name,
+                    filesize=humanbytes(message.document.file_size) if message.document else "Unknown",
+                    duration=convert(duration), # Use the fetched duration
+                )
+                if c_caption
+                else f"{file_name}"
+            )
+
+            ph_path = None # Initialize ph_path
+            if c_thumb:
+                ph_path = await client.download_media(c_thumb)
+            elif media_type == "video" and getattr(message.video, "thumbs", None):
+                if message.video.thumbs:
+                    ph_path = await client.download_media(message.video.thumbs[0].file_id)
+
+
+            upload_params = {
+                'chat_id': message.chat.id,
+                'caption': caption,
+                'thumb': ph_path, # Use the determined ph_path
+                'progress': progress_for_pyrogram,
+                'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
+            }
+
+            if media_type == "document":
+                await client.send_document(document=file_path, **upload_params)
+            elif media_type == "video":
+                await client.send_video(video=file_path, **upload_params)
+            elif media_type == "audio":
+                await client.send_audio(audio=file_path, **upload_params)
+
+            await msg.delete()
+
+        except Exception as e: # Catching exceptions for the metadata and upload process
+            await msg.edit(f"Metadata or upload failed: {e}")
+            raise
+
+        format_template = await codeflixbots.get_format_template(user_id)
+        media_preference = await codeflixbots.get_media_preference(user_id)
+
+        if not format_template:
+            await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
+            return
+
+        if not media_preference: # Assuming media_type should be derived if not explicitly set
+            if file_name.endswith((".mp4", ".mkv", ".avi", ".webm")):
+                media_type = "document" # This was 'document' for video files based on original logic, changed to 'video' for consistency
+            elif file_name.endswith((".mp3", ".flac", ".wav", ".ogg")):
+                media_type = "audio"
+            else:
+                media_type = "video" # Default to video if not recognized as document/audio
+
+        # If media_type is still not set after the above logic (e.g., if file_name has no recognized extension)
+        if not media_type:
+            media_type = "document"
+
+        if await check_anti_nsfw(file_name, message):
+            await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
+            return # Exit if NSFW content is detected
+            
+        # ENHANCED EXTRACTION - Fixed to properly detect from actual filename
+        episode_number = extract_episode_number(file_name)
+        season_number = extract_season_number(file_name)
+        audio_info_extracted = extract_audio_info(file_name)
+        quality_extracted = extract_quality(file_name)
+
+        print(f"DEBUG: Final extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
+
+        template = format_template
+
+        # --- FIXED PLACEHOLDER REPLACEMENT LOGIC (RESTORED {} and word boundaries) ---
+
+        # Format numbers with leading zeros
+        season_value_formatted = str(season_number).zfill(2) if season_number is not None else "01"  # Default to 01 if not found
+        episode_value_formatted = str(episode_number).zfill(2) if episode_number is not None else "01"  # Default to 01 if not found
+
+        # 1. Handle SSeasonXX pattern specifically first (e.g., SSeason01 -> S01)
+        # This regex looks for 'S' immediately followed by 'Season' (case-insensitive) and then digits.
+        # It replaces it with 'S' and the formatted season number.
+        template = re.sub(r'S(?:Season|season|SEASON)(\d+)', f'S{season_value_formatted}', template, flags=re.IGNORECASE)
+
+        # 2. Regular SEASON PLACEHOLDER REPLACEMENT - Multiple patterns
+        season_replacements = [
+            # Curly brace patterns - REPLACES WITH JUST THE NUMBER (e.g., {season} -> 01)
+            (re.compile(r'\{season\}', re.IGNORECASE), season_value_formatted),
+            (re.compile(r'\{Season\}', re.IGNORECASE), season_value_formatted),
+            (re.compile(r'\{SEASON\}', re.IGNORECASE), season_value_formatted),
+
+            # Word boundary patterns - standalone words - REPLACES WITH JUST THE NUMBER (e.g., Season -> 01)
+            (re.compile(r'\bseason\b', re.IGNORECASE), season_value_formatted),
+            (re.compile(r'\bSeason\b', re.IGNORECASE), season_value_formatted),
+            (re.compile(r'\bSEASON\b', re.IGNORECASE), season_value_formatted),
+
+            # Specific season patterns with separators (e.g., Season 1, season-02) - NOW REMOVES "Season" TEXT (e.g., Season 01 -> 01)
+            (re.compile(r'Season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
+            (re.compile(r'season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
+            (re.compile(r'SEASON[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
+        ]
+
+        for pattern, replacement in season_replacements:
+            template = pattern.sub(replacement, template)
+            
+        template = re.sub(r'EP(?:Episode|episode|EPISODE)', f'EP{episode_value_formatted}', template, flags=re.IGNORECASE)
+
+        # 3. Episode placeholder replacement - Now correctly handles {episode}, {Episode}, and standalone "episode"
+        episode_patterns = [
+            re.compile(r'\{episode\}', re.IGNORECASE),  # {episode}, {Episode} -> 01
+            re.compile(r'\bEpisode\b', re.IGNORECASE),  # Episode, episode, EPISODE as standalone words -> 01
+            re.compile(r'\bEP\b', re.IGNORECASE) # Added back to handle standalone EP as a placeholder
+        ]
+
+        for pattern in episode_patterns:
+            template = pattern.sub(episode_value_formatted, template)
+
+        # 4. Audio placeholder replacement - Now correctly handles {audio}, {Audio}, and standalone "audio"
+        audio_replacement = audio_info_extracted if audio_info_extracted else ""
+        audio_patterns = [
+            re.compile(r'\{audio\}', re.IGNORECASE),    # {audio}, {Audio}
+            re.compile(r'\bAudio\b', re.IGNORECASE),    # Audio, audio, AUDIO as standalone words
+        ]
+
+        for pattern in audio_patterns:
+            template = pattern.sub(audio_replacement, template)
+
+        # 5. Quality placeholder replacement - Now correctly handles {quality}, {Quality}, and standalone "quality"
+        quality_replacement = quality_extracted if quality_extracted else ""
+        quality_patterns = [
+            re.compile(r'\{quality\}', re.IGNORECASE),  # {quality}, {Quality}
+            re.compile(r'\bQuality\b', re.IGNORECASE),  # Quality, quality, QUALITY as standalone words
+        ]
+
+        for pattern in quality_patterns:
+            template = pattern.sub(quality_replacement, template)
+
+        # Remove truly empty square brackets, parentheses, curly braces (e.g., "[]", "()", "{}")
+        template = re.sub(r'\[\s*\]', '', template)
+        template = re.sub(r'\(\s*\)', '', template)
+        template = re.sub(r'\{\s*\}', '', template)
+
+        # --- END Clean up Extra Spaces, Brackets, and Separators ---
+        _, file_extension = os.path.splitext(file_name)
+
+        print(f"Cleaned template: '{template}'")
+        print(f"File extension: '{file_extension}'")
+
+        if not file_extension.startswith('.'):
+            file_extension = '.' + file_extension if file_extension else ''
+
+        file_name = f"{template}{file_extension}"
+
+        print(f"DEBUG: Final renamed file: {file_name}")
+
+        renaming_operations[file_id] = True # Mark operation as started
+    except Exception as e:
+        await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
+        if file_id in renaming_operations:
+            del renaming_operations[file_id]
+    finally:
+        cleanup_files = [download_path, metadata_path, output_path]
+        if ph_path:
+            cleanup_files.append(ph_path)
+
+        for file_path in cleanup_files:
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception as cleanup_e:
+                    print(f"Error during file cleanup for {file_path}: {cleanup_e}")
+                    pass # Continue even if one file fails to delete
+
+        if file_id in renaming_operations:
+            del renaming_operations[file_id]
+
 
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
@@ -378,216 +617,8 @@ async def process_thumb_async(ph_path):
         img = img.resize((320, 320))
         img.save(path, "JPEG")
 
-# Assuming this block is within an async function
-download_path = f"downloads/{file_name}"
-metadata_path = f"metadata/{file_name}"
-output_path = f"processed/{os.path.splitext(file_name)[0]}{ext}"
-
-await aiofiles.os.makedirs(os.path.dirname(download_path), exist_ok=True)
-await aiofiles.os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
-await aiofiles.os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-msg = await message.reply_text("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-try:
-    file_path = await client.download_media(
-        message,
-        file_name=download_path,
-        progress=progress_for_pyrogram,
-        progress_args=("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!", msg, time.time())
-    )
-except Exception as e:
-    await msg.edit(f"Download failed: {e}")
-    raise
-
-try: # This try block seems to be for metadata and subsequent upload operations
-    await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
-    await add_metadata(file_path, metadata_path, user_id)
-    file_path = metadata_path # Update file_path to metadata_path
-
-    await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-    await codeflixbots.col.update_one(
-        {"_id": user_id},
-        {
-            "$inc": {"rename_count": 1}, # Increment rename_count by 1
-            "$set": {
-                "first_name": message.from_user.first_name,
-                "username": message.from_user.username,
-                "last_activity_timestamp": datetime.now() # Useful for general tracking
-            }
-        }
-    )
-
-    c_caption = await codeflixbots.get_caption(message.chat.id)
-    c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
-
-    caption = (
-        c_caption.format(
-            filename=file_name,
-            filesize=humanbytes(message.document.file_size) if message.document else "Unknown",
-            duration=convert(duration), # Use the fetched duration
-        )
-        if c_caption
-        else f"{file_name}"
-    )
-
-    ph_path = None # Initialize ph_path
-    if c_thumb:
-        ph_path = await client.download_media(c_thumb)
-    elif media_type == "video" and getattr(message.video, "thumbs", None):
-        # Assuming you'd want to set ph_path here from message.video.thumbs if it exists
-        # This part was incomplete in your original code.
-        # Example: ph_path = await client.download_media(message.video.thumbs[0].file_id)
-        pass
-
-    upload_params = {
-        'chat_id': message.chat.id,
-        'caption': caption,
-        'thumb': ph_path, # Use the determined ph_path
-        'progress': progress_for_pyrogram,
-        'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
-    }
-
-    if media_type == "document":
-        await client.send_document(document=file_path, **upload_params)
-    elif media_type == "video":
-        await client.send_video(video=file_path, **upload_params)
-    elif media_type == "audio":
-        await client.send_audio(audio=file_path, **upload_params)
-
-    await msg.delete()
-
-except Exception as e: # Catching exceptions for the metadata and upload process
-    await msg.edit(f"Metadata or upload failed: {e}")
-    raise
-
-# This 'except Except' block is problematic.
-# It seems like a separate try-except structure is starting here, but it's incomplete.
-# I'm placing the subsequent code at a consistent indentation level,
-# assuming it's part of the same overall function, but you might need to wrap it in a new try-except.
-
-format_template = await codeflixbots.get_format_template(user_id)
-media_preference = await codeflixbots.get_media_preference(user_id)
-
-if not format_template:
-    await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
-    # return is often used to exit the function here
-    # return
-
-if not media_preference: # Assuming media_type should be derived if not explicitly set
-    if file_name.endswith((".mp4", ".mkv", ".avi", ".webm")):
-        media_type = "document"
-    elif file_name.endswith((".mp3", ".flac", ".wav", ".ogg")):
-        media_type = "audio"
-    else:
-        media_type = "video" # Default to video if not recognized as document/audio
-
-# If media_type is still not set after the above logic (e.g., if file_name has no recognized extension)
-if not media_type:
-    media_type = "document"
-
-if await check_anti_nsfw(file_name, message):
-    await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
-    
-    # ENHANCED EXTRACTION - Fixed to properly detect from actual filename
-    episode_number = extract_episode_number(file_name)
-    season_number = extract_season_number(file_name)
-    audio_info_extracted = extract_audio_info(file_name)
-    quality_extracted = extract_quality(file_name)
-
-print(f"DEBUG: Final extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
-
-template = format_template
-
-            # --- FIXED PLACEHOLDER REPLACEMENT LOGIC (RESTORED {} and word boundaries) ---
-
-# Format numbers with leading zeros
-    season_value_formatted = str(season_number).zfill(2) if season_number is not None else "01"  # Default to 01 if not found
-    episode_value_formatted = str(episode_number).zfill(2) if episode_number is not None else "01"  # Default to 01 if not found
-
-    # 1. Handle SSeasonXX pattern specifically first (e.g., SSeason01 -> S01)
-    # This regex looks for 'S' immediately followed by 'Season' (case-insensitive) and then digits.
-    # It replaces it with 'S' and the formatted season number.
-    template = re.sub(r'S(?:Season|season|SEASON)(\d+)', f'S{season_value_formatted}', template, flags=re.IGNORECASE)
-
-            # 2. Regular SEASON PLACEHOLDER REPLACEMENT - Multiple patterns
-            season_replacements = [
-                # Curly brace patterns - REPLACES WITH JUST THE NUMBER (e.g., {season} -> 01)
-                (re.compile(r'\{season\}', re.IGNORECASE), season_value_formatted),
-                (re.compile(r'\{Season\}', re.IGNORECASE), season_value_formatted),
-                (re.compile(r'\{SEASON\}', re.IGNORECASE), season_value_formatted),
-
-                # Word boundary patterns - standalone words - REPLACES WITH JUST THE NUMBER (e.g., Season -> 01)
-                (re.compile(r'\bseason\b', re.IGNORECASE), season_value_formatted),
-                (re.compile(r'\bSeason\b', re.IGNORECASE), season_value_formatted),
-                (re.compile(r'\bSEASON\b', re.IGNORECASE), season_value_formatted),
-
-                # Specific season patterns with separators (e.g., Season 1, season-02) - NOW REMOVES "Season" TEXT (e.g., Season 01 -> 01)
-                (re.compile(r'Season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
-                (re.compile(r'season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
-                (re.compile(r'SEASON[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
-            ]
-
-            for pattern, replacement in season_replacements:
-                template = pattern.sub(replacement, template)
-                
-            template = re.sub(r'EP(?:Episode|episode|EPISODE)', f'EP{episode_value_formatted}', template, flags=re.IGNORECASE)
-
-            # 3. Episode placeholder replacement - Now correctly handles {episode}, {Episode}, and standalone "episode"
-            episode_patterns = [
-                re.compile(r'\{episode\}', re.IGNORECASE),  # {episode}, {Episode} -> 01
-                re.compile(r'\bEpisode\b', re.IGNORECASE),  # Episode, episode, EPISODE as standalone words -> 01
-                re.compile(r'\bEP\b', re.IGNORECASE) # Added back to handle standalone EP as a placeholder
-            ]
-
-            for pattern in episode_patterns:
-                template = pattern.sub(episode_value_formatted, template)
-
-            # 4. Audio placeholder replacement - Now correctly handles {audio}, {Audio}, and standalone "audio"
-            audio_replacement = audio_info_extracted if audio_info_extracted else ""
-            audio_patterns = [
-                re.compile(r'\{audio\}', re.IGNORECASE),    # {audio}, {Audio}
-                re.compile(r'\bAudio\b', re.IGNORECASE),    # Audio, audio, AUDIO as standalone words
-            ]
-
-            for pattern in audio_patterns:
-                template = pattern.sub(audio_replacement, template)
-
-            # 5. Quality placeholder replacement - Now correctly handles {quality}, {Quality}, and standalone "quality"
-            quality_replacement = quality_extracted if quality_extracted else ""
-            quality_patterns = [
-                re.compile(r'\{quality\}', re.IGNORECASE),  # {quality}, {Quality}
-                re.compile(r'\bQuality\b', re.IGNORECASE),  # Quality, quality, QUALITY as standalone words
-            ]
-
-            for pattern in quality_patterns:
-                template = pattern.sub(quality_replacement, template)
-
- # Remove truly empty square brackets, parentheses, curly braces (e.g., "[]", "()", "{}")
-template = re.sub(r'\[\s*\]', '', template)
-template = re.sub(r'\(\s*\)', '', template)
-template = re.sub(r'\{\s*\}', '', template)
-
-# --- END Clean up Extra Spaces, Brackets, and Separators ---
-_, file_extension = os.path.splitext(file_name)
-
-print(f"Cleaned template: '{template}'")
-print(f"File extension: '{file_extension}'")
-
-            if not file_extension.startswith('.'):
-                file_extension = '.' + file_extension if file_extension else ''
-
-            file_name = f"{template}{file_extension}"
-
-            print(f"DEBUG: Final renamed file: {file_name}")
-
-            ph_path = None
-            duration = 0 # Initialize duration
-            
-# This part likely belongs to the main handling function
-if message.video:
-    duration = message.video.duration
-elif message.audio:
-    duration = message.audio.duration
+    # This is where the actual async execution for resizing should happen
+    return await asyncio.to_thread(_resize_thumb, ph_path)
 
 # Definition of the async add_metadata function
 async def add_metadata(input_path, output_path, user_id):
@@ -622,44 +653,3 @@ async def add_metadata(input_path, output_path, user_id):
 
     if process.returncode != 0:
         raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
-
-# This try-except-finally block likely belongs to the main calling function,
-# which is why it's at a higher level of indentation than the add_metadata function definition.
-# It seems to be handling exceptions from the overall process and then performing cleanup.
-try:
-    # ... (previous code related to file download, metadata addition, upload) ...
-    # This 'except' block was isolated; it needs to be part of a 'try'.
-    # I'm assuming it's catching errors from the overall processing.
-    pass # Placeholder for the code that would be inside the 'try' block
-
-except Exception as e:
-    await message.reply_text(f"❌ Eʀʀᴏʀ: {str(e)}")
-    # It's generally not good practice to 'raise' immediately after sending a message
-    # unless you intend to stop execution completely and propagate the error up.
-    raise
-
-finally:
-    # Variables like download_path, metadata_path, output_path, ph_path, file_id, and
-    # renaming_operations need to be defined in the scope where this 'finally' block executes.
-    cleanup_files = [download_path, metadata_path, output_path]
-    if ph_path:
-        cleanup_files.append(ph_path)
-
-    for file_path in cleanup_files:
-        if file_path and os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except Exception as cleanup_e:
-                print(f"Error during file cleanup for {file_path}: {cleanup_e}")
-                pass # Continue even if one file fails to delete
-
-    if file_id in renaming_operations:
-        del renaming_operations[file_id]
-
-# This 'except Exception as e' block was also floating.
-# It needs to be associated with a 'try' block.
-# If it's meant to catch errors from the *entire* process, it should wrap most of your script.
-# For now, I'm placing it as if it's the outermost error handler.
-except Exception as e:
-    if 'file_id' in locals() and file_id in renaming_operations:
-        print(f"An error occurred during renaming for file_id {file_id}: {e}")
