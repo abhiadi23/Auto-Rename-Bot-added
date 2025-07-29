@@ -494,9 +494,9 @@ if await check_anti_nsfw(file_name, message):
     audio_info_extracted = extract_audio_info(file_name)
     quality_extracted = extract_quality(file_name)
 
-    print(f"DEBUG: Final extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
+print(f"DEBUG: Final extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
 
-            template = format_template
+template = format_template
 
             # --- FIXED PLACEHOLDER REPLACEMENT LOGIC (RESTORED {} and word boundaries) ---
 
