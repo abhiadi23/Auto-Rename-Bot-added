@@ -500,14 +500,14 @@ template = format_template
 
             # --- FIXED PLACEHOLDER REPLACEMENT LOGIC (RESTORED {} and word boundaries) ---
 
-            # Format numbers with leading zeros
-            season_value_formatted = str(season_number).zfill(2) if season_number is not None else "01"  # Default to 01 if not found
-            episode_value_formatted = str(episode_number).zfill(2) if episode_number is not None else "01"  # Default to 01 if not found
+# Format numbers with leading zeros
+    season_value_formatted = str(season_number).zfill(2) if season_number is not None else "01"  # Default to 01 if not found
+    episode_value_formatted = str(episode_number).zfill(2) if episode_number is not None else "01"  # Default to 01 if not found
 
-            # 1. Handle SSeasonXX pattern specifically first (e.g., SSeason01 -> S01)
-            # This regex looks for 'S' immediately followed by 'Season' (case-insensitive) and then digits.
-            # It replaces it with 'S' and the formatted season number.
-            template = re.sub(r'S(?:Season|season|SEASON)(\d+)', f'S{season_value_formatted}', template, flags=re.IGNORECASE)
+    # 1. Handle SSeasonXX pattern specifically first (e.g., SSeason01 -> S01)
+    # This regex looks for 'S' immediately followed by 'Season' (case-insensitive) and then digits.
+    # It replaces it with 'S' and the formatted season number.
+    template = re.sub(r'S(?:Season|season|SEASON)(\d+)', f'S{season_value_formatted}', template, flags=re.IGNORECASE)
 
             # 2. Regular SEASON PLACEHOLDER REPLACEMENT - Multiple patterns
             season_replacements = [
