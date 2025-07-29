@@ -562,38 +562,16 @@ template = format_template
             for pattern in quality_patterns:
                 template = pattern.sub(quality_replacement, template)
 
-            # --- END FIXED PLACEHOLDER LOGIC ---
+ # Remove truly empty square brackets, parentheses, curly braces (e.g., "[]", "()", "{}")
+template = re.sub(r'\[\s*\]', '', template)
+template = re.sub(r'\(\s*\)', '', template)
+template = re.sub(r'\{\s*\}', '', template)
 
-            # --- START Clean up Extra Spaces, Brackets, and Separators (Hyphen Preservation Version) ---
+# --- END Clean up Extra Spaces, Brackets, and Separators ---
+_, file_extension = os.path.splitext(file_name)
 
-            # Step 1: Standardize multiple spaces to single spaces
-            template = re.sub(r'\s{2,}', ' ', template)
-
-            # Step 2: Remove truly empty square brackets, parentheses, curly braces (e.g., "[]", "()", "{}")
-            template = re.sub(r'\[\s*\]', '', template)
-            template = re.sub(r'\(\s*\)', '', template)
-            template = re.sub(r'\{\s*\}', '', template)
-
-            # Step 3: Consolidate multiple dots and hyphens (e.g., "file..name" -> "file.name", "---" -> "-")
-            template = re.sub(r'\.{2,}', '.', template)
-            template = re.sub(r'-{2,}', '-', template) # This consolidates multiple hyphens to one
-
-            # Step 4: Remove leading/trailing spaces around dots and hyphens
-            # E.g., "file . name" -> "file.name", "film - name" -> "film-name"
-            # This ensures your "Sseason-EPepisode" format remains "S01-EP01" (no extra spaces)
-            template = re.sub(r'\s*\.\s*', '.', template)
-            template = re.sub(r'\s*-\s*', '-', template)
-
-            # Step 5: Trim overall leading/trailing whitespace
-            template = template.strip()
-
-            # Step 6: Remove any leading/trailing *unwanted* characters (like isolated underscores, or dots)
-            # IMPORTANT CHANGE: Removed '\-' from the character set to preserve hyphens.
-            template = re.sub(r'^[._\s]+', '', template) # Remove leading dots, underscores, spaces
-            template = re.sub(r'[._\s]+$', '', template) # Remove trailing dots, underscores, spaces
-
-            # --- END Clean up Extra Spaces, Brackets, and Separators ---
-            _, file_extension = os.path.splitext(file_name)
+print(f"Cleaned template: '{template}'")
+print(f"File extension: '{file_extension}'")
 
             if not file_extension.startswith('.'):
                 file_extension = '.' + file_extension if file_extension else ''
