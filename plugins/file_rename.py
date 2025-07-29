@@ -422,12 +422,12 @@ try: # This try block seems to be for metadata and subsequent upload operations
 
     caption = (
         c_caption.format(
-            filename=renamed_file_name,
+            filename=file_name,
             filesize=humanbytes(message.document.file_size) if message.document else "Unknown",
             duration=convert(duration), # Use the fetched duration
         )
         if c_caption
-        else f"{renamed_file_name}"
+        else f"{file_name}"
     )
 
     ph_path = None # Initialize ph_path
@@ -598,9 +598,9 @@ template = format_template
             if not file_extension.startswith('.'):
                 file_extension = '.' + file_extension if file_extension else ''
 
-            renamed_file_name = f"{template}{file_extension}"
+            file_name = f"{template}{file_extension}"
 
-            print(f"DEBUG: Final renamed file: {renamed_file_name}")
+            print(f"DEBUG: Final renamed file: {file_name}")
 
             ph_path = None
             duration = 0 # Initialize duration
