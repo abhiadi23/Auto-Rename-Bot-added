@@ -15,7 +15,6 @@ from helper.utils import progress_for_pyrogram, humanbytes, convert
 from helper.database import codeflixbots
 from config import Config
 from functools import wraps
-import aiofiles
 
 ADMIN_URL = Config.ADMIN_URL
 
@@ -346,9 +345,9 @@ async def auto_rename_files(client, message):
         metadata_path = f"metadata/{file_name}"
         output_path = f"processed/{os.path.splitext(file_name)[0]}{os.path.splitext(file_name)[1]}" # Ensure correct extension
 
-        await aiofiles.os.makedirs(os.path.dirname(download_path), exist_ok=True)
-        await aiofiles.os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
-        await aiofiles.os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        makedirs(os.path.dirname(download_path), exist_ok=True)
+        makedirs(os.path.dirname(metadata_path), exist_ok=True)
+        makedirs(os.path.dirname(output_path), exist_ok=True)
 
 
         msg = await message.reply_text("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
