@@ -347,7 +347,7 @@ async def auto_rename_files(client, message):
                 message,
                 file_name=download_path,
                 progress=progress_for_pyrogram,
-                progress_args=("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!", msg, time.time())
+                progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
             )
         except Exception as e:
             await msg.edit(f"Download failed: {e}")
