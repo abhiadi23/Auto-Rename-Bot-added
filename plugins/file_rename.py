@@ -274,7 +274,18 @@ async def auto_rename_files(client, message):
         await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
         return
 
-    media_type = None
+                media_type = media_preference
+
+            if not media_type:
+                if file_name.endswith((".mp4", ".mkv", ".avi", ".webm")):
+                    media_type = "document"
+                elif file_name.endswith((".mp3", ".flac", ".wav", ".ogg")):
+                    media_type = "audio"
+                else:
+                    media_type = "video"
+
+            if not media_type:
+                media_type = "document"
 
     if message.document:
         file_id = message.document.file_id
@@ -320,13 +331,6 @@ async def auto_rename_files(client, message):
     metadata_path = None
     output_path = None
     ph_path = None
-    duration = 0
-
-    try:
-        if message.video:
-            duration = message.video.duration
-        elif message.audio:
-            duration = message.audio.duration
 
         download_path = f"downloads/{file_name}"
         metadata_path = f"metadata/{file_name}"
