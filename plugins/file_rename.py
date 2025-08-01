@@ -289,17 +289,17 @@ async def auto_rename_files(client, message):
 
     if message.document:
         file_id = message.document.file_id
-        file_name = message.document.file_name
+        renamed_file_name = message.document.file_name
         file_size = message.document.file_size
         media_type = "document"
     elif message.video:
         file_id = message.video.file_id
-        file_name = message.video.file_name or "video"
+        renamed_file_name = message.video.file_name or "video"
         file_size = message.video.file_size
         media_type = "video"
     elif message.audio:
         file_id = message.audio.file_id
-        file_name = message.audio.file_name or "audio"
+        renamed_file_name = message.audio.file_name or "audio"
         file_size = message.audio.file_size
         media_type = "audio"
     else:
@@ -316,7 +316,7 @@ async def auto_rename_files(client, message):
             
     file_info = {
         "file_id": file_id,
-        "file_name": file_name if file_name else "Unknown",
+        "file_name": renamed_file_name if file_name else "Unknown",
         "message": message,
         "episode_num": extract_episode_number(file_name if file_name else "Unknown")
     }
@@ -332,9 +332,9 @@ async def auto_rename_files(client, message):
     output_path = None
     ph_path = None
 
-        download_path = f"downloads/{file_name}"
-        metadata_path = f"metadata/{file_name}"
-        output_path = f"processed/{os.path.splitext(file_name)[0]}{os.path.splitext(file_name)[1]}"
+        download_path = f"downloads/{renamed_file_name}"
+        metadata_path = f"metadata/{renamed_file_name}"
+        output_path = f"processed/{os.path.splitext(renamed_file_name)[0]}{os.path.splitext(renamed_file_name)[1]}"
 
         makedirs(os.path.dirname(download_path), exist_ok=True)
         makedirs(os.path.dirname(metadata_path), exist_ok=True)
@@ -381,7 +381,7 @@ async def auto_rename_files(client, message):
                     duration=convert(duration),
                 )
                 if c_caption
-                else f"{file_name}"
+                else f"{renamed_file_name}"
             )
 
             ph_path = None
@@ -483,7 +483,7 @@ async def auto_rename_files(client, message):
         if not file_extension.startswith('.'):
             file_extension = '.' + file_extension if file_extension else ''
 
-        file_name = f"{template}{file_extension}"
+        renamed_file_name = f"{template}{file_extension}"
 
         print(f"DEBUG: Final renamed file: {file_name}")
 
