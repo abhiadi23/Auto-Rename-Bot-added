@@ -343,9 +343,9 @@ if user_id in active_sequences:
         message_ids[user_id].append(reply_msg.id)
         return
 
-    download_path = f"downloads/{file_name}"
-    metadata_path = f"metadata/{file_name}"
-    output_path = f"processed/{os.path.splitext(file_name)[0]}{os.path.splitext(file_name)[1]}"
+    download_path = f"downloads/{new_file_name}"
+    metadata_path = f"metadata/{new_file_name}"
+    output_path = f"processed/{os.path.splitext(new_file_name)[0]}{os.path.splitext(new_file_name)[1]}"
 
     makedirs(os.path.dirname(download_path), exist_ok=True)
     makedirs(os.path.dirname(metadata_path), exist_ok=True)
@@ -382,18 +382,8 @@ if user_id in active_sequences:
             }
         )
 
-        c_caption = await codeflixbots.get_caption(message.chat.id)
+        c_caption = await codeflixbots.get_caption(message.chat.id) or f"**{new_file_name}**"
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
-
-        caption = (
-            c_caption.format(
-                filename=file_name,
-                filesize=humanbytes(file_size),
-                duration=convert(duration),
-            )
-            if c_caption
-            else f"{file_name}"
-        )
 
         ph_path = None
         if c_thumb:
@@ -493,7 +483,7 @@ if user_id in active_sequences:
     if not file_extension.startswith('.'):
         file_extension = '.' + file_extension if file_extension else ''
 
-    renamed_file_name = f"{template}{file_extension}"
+    new_file_name = f"{template}{file_extension}"
 
     print(f"DEBUG: Final renamed file: {renamed_file_name}")
 
@@ -505,22 +495,22 @@ if user_id in active_sequences:
         pass
     except Exception as e:
         await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
-    finally:
+        raise
+        finally:
         if file_id in renaming_operations:
             del renaming_operations[file_id]
 
-    cleanup_files = [download_path, metadata_path, output_path]
-    if ph_path:
-        cleanup_files.append(ph_path)
+        cleanup_files = [download_path, metadata_path, output_path]
+        if ph_path:
+            cleanup_files.append(ph_path)
 
-    for file_path in cleanup_files:
-        if file_path and os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except Exception as cleanup_e:
-                print(f"Error during file cleanup for {file_path}: {cleanup_e}")
-                pass
-
+        for file_path in cleanup_files:
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception as cleanup_e:
+                    print(f"Error during file cleanup for {file_path}: {cleanup_e}")
+                    pass
 
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
