@@ -20,7 +20,7 @@ from os import makedirs
 ADMIN_URL = Config.ADMIN_URL
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(name)
 logging.basicConfig(level=logging.INFO)
 
 active_sequences = {}
@@ -44,7 +44,7 @@ def check_ban(func):
                 [[InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ ʜᴇʀᴇ...!!", url=ADMIN_URL)]]
             )
             return await message.reply_text(
-                "Wᴛғ ʏᴏᴜ ᴀʀᴇ ʙᴀɴɴᴇᴅ ғʀᴏᴍ ᴜsɪɴɢ ᴍᴇ ʙʏ ᴏᴜʀ ᴀᴅᴍɪɴ/ᴏᴡɴᴇʀ . Iғ ʏᴏᴜ ᴛʜɪɴᴋs ɪᴛ's ᴍɪsᴛᴀᴋᴇ ᴄʟɪᴄᴋ ᴏɴ **ᴄᴏɴᴛᴀᴄᴛ ʜᴇʀᴇ...!!**",
+                "Wᴛғ ʏᴏᴜ ᴀʀᴇ ʙᴀɴɴᴇᴅ ғʀᴏᴍ ᴜsɪɴɢ ᴍᴇ ʙʏ ᴏᴜʀ ᴀᴅᴍɪɴ/ᴏᴡɴᴇʀ . Iғ ʏᴏᴜ ᴛʜɪɴᴋs ɪᴛ's ᴍɪsᴛᴀᴋᴇ ᴄʟɪᴄᴋ ᴏɴ ᴄᴏɴᴛᴀᴄᴛ ʜᴇʀᴇ...!!",
                 reply_markup=keyboard
             )
         return await func(client, message, *args, **kwargs)
@@ -117,7 +117,7 @@ def extract_episode_number(filename):
                                 print(f"DEBUG: Skipping {episode_num} as it is a common quality/year number.")
                                 continue
 
-                        print(f"DEBUG: Episode Pattern {i+1} found episode: {episode_num}")
+print(f"DEBUG: Episode Pattern {i+1} found episode: {episode_num}")
                         return episode_num
                 except ValueError:
                     continue
@@ -302,7 +302,7 @@ async def auto_rename_files(client, message):
 
     # The block of code below was incorrectly indented.
     # It should be part of the main function body, not nested in a way that creates a syntax error.
-    # The variables like `file_name` and `media_type` were not yet defined when this block was entered.
+    # The variables like file_name and media_type were not yet defined when this block was entered.
     
     # Corrected placement and logic
     if not file_name:
@@ -337,7 +337,7 @@ async def auto_rename_files(client, message):
         "episode_num": extract_episode_number(file_name)
     }
 
-    if user_id in active_sequences:
+if user_id in active_sequences:
         active_sequences[user_id].append(file_info)
         reply_msg = await message.reply_text("Wᴇᴡ...ғɪʟᴇs ʀᴇᴄᴇɪᴠᴇᴅ ɴᴏᴡ ᴜsᴇ /end_sequence ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs...!!")
         message_ids[user_id].append(reply_msg.id)
@@ -440,7 +440,7 @@ async def auto_rename_files(client, message):
         (re.compile(r'\{Season\}', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\{SEASON\}', re.IGNORECASE), season_value_formatted),
 
-        (re.compile(r'\bseason\b', re.IGNORECASE), season_value_formatted),
+(re.compile(r'\bseason\b', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\bSeason\b', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\bSEASON\b', re.IGNORECASE), season_value_formatted),
 
@@ -501,7 +501,7 @@ async def auto_rename_files(client, message):
         # A rename operation should be done here if the file_name is changed.
         # This part of your original code was missing a file rename step on disk.
         # However, to only fix the indentation, I've left the logic as is.
-        # The line below `renaming_operations[file_id] = True` doesn't actually rename a file on disk.
+        # The line below renaming_operations[file_id] = True doesn't actually rename a file on disk.
         pass
     except Exception as e:
         await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
@@ -545,7 +545,7 @@ async def end_sequence(client, message: Message):
 
                     original_message = file_info["message"]
 
-                    if original_message.document:
+if original_message.document:
                         await client.send_document(
                             message.chat.id,
                             original_message.document.file_id,
