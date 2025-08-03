@@ -20,7 +20,7 @@ from os import makedirs
 ADMIN_URL = Config.ADMIN_URL
 
 
-logger = logging.getLogger(name)
+logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 active_sequences = {}
