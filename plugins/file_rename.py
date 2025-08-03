@@ -113,7 +113,7 @@ def extract_episode_number(filename):
                     if 1 <= episode_num <= 9999:
                         if episode_num in [360, 480, 720, 1080, 1440, 2160, 2020, 2021, 2022, 2023, 2024, 2025]:
                             if re.search(r'\b' + str(episode_num) + r'(?:p|K|HD|WEB|BLURAY|X264|X265|HEVC|Multi|Dual)\b', filename, re.IGNORECASE) or \
-                               re.search(r'\b(?:19|20)\d{2}\b', filename, re.IGNORECASE) and len(str(episode_num)) == 4:
+                                re.search(r'\b(?:19|20)\d{2}\b', filename, re.IGNORECASE) and len(str(episode_num)) == 4:
                                 print(f"DEBUG: Skipping {episode_num} as it is a common quality/year number.")
                                 continue
 
@@ -274,7 +274,6 @@ async def auto_rename_files(client, message):
         await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
         return
     
-
     # Correctly identify file properties and initial media type
     if message.document:
         file_id = message.document.file_id
@@ -295,17 +294,11 @@ async def auto_rename_files(client, message):
         media_type = "audio"
     else:
         return await message.reply_text("Unsupported file type")
-
-    # The block of code below was incorrectly indented.
-    # It should be part of the main function body, not nested in a way that creates a syntax error.
-    # The variables like file_name and media_type were not yet defined when this block was entered.
-    
-    # Corrected placement and logic
+        
     if not file_name:
         await message.reply_text("Could not determine file name.")
         return
 
-    # This part was also indented incorrectly. Correctly placing it after file info is gathered.
     if media_preference:
         media_type = media_preference
     else:
@@ -420,6 +413,9 @@ async def auto_rename_files(client, message):
 
 
     msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+    
+    caption = await codeflixbots.get_caption(message.chat.id) or f"**{new_file_name}**"
+
     try:
         file_path = await client.download_media(
             message,
@@ -427,11 +423,7 @@ async def auto_rename_files(client, message):
             progress=progress_for_pyrogram,
             progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         )
-    except Exception as e:
-        await msg.edit(f"Download failed: {e}")
-        raise
 
-    try:
         await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
         await add_metadata(file_path, metadata_path, user_id)
         file_path = metadata_path
@@ -449,7 +441,6 @@ async def auto_rename_files(client, message):
             }
         )
 
-        c_caption = await codeflixbots.get_caption(message.chat.id) or f"**{new_file_name}**"
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
         ph_path = None
@@ -477,12 +468,7 @@ async def auto_rename_files(client, message):
         await msg.delete()
 
     except Exception as e:
-        await msg.edit(f"Metadata or upload failed: {e}")
-        raise
-        try:
-        pass
-    except Exception as e:
-        await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
+        await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
         raise
     finally:
         if file_id in renaming_operations:
