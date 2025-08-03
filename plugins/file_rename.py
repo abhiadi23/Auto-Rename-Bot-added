@@ -274,11 +274,7 @@ async def auto_rename_files(client, message):
         await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
         return
     
-    file_name = None
-    file_size = 0
-    duration = 0
-    file_id = None
-    
+
     # Correctly identify file properties and initial media type
     if message.document:
         file_id = message.document.file_id
@@ -488,10 +484,6 @@ if user_id in active_sequences:
     print(f"DEBUG: Final renamed file: {renamed_file_name}")
 
     try:
-        # A rename operation should be done here if the file_name is changed.
-        # This part of your original code was missing a file rename step on disk.
-        # However, to only fix the indentation, I've left the logic as is.
-        # The line below renaming_operations[file_id] = True doesn't actually rename a file on disk.
         pass
     except Exception as e:
         await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
