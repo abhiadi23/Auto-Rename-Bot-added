@@ -1,4 +1,4 @@
-import os
+ import os
 import re
 import time
 import shutil
@@ -117,7 +117,7 @@ def extract_episode_number(filename):
                                 print(f"DEBUG: Skipping {episode_num} as it is a common quality/year number.")
                                 continue
 
-print(f"DEBUG: Episode Pattern {i+1} found episode: {episode_num}")
+                        print(f"DEBUG: Episode Pattern {i+1} found episode: {episode_num}")
                         return episode_num
                 except ValueError:
                     continue
@@ -333,7 +333,7 @@ async def auto_rename_files(client, message):
         "episode_num": extract_episode_number(file_name)
     }
 
-if user_id in active_sequences:
+    if user_id in active_sequences:
         active_sequences[user_id].append(file_info)
         reply_msg = await message.reply_text("Wᴇᴡ...ғɪʟᴇs ʀᴇᴄᴇɪᴠᴇᴅ ɴᴏᴡ ᴜsᴇ /end_sequence ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs...!!")
         message_ids[user_id].append(reply_msg.id)
@@ -348,7 +348,7 @@ if user_id in active_sequences:
     makedirs(os.path.dirname(output_path), exist_ok=True)
 
 
-    msg = await message.reply_text("Wᴇᴡ... Iᴀᴍ ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+    msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
     try:
         file_path = await client.download_media(
             message,
@@ -426,7 +426,7 @@ if user_id in active_sequences:
         (re.compile(r'\{Season\}', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\{SEASON\}', re.IGNORECASE), season_value_formatted),
 
-(re.compile(r'\bseason\b', re.IGNORECASE), season_value_formatted),
+        (re.compile(r'\bseason\b', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\bSeason\b', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\bSEASON\b', re.IGNORECASE), season_value_formatted),
 
@@ -481,14 +481,14 @@ if user_id in active_sequences:
 
     new_file_name = f"{template}{file_extension}"
 
-    print(f"DEBUG: Final renamed file: {renamed_file_name}")
+    print(f"DEBUG: Final renamed file: {new_file_name}")
 
     try:
         pass
     except Exception as e:
         await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
         raise
-        finally:
+    finally:
         if file_id in renaming_operations:
             del renaming_operations[file_id]
 
@@ -527,7 +527,7 @@ async def end_sequence(client, message: Message):
 
                     original_message = file_info["message"]
 
-if original_message.document:
+                    if original_message.document:
                         await client.send_document(
                             message.chat.id,
                             original_message.document.file_id,
