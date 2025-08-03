@@ -339,76 +339,6 @@ async def auto_rename_files(client, message):
         message_ids[user_id].append(reply_msg.id)
         return
 
-    download_path = f"downloads/{new_file_name}"
-    metadata_path = f"metadata/{new_file_name}"
-    output_path = f"processed/{os.path.splitext(new_file_name)[0]}{os.path.splitext(new_file_name)[1]}"
-
-    makedirs(os.path.dirname(download_path), exist_ok=True)
-    makedirs(os.path.dirname(metadata_path), exist_ok=True)
-    makedirs(os.path.dirname(output_path), exist_ok=True)
-
-
-    msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-    try:
-        file_path = await client.download_media(
-            message,
-            file_name=download_path,
-            progress=progress_for_pyrogram,
-            progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
-        )
-    except Exception as e:
-        await msg.edit(f"Download failed: {e}")
-        raise
-
-    try:
-        await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
-        await add_metadata(file_path, metadata_path, user_id)
-        file_path = metadata_path
-
-        await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-        await codeflixbots.col.update_one(
-            {"_id": user_id},
-            {
-                "$inc": {"rename_count": 1},
-                "$set": {
-                    "first_name": message.from_user.first_name,
-                    "username": message.from_user.username,
-                    "last_activity_timestamp": datetime.now()
-                }
-            }
-        )
-
-        c_caption = await codeflixbots.get_caption(message.chat.id) or f"**{new_file_name}**"
-        c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
-
-        ph_path = None
-        if c_thumb:
-            ph_path = await client.download_media(c_thumb)
-        elif media_type == "video" and getattr(message.video, "thumbs", None):
-            if message.video.thumbs:
-                ph_path = await client.download_media(message.video.thumbs[0].file_id)
-
-        upload_params = {
-            'chat_id': message.chat.id,
-            'caption': caption,
-            'thumb': ph_path,
-            'progress': progress_for_pyrogram,
-            'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
-        }
-
-        if media_type == "document":
-            await client.send_document(document=file_path, **upload_params)
-        elif media_type == "video":
-            await client.send_video(video=file_path, **upload_params)
-        elif media_type == "audio":
-            await client.send_audio(audio=file_path, **upload_params)
-
-        await msg.delete()
-
-    except Exception as e:
-        await msg.edit(f"Metadata or upload failed: {e}")
-        raise
-
     episode_number = extract_episode_number(file_name)
     season_number = extract_season_number(file_name)
     audio_info_extracted = extract_audio_info(file_name)
@@ -480,10 +410,76 @@ async def auto_rename_files(client, message):
         file_extension = '.' + file_extension if file_extension else ''
 
     new_file_name = f"{template}{file_extension}"
+    download_path = f"downloads/{new_file_name}"
+    metadata_path = f"metadata/{new_file_name}"
+    output_path = f"processed/{os.path.splitext(new_file_name)[0]}{os.path.splitext(new_file_name)[1]}"
 
-    print(f"DEBUG: Final renamed file: {new_file_name}")
+    makedirs(os.path.dirname(download_path), exist_ok=True)
+    makedirs(os.path.dirname(metadata_path), exist_ok=True)
+    makedirs(os.path.dirname(output_path), exist_ok=True)
+
+
+    msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+    try:
+        file_path = await client.download_media(
+            message,
+            file_name=download_path,
+            progress=progress_for_pyrogram,
+            progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
+        )
+    except Exception as e:
+        await msg.edit(f"Download failed: {e}")
+        raise
 
     try:
+        await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+        await add_metadata(file_path, metadata_path, user_id)
+        file_path = metadata_path
+
+        await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+        await codeflixbots.col.update_one(
+            {"_id": user_id},
+            {
+                "$inc": {"rename_count": 1},
+                "$set": {
+                    "first_name": message.from_user.first_name,
+                    "username": message.from_user.username,
+                    "last_activity_timestamp": datetime.now()
+                }
+            }
+        )
+
+        c_caption = await codeflixbots.get_caption(message.chat.id) or f"**{new_file_name}**"
+        c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
+
+        ph_path = None
+        if c_thumb:
+            ph_path = await client.download_media(c_thumb)
+        elif media_type == "video" and getattr(message.video, "thumbs", None):
+            if message.video.thumbs:
+                ph_path = await client.download_media(message.video.thumbs[0].file_id)
+
+        upload_params = {
+            'chat_id': message.chat.id,
+            'caption': caption,
+            'thumb': ph_path,
+            'progress': progress_for_pyrogram,
+            'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
+        }
+
+        if media_type == "document":
+            await client.send_document(document=file_path, **upload_params)
+        elif media_type == "video":
+            await client.send_video(video=file_path, **upload_params)
+        elif media_type == "audio":
+            await client.send_audio(audio=file_path, **upload_params)
+
+        await msg.delete()
+
+    except Exception as e:
+        await msg.edit(f"Metadata or upload failed: {e}")
+        raise
+        try:
         pass
     except Exception as e:
         await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
