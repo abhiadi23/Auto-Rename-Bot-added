@@ -54,8 +54,8 @@ async def handle_Chatmembers(client, chat_member_updated: ChatMemberUpdated):
         if old_member.status == ChatMemberStatus.MEMBER:
             user_id = old_member.user.id
 
-            if await db.req_user_exist(chat_id, user_id):
-                await db.del_req_user(chat_id, user_id)
+            if await codeflixbots.req_user_exist(chat_id, user_id):
+                await codeflixbots.del_req_user(chat_id, user_id)
 
 
 # This handler will capture any join request to the channel/group where the bot is an admin
@@ -72,15 +72,15 @@ async def handle_join_request(client, chat_join_request):
 
     if channel_exists:
         if not await codeflixbots.req_user_exist(chat_id, user_id):
-            await db.req_user(chat_id, user_id)
+            await codeflixbots.req_user(chat_id, user_id)
             #print(f"Added user {user_id} to request list for {chat_id}")
 
 # Delete channel
-@Bot.on_message(filters.command('delchnl') & filters.private & admin)
+@Client.on_message(filters.command('delchnl') & filters.private & admin)
 async def del_force_sub(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     args = message.text.split(maxsplit=1)
-    all_channels = await db.show_channels()
+    all_channels = await codeflixbots.show_channels()
 
     if len(args) != 2:
         return await temp.edit("<b>Usage:</b> <code>/delchnl <channel_id | all></code>")
@@ -89,7 +89,7 @@ async def del_force_sub(client: Client, message: Message):
         if not all_channels:
             return await temp.edit("<b>❌ No force-sub channels found.</b>")
         for ch_id in all_channels:
-            await db.del_channel(ch_id)
+            await codeflixbots.del_channel(ch_id)
         return await temp.edit("<b>✅ All force-sub channels have been removed.</b>")
 
     try:
@@ -98,16 +98,16 @@ async def del_force_sub(client: Client, message: Message):
         return await temp.edit("<b>❌ Invalid Channel ID</b>")
 
     if ch_id in all_channels:
-        await db.rem_channel(ch_id)
+        await codeflixbots.rem_channel(ch_id)
         return await temp.edit(f"<b>✅ Channel removed:</b> <code>{ch_id}</code>")
     else:
         return await temp.edit(f"<b>❌ Channel not found in force-sub list:</b> <code>{ch_id}</code>")
 
 # View all channels
-@Bot.on_message(filters.command('listchnl') & filters.private & admin)
+@Client.on_message(filters.command('listchnl') & filters.private & admin)
 async def list_force_sub_channels(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
-    channels = await db.show_channels()
+    channels = await codeflixbots.show_channels()
 
     if not channels:
         return await temp.edit("<b>❌ No force-sub channels found.</b>")
