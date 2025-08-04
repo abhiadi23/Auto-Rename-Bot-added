@@ -15,7 +15,13 @@ class Database:
             raise e  # Re-raise the exception after logging it
         self.codeflixbots = self._client[database_name]
         self.col = self.codeflixbots.user
-
+        self.channel_data = self.database['channels']
+        self.admins_data = self.database['admins']
+        self.autho_user_data = self.database['autho_user']
+        self.fsub_data = self.database['fsub']   
+        self.rqst_fsub_data = self.database['request_forcesub']
+        self.rqst_fsub_Channel_data = self.database['request_forcesub_channel']
+        
     def new_user(self, id, username=None):
         return dict(
             _id=int(id),
@@ -212,5 +218,106 @@ class Database:
     async def get_banned_users():
         return db.banned_users.find()
 
+    # ADMIN DATA
+    async def admin_exist(self, admin_id: int):
+        found = await self.admins_data.find_one({'_id': admin_id})
+        return bool(found)
+
+    async def add_admin(self, admin_id: int):
+        if not await self.admin_exist(admin_id):
+            await self.admins_data.insert_one({'_id': admin_id})
+            return
+
+    async def del_admin(self, admin_id: int):
+        if await self.admin_exist(admin_id):
+            await self.admins_data.delete_one({'_id': admin_id})
+            return
+
+    async def get_all_admins(self):
+        users_docs = await self.admins_data.find().to_list(length=None)
+        user_ids = [doc['_id'] for doc in users_docs]
+        return user_ids
+
+    # CHANNEL MANAGEMENT
+    async def channel_exist(self, channel_id: int):
+        found = await self.fsub_data.find_one({'_id': channel_id})
+        return bool(found)
+
+    async def add_channel(self, channel_id: int):
+        if not await self.channel_exist(channel_id):
+            await self.fsub_data.insert_one({'_id': channel_id})
+            return
+
+    async def rem_channel(self, channel_id: int):
+        if await self.channel_exist(channel_id):
+            await self.fsub_data.delete_one({'_id': channel_id})
+            return
+
+    async def show_channels(self):
+        channel_docs = await self.fsub_data.find().to_list(length=None)
+        channel_ids = [doc['_id'] for doc in channel_docs]
+        return channel_ids
+
+# Get current mode of a channel
+    async def get_channel_mode(self, channel_id: int):
+        data = await self.fsub_data.find_one({'_id': channel_id})
+        return data.get("mode", "off") if data else "off"
+
+    # Set mode of a channel
+    async def set_channel_mode(self, channel_id: int, mode: str):
+        await self.fsub_data.update_one(
+            {'_id': channel_id},
+            {'$set': {'mode': mode}},
+            upsert=True
+        )
+
+    # REQUEST FORCE-SUB MANAGEMENT
+
+    # Add the user to the set of users for a   specific channel
+    async def req_user(self, channel_id: int, user_id: int):
+        try:
+            await self.rqst_fsub_Channel_data.update_one(
+                {'_id': int(channel_id)},
+                {'$addToSet': {'user_ids': int(user_id)}},
+                upsert=True
+            )
+        except Exception as e:
+            print(f"[DB ERROR] Failed to add user to request list: {e}")
+
+
+    # Method 2: Remove a user from the channel set
+    async def del_req_user(self, channel_id: int, user_id: int):
+        # Remove the user from the set of users for the channel
+        await self.rqst_fsub_Channel_data.update_one(
+            {'_id': channel_id}, 
+            {'$pull': {'user_ids': user_id}}
+        )
+
+    # Check if the user exists in the set of the channel's users
+    async def req_user_exist(self, channel_id: int, user_id: int):
+        try:
+            found = await self.rqst_fsub_Channel_data.find_one({
+                '_id': int(channel_id),
+                'user_ids': int(user_id)
+            })
+            return bool(found)
+        except Exception as e:
+            print(f"[DB ERROR] Failed to check request list: {e}")
+            return False  
+
+
+    # Method to check if a channel exists using show_channels
+    async def reqChannel_exist(self, channel_id: int):
+    # Get the list of all channel IDs from the database
+        channel_ids = await self.show_channels()
+        #print(f"All channel IDs in the database: {channel_ids}")
+
+    # Check if the given channel_id is in the list of channel IDs
+        if channel_id in channel_ids:
+            #print(f"Channel {channel_id} found in the database.")
+            return True
+        else:
+            #print(f"Channel {channel_id} NOT found in the database.")
+            return False
 
 codeflixbots = Database(Config.DB_URL, Config.DB_NAME)
