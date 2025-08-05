@@ -13,7 +13,7 @@ class Database:
         except Exception as e:
             logging.error(f"Failed to connect to MongoDB: {e}")
             raise e  # Re-raise the exception after logging it
-        self.codeflixbots = self._client[database_name]
+        self.database = self._client[database_name]
         self.col = self.codeflixbots.user
         self.channel_data = self.database['channels']
         self.admins_data = self.database['admins']
