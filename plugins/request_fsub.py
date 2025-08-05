@@ -12,7 +12,7 @@ from config import *
 from helper.database import *
 
 #Request force sub mode commad,,,,,,
-@Client.on_message(filters.command('fsub_mode') & filters.private & admin)
+@Client.on_message(filters.command('fsub_mode') & filters.private & filters.user(Config.ADMIN))
 async def change_force_sub_mode(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     channels = await codeflixbots.show_channels()
@@ -75,7 +75,7 @@ async def handle_join_request(client, chat_join_request):
             #print(f"Added user {user_id} to request list for {chat_id}")
 
 # Delete channel
-@Client.on_message(filters.command('delchnl') & filters.private & admin)
+@Client.on_message(filters.command('delchnl') & filters.private & filters.user(Config.ADMIN))
 async def del_force_sub(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     args = message.text.split(maxsplit=1)
@@ -103,7 +103,7 @@ async def del_force_sub(client: Client, message: Message):
         return await temp.edit(f"<b>❌ Channel not found in force-sub list:</b> <code>{ch_id}</code>")
 
 # View all channels
-@Client.on_message(filters.command('listchnl') & filters.private & admin)
+@Client.on_message(filters.command('listchnl') & filters.private & filters.user(Config.ADMIN))
 async def list_force_sub_channels(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     channels = await codeflixbots.show_channels()
