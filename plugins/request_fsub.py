@@ -9,7 +9,6 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, 
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant, InviteHashEmpty, ChatAdminRequired, PeerIdInvalid, UserIsBlocked, InputUserDeactivated, UserNotParticipant
 from helper.database import codeflixbots
 from config import *
-from helper_func import *
 from helper.database import *
 
 #Request force sub mode commad,,,,,,
