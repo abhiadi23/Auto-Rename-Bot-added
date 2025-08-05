@@ -74,6 +74,59 @@ async def handle_join_request(client, chat_join_request):
             await codeflixbots.req_user(chat_id, user_id)
             #print(f"Added user {user_id} to request list for {chat_id}")
 
+@Client.on_message(filters.command('addchnl') & filters.private & filters.user(Config.ADMIN))
+async def add_force_sub(client: Client, message: Message):
+    temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
+    args = message.text.split(maxsplit=1)
+
+    if len(args) != 2:
+        return await temp.edit(
+            "<b>Usage:</b> <code>/addchnl -100XXXXXXXXXX</code>\n<b>Add only one channel at a time.</b>",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Close ✖️", callback_data="close")]])
+        )
+
+    try:
+        channel_id = int(args[1])
+    except ValueError:
+        return await temp.edit("<b>❌ Invalid Channel ID!</b>")
+
+    all_channels = await codeflixbots.show_channels()
+    channel_ids_only = [cid if isinstance(cid, int) else cid[0] for cid in all_channels]
+    if channel_id in channel_ids_only:
+        return await temp.edit(f"<b>Channel already exists:</b> <code>{channel_id}</code>")
+
+    try:
+        chat = await client.get_chat(channel_id)
+
+        if chat.type != ChatType.CHANNEL:
+            return await temp.edit("<b>❌ Only public or private channels are allowed.</b>")
+
+        member = await client.get_chat_member(chat.id, "me")
+        print(f"Bot status: {member.status} in chat: {chat.title} ({chat.id})")  # Debug
+
+        # FIXED ENUM COMPARISON
+        if member.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+            return await temp.edit("<b>❌ Bot must be an admin in that channel.</b>")
+
+        # Get invite link
+        try:
+            link = await client.export_chat_invite_link(chat.id)
+        except Exception:
+            link = f"https://t.me/{chat.username}" if chat.username else f"https://t.me/c/{str(chat.id)[4:]}"
+
+        await codeflixbots.add_channel(channel_id)
+        return await temp.edit(
+            f"<b>✅ Force-sub channel added successfully!</b>\n\n"
+            f"<b>Name:</b> <a href='{link}'>{chat.title}</a>\n"
+            f"<b>ID:</b> <code>{channel_id}</code>",
+            disable_web_page_preview=True
+        )
+
+    except Exception as e:
+        return await temp.edit(
+            f"<b>❌ Failed to add channel:</b>\n<code>{channel_id}</code>\n\n<i>{e}</i>"
+        )
+
 # Delete channel
 @Client.on_message(filters.command('delchnl') & filters.private & filters.user(Config.ADMIN))
 async def del_force_sub(client: Client, message: Message):
