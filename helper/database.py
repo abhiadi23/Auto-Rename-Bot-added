@@ -14,7 +14,7 @@ class Database:
             logging.error(f"Failed to connect to MongoDB: {e}")
             raise e  # Re-raise the exception after logging it
         self.database = self._client[database_name]
-        self.col = self.codeflixbots.user
+        self.col = self.database['user']
         self.channel_data = self.database['channels']
         self.admins_data = self.database['admins']
         self.autho_user_data = self.database['autho_user']
