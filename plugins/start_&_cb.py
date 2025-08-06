@@ -1,13 +1,13 @@
 import random
 import asyncio
-import logging 
+import logging
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 
-from helper.database import codeflixbots
+from helper.database import codeflixbots, db
 from config import *
 from config import Config
-from functools import wraps 
+from functools import wraps
 
 ADMIN_URL = Config.ADMIN_URL
 
@@ -159,7 +159,7 @@ async def cb_handler(client, query: CallbackQuery):
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
-       )
+        )
     elif data == "metadatax":
         await query.message.edit_caption(
             caption=Txt.SEND_METADATA,
@@ -174,10 +174,8 @@ async def cb_handler(client, query: CallbackQuery):
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
                 InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="home")
-            ]])          
+            ]])
         )
-    
-    
     elif data == "close":
         try:
             await query.message.delete()
@@ -187,7 +185,7 @@ async def cb_handler(client, query: CallbackQuery):
             await query.message.delete()
             await query.message.continue_propagation()
 
-elif data.startswith("rfs_ch_"):
+    elif data.startswith("rfs_ch_"):
         cid = int(data.split("_")[2])
         try:
             chat = await client.get_chat(cid)
@@ -241,4 +239,4 @@ elif data.startswith("rfs_ch_"):
         await query.message.edit_text(
             "sᴇʟᴇᴄᴛ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ɪᴛs ғᴏʀᴄᴇ-sᴜʙ ᴍᴏᴅᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
-)
+        )
