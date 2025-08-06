@@ -3,14 +3,18 @@ import asyncio
 import logging
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
+from pyrogram.enums import ChatAction
+from datetime import datetime, timedelta
 
 from helper.database import codeflixbots, db
-from config import *
-from config import Config
+from config import Config, Txt
 from functools import wraps
 
 chat_data_cache = {}
 ADMIN_URL = Config.ADMIN_URL
+FORCE_PIC = Config.FORCE_PIC
+BOT_USERNAME = Config.BOT_USERNAME
+FSUB_LINK_EXPIRY = 10
 
 def check_ban(func):
     @wraps(func)
@@ -33,11 +37,17 @@ def check_fsub(func):
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
         user = await codeflixbots.col.find_one({"_id": user_id})
-        if not await is_subscribed(client, user_id):
-        #await temp.delete()
-        return await not_joined(client, message)
+        if not await codeflixbots.is_subscribed(client, user_id):
+            return await not_joined(client, message)
         return await func(client, message, *args, **kwargs)
-        return wrapper
+    return wrapper
+
+async def is_sub(client, user_id, chat_id):
+    try:
+        member = await client.get_chat_member(chat_id, user_id)
+        return member.status not in ["kicked", "left"]
+    except Exception:
+        return False
 
 async def not_joined(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>")
@@ -47,15 +57,14 @@ async def not_joined(client: Client, message: Message):
     count = 0
 
     try:
-        all_channels = await codeflixbots.show_channels()  # Should return list of (chat_id, mode) tuples
-        for total, chat_id in enumerate(all_channels, start=1):
-            mode = await codeflixbots.get_channel_mode(chat_id)  # fetch mode 
+        all_channels = await codeflixbots.show_channels()
+        for chat_id in all_channels:
+            mode = await codeflixbots.get_channel_mode(chat_id)
 
             await message.reply_chat_action(ChatAction.TYPING)
 
             if not await is_sub(client, user_id, chat_id):
                 try:
-                    # Cache chat info
                     if chat_id in chat_data_cache:
                         data = chat_data_cache[chat_id]
                     else:
@@ -64,22 +73,21 @@ async def not_joined(client: Client, message: Message):
 
                     name = data.title
 
-                    # Generate proper invite link based on the mode
                     if mode == "on" and not data.username:
                         invite = await client.create_chat_invite_link(
                             chat_id=chat_id,
                             creates_join_request=True,
                             expire_date=datetime.utcnow() + timedelta(seconds=FSUB_LINK_EXPIRY) if FSUB_LINK_EXPIRY else None
-                            )
+                        )
                         link = invite.invite_link
-
                     else:
                         if data.username:
                             link = f"https://t.me/{data.username}"
                         else:
                             invite = await client.create_chat_invite_link(
                                 chat_id=chat_id,
-                                expire_date=datetime.utcnow() + timedelta(seconds=FSUB_LINK_EXPIRY) if FSUB_LINK_EXPIRY else None)
+                                expire_date=datetime.utcnow() + timedelta(seconds=FSUB_LINK_EXPIRY) if FSUB_LINK_EXPIRY else None
+                            )
                             link = invite.invite_link
 
                     buttons.append([InlineKeyboardButton(text=name, url=link)])
@@ -93,18 +101,18 @@ async def not_joined(client: Client, message: Message):
                         f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
                     )
 
-        # Retry Button
         try:
             buttons.append([
                 InlineKeyboardButton(
                     text='• Jᴏɪɴᴇᴅ •',
-                    url=f"https://t.me/{client.username}?start=true"
+                    url=f"https://t.me/{config.BOT_USERNAME}?start=true"
                 )
             ])
         except IndexError:
             pass
 
-        text = "<b>Yᴏᴜ Bᴀᴋᴋᴀᴀ...!! \n\n<blockquote>Jᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴍʏ ᴏᴛʜᴇʀᴡɪsᴇ Yᴏᴜ ᴀʀᴇ ɪɴ ʙɪɢ sʜɪᴛ...!!</blockquote></b>
+        text = "<b>Yᴏᴜ Bᴀᴋᴋᴀᴀ...!! \n\n<blockquote>Jᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴍʏ ᴏᴛʜᴇʀᴡɪsᴇ Yᴏᴜ ᴀʀᴇ ɪɴ ʙɪɢ sʜɪᴛ...!!</blockquote></b>"
+        await temp.delete()
         await message.reply_photo(
             photo=FORCE_PIC,
             caption=text,
@@ -118,10 +126,11 @@ async def not_joined(client: Client, message: Message):
             f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
         )
 
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-# Start Command Handler
+
 @Client.on_message(filters.private & filters.command("start"))
 @check_ban
 @check_fsub
@@ -129,7 +138,6 @@ async def start(client, message: Message):
     user = message.from_user
     await codeflixbots.add_user(client, message)
 
-    # Initial interactive text and sticker sequence
     m = await message.reply_text("Wᴇᴡ...Hᴏᴡ ᴀʀᴇ ʏᴏᴜ ᴅᴜᴅᴇ \nᴡᴀɪᴛ ᴀ ᴍᴏᴍᴇɴᴛ. . .")
     await asyncio.sleep(0.4)
     await m.edit_text("🎊")
@@ -140,10 +148,8 @@ async def start(client, message: Message):
     await asyncio.sleep(0.4)
     await m.delete()
 
-    # Send sticker after the text sequence
     await message.reply_sticker("CAACAgUAAxkBAAEOtVNoUAphgIzDsgHV10rbfmFKNIgMlwACPQsAApWaqVbHL7SvWBBaITYE")
 
-    # Define buttons for the start message
     buttons = InlineKeyboardMarkup([
         [
             InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs •", callback_data='help')
@@ -158,7 +164,6 @@ async def start(client, message: Message):
         ]
     ])
 
-    # Send start message with or without picture
     if Config.START_PIC:
         await message.reply_photo(
             Config.START_PIC,
@@ -180,15 +185,12 @@ async def cb_handler(client, query: CallbackQuery):
 
     user = await codeflixbots.col.find_one({"_id": user_id})
     if user and user.get("ban_status", {}).get("is_banned", False):
-        await query.message.edit_text(
+        return await query.message.edit_text(
             "🚫 You are banned from using this bot.\n\nIf you think this is a mistake, contact the admin.",
             reply_markup=InlineKeyboardMarkup(
                 [[InlineKeyboardButton("📩 Contact Admin", url=ADMIN_URL)]]
             )
         )
-        return
-
-    # print(f"Callback data received: {data}")  # Debugging line line
 
     if data == "home":
         await query.message.edit_text(
@@ -196,7 +198,7 @@ async def cb_handler(client, query: CallbackQuery):
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs •", callback_data='help')],
-                [InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/botskingdoms'), InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/botskingdoms')],
+                [InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/botskingdoms'), InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/botskingdomsgroup')],
                 [InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about'), InlineKeyboardButton('Dᴇᴠᴇʟᴏᴘᴇʀ •', url='https://t.me/botskingdoms')]
             ])
         )
@@ -211,7 +213,7 @@ async def cb_handler(client, query: CallbackQuery):
 
     elif data == "help":
         await query.message.edit_text(
-            text=Txt.HELP_TXT.format(client.mention),
+            text=Txt.HELP_TXT.format(client.me.mention),
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴀᴜᴛᴏ ʀᴇɴᴀᴍᴇ ғᴏʀᴍᴀᴛ •", callback_data='file_names')],
@@ -222,8 +224,8 @@ async def cb_handler(client, query: CallbackQuery):
         )
 
     elif data == "meta":
-        await query.message.edit_text(  # Change edit_caption to edit_text
-            text=Txt.SEND_METADATA,  # Changed from caption to text
+        await query.message.edit_text(
+            text=Txt.SEND_METADATA,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
@@ -246,19 +248,35 @@ async def cb_handler(client, query: CallbackQuery):
             ])
         )
     elif data == "thumbnail":
-        await query.message.edit_caption(
-            caption=Txt.THUMBNAIL_TXT,
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
-            ])
-        )
+        if query.message.photo:
+            await query.message.edit_caption(
+                caption=Txt.THUMBNAIL_TXT,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
+                ])
+            )
+        else:
+            await query.message.edit_text(
+                text=Txt.THUMBNAIL_TXT,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
+                ])
+            )
     elif data == "metadatax":
-        await query.message.edit_caption(
-            caption=Txt.SEND_METADATA,
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
-            ])
-        )
+        if query.message.photo:
+            await query.message.edit_caption(
+                caption=Txt.SEND_METADATA,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
+                ])
+            )
+        else:
+            await query.message.edit_text(
+                text=Txt.SEND_METADATA,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
+                ])
+            )
     elif data == "about":
         await query.message.edit_text(
             text=Txt.ABOUT_TXT,
@@ -272,10 +290,8 @@ async def cb_handler(client, query: CallbackQuery):
         try:
             await query.message.delete()
             await query.message.reply_to_message.delete()
-            await query.message.continue_propagation()
-        except:
+        except Exception:
             await query.message.delete()
-            await query.message.continue_propagation()
 
     elif data.startswith("rfs_ch_"):
         cid = int(data.split("_")[2])
@@ -283,7 +299,7 @@ async def cb_handler(client, query: CallbackQuery):
             chat = await client.get_chat(cid)
             mode = await db.get_channel_mode(cid)
             status = "🟢 ᴏɴ" if mode == "on" else "🔴 ᴏғғ"
-            new_mode = "ᴏғғ" if mode == "on" else "on"
+            new_mode = "off" if mode == "on" else "on"
             buttons = [
                 [InlineKeyboardButton(f"ʀᴇǫ ᴍᴏᴅᴇ {'OFF' if mode == 'on' else 'ON'}", callback_data=f"rfs_toggle_{cid}_{new_mode}")],
                 [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="fsub_back")]
@@ -303,7 +319,6 @@ async def cb_handler(client, query: CallbackQuery):
         await db.set_channel_mode(cid, mode)
         await query.answer(f"Force-Sub set to {'ON' if mode == 'on' else 'OFF'}")
 
-        # Refresh the same channel's mode view
         chat = await client.get_chat(cid)
         status = "🟢 ON" if mode == "on" else "🔴 OFF"
         new_mode = "off" if mode == "on" else "on"
@@ -325,9 +340,10 @@ async def cb_handler(client, query: CallbackQuery):
                 mode = await db.get_channel_mode(cid)
                 status = "🟢" if mode == "on" else "🔴"
                 buttons.append([InlineKeyboardButton(f"{status} {chat.title}", callback_data=f"rfs_ch_{cid}")])
-            except:
+            except Exception:
                 continue
-
+        if not buttons:
+            buttons.append([InlineKeyboardButton("No Channels Found", callback_data="no_channels")])
         await query.message.edit_text(
             "sᴇʟᴇᴄᴛ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ɪᴛs ғᴏʀᴄᴇ-sᴜʙ ᴍᴏᴅᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
