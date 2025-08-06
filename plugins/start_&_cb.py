@@ -9,6 +9,7 @@ from config import *
 from config import Config
 from functools import wraps
 
+chat_data_cache = {}
 ADMIN_URL = Config.ADMIN_URL
 
 def check_ban(func):
@@ -27,12 +28,103 @@ def check_ban(func):
         return await func(client, message, *args, **kwargs)
     return wrapper
 
+def check_fsub(func):
+    @wraps(func)
+    async def wrapper(client, message, *args, **kwargs):
+        user_id = message.from_user.id
+        user = await codeflixbots.col.find_one({"_id": user_id})
+        if not await is_subscribed(client, user_id):
+        #await temp.delete()
+        return await not_joined(client, message)
+        return await func(client, message, *args, **kwargs)
+        return wrapper
+
+async def not_joined(client: Client, message: Message):
+    temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>")
+
+    user_id = message.from_user.id
+    buttons = []
+    count = 0
+
+    try:
+        all_channels = await codeflixbots.show_channels()  # Should return list of (chat_id, mode) tuples
+        for total, chat_id in enumerate(all_channels, start=1):
+            mode = await codeflixbots.get_channel_mode(chat_id)  # fetch mode 
+
+            await message.reply_chat_action(ChatAction.TYPING)
+
+            if not await is_sub(client, user_id, chat_id):
+                try:
+                    # Cache chat info
+                    if chat_id in chat_data_cache:
+                        data = chat_data_cache[chat_id]
+                    else:
+                        data = await client.get_chat(chat_id)
+                        chat_data_cache[chat_id] = data
+
+                    name = data.title
+
+                    # Generate proper invite link based on the mode
+                    if mode == "on" and not data.username:
+                        invite = await client.create_chat_invite_link(
+                            chat_id=chat_id,
+                            creates_join_request=True,
+                            expire_date=datetime.utcnow() + timedelta(seconds=FSUB_LINK_EXPIRY) if FSUB_LINK_EXPIRY else None
+                            )
+                        link = invite.invite_link
+
+                    else:
+                        if data.username:
+                            link = f"https://t.me/{data.username}"
+                        else:
+                            invite = await client.create_chat_invite_link(
+                                chat_id=chat_id,
+                                expire_date=datetime.utcnow() + timedelta(seconds=FSUB_LINK_EXPIRY) if FSUB_LINK_EXPIRY else None)
+                            link = invite.invite_link
+
+                    buttons.append([InlineKeyboardButton(text=name, url=link)])
+                    count += 1
+                    await temp.edit(f"<b>{'! ' * count}</b>")
+
+                except Exception as e:
+                    print(f"Error with chat {chat_id}: {e}")
+                    return await temp.edit(
+                        f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                        f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
+                    )
+
+        # Retry Button
+        try:
+            buttons.append([
+                InlineKeyboardButton(
+                    text='• Jᴏɪɴᴇᴅ •',
+                    url=f"https://t.me/{client.username}?start=true"
+                )
+            ])
+        except IndexError:
+            pass
+
+        text = "<b>Yᴏᴜ Bᴀᴋᴋᴀᴀ...!! \n\n<blockquote>Jᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴍʏ ᴏᴛʜᴇʀᴡɪsᴇ Yᴏᴜ ᴀʀᴇ ɪɴ ʙɪɢ sʜɪᴛ...!!</blockquote></b>
+        await message.reply_photo(
+            photo=FORCE_PIC,
+            caption=text,
+            reply_markup=InlineKeyboardMarkup(buttons),
+        )
+
+    except Exception as e:
+        print(f"Final Error: {e}")
+        await temp.edit(
+            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
+        )
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 # Start Command Handler
 @Client.on_message(filters.private & filters.command("start"))
 @check_ban
+@check_fsub
 async def start(client, message: Message):
     user = message.from_user
     await codeflixbots.add_user(client, message)
