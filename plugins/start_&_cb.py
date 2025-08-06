@@ -12,7 +12,7 @@ from functools import wraps
 
 chat_data_cache = {}
 ADMIN_URL = Config.ADMIN_URL
-FORCE_PIC = Config.FORCE_PIC
+FSUB_PIC = Config.FSUB_PIC
 BOT_USERNAME = Config.BOT_USERNAME
 FSUB_LINK_EXPIRY = 10
 
