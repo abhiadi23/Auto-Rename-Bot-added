@@ -6,7 +6,7 @@ from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, 
 from pyrogram.enums import ChatAction
 from datetime import datetime, timedelta
 
-from helper.database import codeflixbots, db
+from helper.database import codeflixbots
 from config import Config, Txt
 from functools import wraps
 
