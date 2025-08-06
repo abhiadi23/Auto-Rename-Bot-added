@@ -114,7 +114,7 @@ async def not_joined(client: Client, message: Message):
         text = "<b>Yᴏᴜ Bᴀᴋᴋᴀᴀ...!! \n\n<blockquote>Jᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴍʏ ᴏᴛʜᴇʀᴡɪsᴇ Yᴏᴜ ᴀʀᴇ ɪɴ ʙɪɢ sʜɪᴛ...!!</blockquote></b>"
         await temp.delete()
         await message.reply_photo(
-            photo=FORCE_PIC,
+            photo=FSUB_PIC,
             caption=text,
             reply_markup=InlineKeyboardMarkup(buttons),
         )
