@@ -3,7 +3,7 @@ import asyncio
 import logging
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
-from pyrogram.enums import ChatAction
+from pyrogram.enums import ChatAction, ChatMemberStatus, UserNotParticipant
 from datetime import datetime, timedelta
 
 from helper.database import codeflixbots
@@ -14,6 +14,7 @@ chat_data_cache = {}
 ADMIN_URL = Config.ADMIN_URL
 FSUB_PIC = Config.FSUB_PIC
 BOT_USERNAME = Config.BOT_USERNAME
+OWNER_ID = Config.OWNER_ID
 FSUB_LINK_EXPIRY = 10
 
 def check_ban(func):
@@ -36,26 +37,70 @@ def check_fsub(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
-        # --- DEBUGGING PRINT ---
         print(f"DEBUG: check_fsub decorator called for user {user_id}")
-        is_sub_status = await codeflixbots.is_subscribed(client, user_id)
-        print(f"DEBUG: User {user_id} subscribed status: {is_sub_status}")
-        if not is_sub_status:
-            print(f"DEBUG: User {user_id} is not subscribed, calling not_joined.")
-            return await not_joined(client, message)
-        print(f"DEBUG: User {user_id} is subscribed, proceeding with function call.")
-        return await func(client, message, *args, **kwargs)
+
+        async def is_sub(client, user_id, channel_id):
+            try:
+                member = await client.get_chat_member(channel_id, user_id)
+                status = member.status
+                return status in {
+                    ChatMemberStatus.OWNER,
+                    ChatMemberStatus.ADMINISTRATOR,
+                    ChatMemberStatus.MEMBER
+                }
+            except UserNotParticipant:
+                mode = await codeflixbots.get_channel_mode(channel_id)
+                if mode == "on":
+                    exists = await codeflixbots.req_user_exist(channel_id, user_id)
+                    return exists
+                return False
+            except Exception as e:
+                print(f"[!] Error in is_sub(): {e}")
+                return False
+
+        async def is_subscribed(client, user_id):
+            channel_ids = await codeflixbots.show_channels()
+            if not channel_ids:
+                return True
+            if user_id == OWNER_ID:
+                return True
+            for cid in channel_ids:
+                if not await is_sub(client, user_id, cid):
+                    mode = await codeflixbots.get_channel_mode(cid)
+                    if mode == "on":
+                        await asyncio.sleep(2)
+                        if await is_sub(client, user_id, cid):
+                            continue
+                    return False
+            return True
+        
+        try:
+            is_sub_status = await is_subscribed(client, user_id)
+            print(f"DEBUG: User {user_id} subscribed status: {is_sub_status}")
+            
+            if not is_sub_status:
+                print(f"DEBUG: User {user_id} is not subscribed, calling not_joined.")
+                return await not_joined(client, message)
+            
+            print(f"DEBUG: User {user_id} is subscribed, proceeding with function call.")
+            return await func(client, message, *args, **kwargs)
+        
+        except Exception as e:
+            print(f"FATAL ERROR in check_fsub: {e}")
+            await message.reply_text(f"An unexpected error occurred: `{e}`. Please contact the developer.")
+            return
+
     return wrapper
 
-async def is_sub(client, user_id, chat_id):
+async def check_admin(filter, client, update):
     try:
-        member = await client.get_chat_member(chat_id, user_id)
-        return member.status not in ["kicked", "left"]
-    except Exception:
+        user_id = update.from_user.id
+        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
+    except Exception as e:
+        print(f"! Exception in check_admin: {e}")
         return False
 
 async def not_joined(client: Client, message: Message):
-    # --- DEBUGGING PRINT ---
     print(f"DEBUG: not_joined function called for user {message.from_user.id}")
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>")
 
@@ -70,7 +115,21 @@ async def not_joined(client: Client, message: Message):
 
             await message.reply_chat_action(ChatAction.TYPING)
 
-            if not await is_sub(client, user_id, chat_id):
+            # Re-check is_sub status for this logic
+            try:
+                member = await client.get_chat_member(chat_id, user_id)
+                is_member = member.status in {
+                    ChatMemberStatus.OWNER,
+                    ChatMemberStatus.ADMINISTRATOR,
+                    ChatMemberStatus.MEMBER
+                }
+            except UserNotParticipant:
+                is_member = False
+            except Exception as e:
+                is_member = False
+                print(f"[!] Error checking member in not_joined: {e}")
+
+            if not is_member:
                 try:
                     if chat_id in chat_data_cache:
                         data = chat_data_cache[chat_id]
@@ -109,7 +168,6 @@ async def not_joined(client: Client, message: Message):
                     )
 
         try:
-            # --- FIXED NAME ERROR HERE (config -> Config) ---
             buttons.append([
                 InlineKeyboardButton(
                     text='• Jᴏɪɴᴇᴅ •',
@@ -122,7 +180,6 @@ async def not_joined(client: Client, message: Message):
         text = "<b>Yᴏᴜ Bᴀᴋᴋᴀᴀ...!! \n\n<blockquote>Jᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴍʏ ᴏᴛʜᴇʀᴡɪsᴇ Yᴏᴜ ᴀʀᴇ ɪɴ ʙɪɢ sʜɪᴛ...!!</blockquote></b>"
         await temp.delete()
         
-        # --- DEBUGGING PRINT ---
         print(f"DEBUG: Sending final reply photo to user {user_id}")
         await message.reply_photo(
             photo=FSUB_PIC,
@@ -137,16 +194,13 @@ async def not_joined(client: Client, message: Message):
             f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
         )
 
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-
 
 @Client.on_message(filters.private & filters.command("start"))
 @check_ban
 @check_fsub
 async def start(client, message: Message):
-    # --- DEBUGGING PRINT ---
     print(f"DEBUG: /start command received from user {message.from_user.id}")
     user = message.from_user
     await codeflixbots.add_user(client, message)
@@ -310,7 +364,7 @@ async def cb_handler(client, query: CallbackQuery):
         cid = int(data.split("_")[2])
         try:
             chat = await client.get_chat(cid)
-            mode = await db.get_channel_mode(cid)
+            mode = await codeflixbots.get_channel_mode(cid)
             status = "🟢 ᴏɴ" if mode == "on" else "🔴 ᴏғғ"
             new_mode = "off" if mode == "on" else "on"
             buttons = [
@@ -329,12 +383,12 @@ async def cb_handler(client, query: CallbackQuery):
         cid = int(cid)
         mode = "on" if action == "on" else "off"
 
-        await db.set_channel_mode(cid, mode)
+        await codeflixbots.set_channel_mode(cid, mode)
         await query.answer(f"Force-Sub set to {'ON' if mode == 'on' else 'OFF'}")
 
         chat = await client.get_chat(cid)
         status = "🟢 ON" if mode == "on" else "🔴 OFF"
-        new_mode = "off" if mode == "on" else "on"
+        new_mode = "off" if mode == 'on' else "on"
         buttons = [
             [InlineKeyboardButton(f"ʀᴇǫ ᴍᴏᴅᴇ {'OFF' if mode == 'on' else 'ON'}", callback_data=f"rfs_toggle_{cid}_{new_mode}")],
             [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="fsub_back")]
@@ -345,12 +399,12 @@ async def cb_handler(client, query: CallbackQuery):
         )
 
     elif data == "fsub_back":
-        channels = await db.show_channels()
+        channels = await codeflixbots.show_channels()
         buttons = []
         for cid in channels:
             try:
                 chat = await client.get_chat(cid)
-                mode = await db.get_channel_mode(cid)
+                mode = await codeflixbots.get_channel_mode(cid)
                 status = "🟢" if mode == "on" else "🔴"
                 buttons.append([InlineKeyboardButton(f"{status} {chat.title}", callback_data=f"rfs_ch_{cid}")])
             except Exception:
