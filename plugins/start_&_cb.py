@@ -3,7 +3,8 @@ import asyncio
 import logging
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
-from pyrogram.enums import ChatAction, ChatMemberStatus, UserNotParticipant
+from pyrogram.enums import ChatAction, ChatMemberStatus
+from pyrogram.errors import UserNotParticipant
 from datetime import datetime, timedelta
 
 from helper.database import codeflixbots
