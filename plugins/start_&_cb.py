@@ -36,9 +36,14 @@ def check_fsub(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
-        user = await codeflixbots.col.find_one({"_id": user_id})
-        if not await codeflixbots.is_subscribed(client, user_id):
+        # --- DEBUGGING PRINT ---
+        print(f"DEBUG: check_fsub decorator called for user {user_id}")
+        is_sub_status = await codeflixbots.is_subscribed(client, user_id)
+        print(f"DEBUG: User {user_id} subscribed status: {is_sub_status}")
+        if not is_sub_status:
+            print(f"DEBUG: User {user_id} is not subscribed, calling not_joined.")
             return await not_joined(client, message)
+        print(f"DEBUG: User {user_id} is subscribed, proceeding with function call.")
         return await func(client, message, *args, **kwargs)
     return wrapper
 
@@ -50,6 +55,8 @@ async def is_sub(client, user_id, chat_id):
         return False
 
 async def not_joined(client: Client, message: Message):
+    # --- DEBUGGING PRINT ---
+    print(f"DEBUG: not_joined function called for user {message.from_user.id}")
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>")
 
     user_id = message.from_user.id
@@ -102,10 +109,11 @@ async def not_joined(client: Client, message: Message):
                     )
 
         try:
+            # --- FIXED NAME ERROR HERE (config -> Config) ---
             buttons.append([
                 InlineKeyboardButton(
                     text='• Jᴏɪɴᴇᴅ •',
-                    url=f"https://t.me/{config.BOT_USERNAME}?start=true"
+                    url=f"https://t.me/{Config.BOT_USERNAME}?start=true"
                 )
             ])
         except IndexError:
@@ -113,6 +121,9 @@ async def not_joined(client: Client, message: Message):
 
         text = "<b>Yᴏᴜ Bᴀᴋᴋᴀᴀ...!! \n\n<blockquote>Jᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴍʏ ᴏᴛʜᴇʀᴡɪsᴇ Yᴏᴜ ᴀʀᴇ ɪɴ ʙɪɢ sʜɪᴛ...!!</blockquote></b>"
         await temp.delete()
+        
+        # --- DEBUGGING PRINT ---
+        print(f"DEBUG: Sending final reply photo to user {user_id}")
         await message.reply_photo(
             photo=FSUB_PIC,
             caption=text,
@@ -135,6 +146,8 @@ logging.basicConfig(level=logging.INFO)
 @check_ban
 @check_fsub
 async def start(client, message: Message):
+    # --- DEBUGGING PRINT ---
+    print(f"DEBUG: /start command received from user {message.from_user.id}")
     user = message.from_user
     await codeflixbots.add_user(client, message)
 
