@@ -4,9 +4,10 @@ from pyrogram.enums import ChatAction, ChatMemberStatus
 from pyrogram.errors import UserNotParticipant
 from datetime import datetime, timedelta
 from helper.database import codeflixbots
-import logging 
-from functools import wraps 
+import logging
+from functools import wraps
 from config import Config
+import asyncio
 
 chat_data_cache = {}
 ADMIN_URL = Config.ADMIN_URL
@@ -71,18 +72,18 @@ def check_fsub(func):
                             continue
                     return False
             return True
-        
+
         try:
             is_sub_status = await is_subscribed(client, user_id)
             print(f"DEBUG: User {user_id} subscribed status: {is_sub_status}")
-            
+
             if not is_sub_status:
                 print(f"DEBUG: User {user_id} is not subscribed, calling not_joined.")
                 return await not_joined(client, message)
-            
+
             print(f"DEBUG: User {user_id} is subscribed, proceeding with function call.")
             return await func(client, message, *args, **kwargs)
-        
+
         except Exception as e:
             print(f"FATAL ERROR in check_fsub: {e}")
             await message.reply_text(f"An unexpected error occurred: {e}. Please contact the developer.")
@@ -109,11 +110,8 @@ async def not_joined(client: Client, message: Message):
     try:
         all_channels = await codeflixbots.show_channels()
         for chat_id in all_channels:
-            mode = await codeflixbots.get_channel_mode(chat_id)
-
             await message.reply_chat_action(ChatAction.TYPING)
 
-            # Re-check is_sub status for this logic
             try:
                 member = await client.get_chat_member(chat_id, user_id)
                 is_member = member.status in {
@@ -129,51 +127,54 @@ async def not_joined(client: Client, message: Message):
 
             if not is_member:
                 try:
-    if chat_id in chat_data_cache:
-        data = chat_data_cache[chat_id]
-    else:
-        data = await client.get_chat(chat_id)
-        chat_data_cache[chat_id] = data
-    name = data.title
+                    if chat_id in chat_data_cache:
+                        data = chat_data_cache[chat_id]
+                    else:
+                        data = await client.get_chat(chat_id)
+                        chat_data_cache[chat_id] = data
+                    name = data.title
 
-    if mode == "on" and not data.username:
-        invite = await client.create_chat_invite_link(
-            chat_id=chat_id,
-            creates_join_request=True,
-            expire_date=datetime.utcnow() + timedelta(seconds=FSUB_LINK_EXPIRY) if FSUB_LINK_EXPIRY else None
-        )
-        link = invite.invite_link
-    else:
-        if data.username:
-            link = f"https://t.me/{data.username}"
-        else:
-            invite = await client.create_chat_invite_link(
-                chat_id=chat_id,
-                expire_date=datetime.utcnow() + timedelta(seconds=FSUB_LINK_EXPIRY) if FSUB_LINK_EXPIRY else None
-            )
-            link = invite.invite_link
-    buttons.append([InlineKeyboardButton(text=name, url=link)])
-    count += 1
-    await temp.edit(f"<b>{'! ' * count}</b>")
-except Exception as e:
-    print(f"Error with chat {chat_id}: {e}")
-    return await temp.edit(
-        f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
-        f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
-    )
-try:
-    buttons.append([
-        InlineKeyboardButton(
-            text='• Jᴏɪɴᴇᴅ •',
-            url=f"https://t.me/{Config.BOT_USERNAME}?start=true"
-        )
-    ])
-except IndexError:
-    pass
+                    mode = await codeflixbots.get_channel_mode(chat_id)
+                    if mode == "on" and not data.username:
+                        invite = await client.create_chat_invite_link(
+                            chat_id=chat_id,
+                            creates_join_request=True,
+                            expire_date=datetime.utcnow() + timedelta(seconds=FSUB_LINK_EXPIRY) if FSUB_LINK_EXPIRY else None
+                        )
+                        link = invite.invite_link
+                    else:
+                        if data.username:
+                            link = f"https://t.me/{data.username}"
+                        else:
+                            invite = await client.create_chat_invite_link(
+                                chat_id=chat_id,
+                                expire_date=datetime.utcnow() + timedelta(seconds=FSUB_LINK_EXPIRY) if FSUB_LINK_EXPIRY else None
+                            )
+                            link = invite.invite_link
 
-text = "<b>Yᴏᴜ Bᴀᴋᴋᴀᴀ...!! \n\n<blockquote>Jᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴍʏ ᴏᴛʜᴇʀᴡɪsᴇ Yᴏᴜ ᴀʀᴇ ɪɴ ʙɪɢ sʜɪᴛ...!!</blockquote></b>"
+                    buttons.append([InlineKeyboardButton(text=name, url=link)])
+                    count += 1
+                    await temp.edit(f"<b>{'! ' * count}</b>")
+                except Exception as e:
+                    print(f"Error with chat {chat_id}: {e}")
+                    return await temp.edit(
+                        f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                        f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
+                    )
+
+        try:
+            buttons.append([
+                InlineKeyboardButton(
+                    text='• Jᴏɪɴᴇᴅ •',
+                    url=f"https://t.me/{Config.BOT_USERNAME}?start=true"
+                )
+            ])
+        except IndexError:
+            pass
+
+        text = "<b>Yᴏᴜ Bᴀᴋᴋᴀᴀ...!! \n\n<blockquote>Jᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴍʏ ᴏᴛʜᴇʀᴡɪsᴇ Yᴏᴜ ᴀʀᴇ ɪɴ ʙɪɢ sʜɪᴛ...!!</blockquote></b>"
         await temp.delete()
-        
+
         print(f"DEBUG: Sending final reply photo to user {user_id}")
         await message.reply_photo(
             photo=FSUB_PIC,
