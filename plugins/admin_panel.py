@@ -37,7 +37,7 @@ def check_ban(func):
     return wrapper
 
 # Commands for adding admins by owner
-@Client.on_message(filters.command('add_admin') & filters.private & filters.user(OWNER_ID))
+@Client.on_message(filters.command('add_admin') & filters.private & filters.user(Config.OWNER_ID))
 async def add_admins(client: Client, message: Message):
     pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
     check = 0
@@ -87,7 +87,7 @@ async def add_admins(client: Client, message: Message):
         )
 
 
-@Client.on_message(filters.command('deladmin') & filters.private & filters.user(OWNER_ID))
+@Client.on_message(filters.command('deladmin') & filters.private & filters.user(Config.OWNER_ID))
 async def delete_admins(client: Client, message: Message):
     pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
     admin_ids = await codeflixbots.get_all_admins()
