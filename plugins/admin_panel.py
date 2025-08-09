@@ -13,7 +13,7 @@ import html # Import html for escaping names
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-OWNER_ID = Config.OWNER
+OWNER_ID = Config.OWNER_ID
 ADMIN_URL = Config.ADMIN_URL
 
 # Flag to indicate if the bot is restarting
