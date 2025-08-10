@@ -11,8 +11,17 @@ from helper.database import codeflixbots
 from config import *
 from helper.database import *
 
-#Request force sub mode commad,,,,,,
-@Client.on_message(filters.command('fsub_mode') & filters.private & filters.user(Config.ADMIN))
+# used for checking if a user is admin. ~Owner is also treated as an admin.
+async def check_admin(filter, client, update):
+    try:
+        user_id = update.from_user.id
+        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
+    except Exception as e:
+        print(f"! Exception in check_admin: {e}")
+        return False
+
+# Request force sub mode command
+@Client.on_message(filters.command('fsub_mode') & filters.private & admin)
 async def change_force_sub_mode(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     channels = await codeflixbots.show_channels()
@@ -41,7 +50,7 @@ async def change_force_sub_mode(client: Client, message: Message):
 
 # This handler captures membership updates (like when a user leaves, banned)
 @Client.on_chat_member_updated()
-async def handle_Chatmembers(client, chat_member_updated: ChatMemberUpdated):    
+async def handle_Chatmembers(client, chat_member_updated: ChatMemberUpdated):
     chat_id = chat_member_updated.chat.id
 
     if await codeflixbots.reqChannel_exist(chat_id):
@@ -63,18 +72,18 @@ async def handle_join_request(client, chat_join_request):
     chat_id = chat_join_request.chat.id
     user_id = chat_join_request.from_user.id
 
-    #print(f"[JOIN REQUEST] User {user_id} sent join request to {chat_id}")
+    # print(f"[JOIN REQUEST] User {user_id} sent join request to {chat_id}")
 
     # Print the result of codeflixbots.reqChannel_exist to check if the channel exists
     channel_exists = await codeflixbots.reqChannel_exist(chat_id)
-    #print(f"Channel {chat_id} exists in the database: {channel_exists}")
+    # print(f"Channel {chat_id} exists in the database: {channel_exists}")
 
     if channel_exists:
         if not await codeflixbots.req_user_exist(chat_id, user_id):
             await codeflixbots.req_user(chat_id, user_id)
-            #print(f"Added user {user_id} to request list for {chat_id}")
+            # print(f"Added user {user_id} to request list for {chat_id}")
 
-@Client.on_message(filters.command('addchnl') & filters.private & filters.user(Config.ADMIN))
+@Client.on_message(filters.command('addchnl') & filters.private & admin)
 async def add_force_sub(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     args = message.text.split(maxsplit=1)
@@ -128,7 +137,7 @@ async def add_force_sub(client: Client, message: Message):
         )
 
 # Delete channel
-@Client.on_message(filters.command('delchnl') & filters.private & filters.user(Config.ADMIN))
+@Client.on_message(filters.command('delchnl') & filters.private & admin)
 async def del_force_sub(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     args = message.text.split(maxsplit=1)
@@ -156,7 +165,7 @@ async def del_force_sub(client: Client, message: Message):
         return await temp.edit(f"<b>❌ Channel not found in force-sub list:</b> <code>{ch_id}</code>")
 
 # View all channels
-@Client.on_message(filters.command('listchnl') & filters.private & filters.user(Config.ADMIN))
+@Client.on_message(filters.command('listchnl') & filters.private & admin)
 async def list_force_sub_channels(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     channels = await codeflixbots.show_channels()
