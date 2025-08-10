@@ -20,6 +20,9 @@ async def check_admin(filter, client, update):
         print(f"! Exception in check_admin: {e}")
         return False
 
+# Define the 'admin' filter
+admin = filters.create(check_admin)
+
 # Request force sub mode command
 @Client.on_message(filters.command('fsub_mode') & filters.private & admin)
 async def change_force_sub_mode(client: Client, message: Message):
