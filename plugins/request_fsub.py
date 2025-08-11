@@ -10,7 +10,7 @@ from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant, Invit
 from helper.database import codeflixbots
 from config import *
 from helper.database import *
-from helper_func import *
+from plugins.helper_func import *
 
 # Request force sub mode command
 @Client.on_message(filters.command('fsub_mode') & filters.private & admin)
