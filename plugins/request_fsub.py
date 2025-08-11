@@ -12,6 +12,8 @@ from config import *
 from helper.database import *
 from plugins.helper_func import *
 
+OWNER_ID = Config.OWNER_ID
+
 # Request force sub mode command
 @Client.on_message(filters.command('fsub_mode') & filters.private & filters.user(OWNER_ID))
 async def change_force_sub_mode(client: Client, message: Message):
