@@ -15,7 +15,7 @@ from helper.database import *
 async def check_admin(filter, client, update):
     try:
         user_id = update.from_user.id       
-        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
+        return any([user_id in OWNER_ID, await codeflixbots.admin_exist(user_id)])
     except Exception as e:
         print(f"! Exception in check_admin: {e}")
         return False
@@ -26,7 +26,7 @@ async def is_subscribed(client, user_id):
     if not channel_ids:
         return True
 
-    if user_id == OWNER_ID:
+    if user_id in OWNER_ID:
         return True
 
     for cid in channel_ids:
