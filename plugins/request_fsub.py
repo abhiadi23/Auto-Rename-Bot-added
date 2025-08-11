@@ -10,7 +10,6 @@ from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant, Invit
 from helper.database import codeflixbots
 from config import *
 from helper.database import *
-from start import *
 
 # used for checking if a user is admin. ~Owner is also treated as an admin.
 async def check_admin(filter, client, update):
@@ -21,7 +20,54 @@ async def check_admin(filter, client, update):
         print(f"! Exception in check_admin: {e}")
         return False
 
-# Define the 'admin' filter
+async def is_subscribed(client, user_id):
+    channel_ids = await codeflixbots.show_channels()
+
+    if not channel_ids:
+        return True
+
+    if user_id == OWNER_ID:
+        return True
+
+    for cid in channel_ids:
+        if not await is_sub(client, user_id, cid):
+            # Retry once if join request might be processing
+            mode = await codeflixbots.get_channel_mode(cid)
+            if mode == "on":
+                await asyncio.sleep(2)  # give time for @on_chat_join_request to process
+                if await is_sub(client, user_id, cid):
+                    continue
+            return False
+
+    return True
+
+
+async def is_sub(client, user_id, channel_id):
+    try:
+        member = await client.get_chat_member(channel_id, user_id)
+        status = member.status
+        #print(f"[SUB] User {user_id} in {channel_id} with status {status}")
+        return status in {
+            ChatMemberStatus.OWNER,
+            ChatMemberStatus.ADMINISTRATOR,
+            ChatMemberStatus.MEMBER
+        }
+
+    except UserNotParticipant:
+        mode = await codeflixbots.get_channel_mode(channel_id)
+        if mode == "on":
+            exists = await codeflixbots.req_user_exist(channel_id, user_id)
+            #print(f"[REQ] User {user_id} join request for {channel_id}: {exists}")
+            return exists
+        #print(f"[NOT SUB] User {user_id} not in {channel_id} and mode != on")
+        return False
+
+    except Exception as e:
+        print(f"[!] Error in is_sub(): {e}")
+        return False
+
+# Define the 'subscribed' and 'admin' filter
+subscribed = filters.create(is_subscribed)
 admin = filters.create(check_admin)
 
 # Request force sub mode command
