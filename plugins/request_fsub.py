@@ -10,7 +10,7 @@ from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant, Invit
 from helper.database import codeflixbots
 from config import *
 from helper.database import *
-from .start_&_cb import *
+from start import *
 
 # used for checking if a user is admin. ~Owner is also treated as an admin.
 async def check_admin(filter, client, update):
