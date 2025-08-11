@@ -76,7 +76,7 @@ async def handle_join_request(client, chat_join_request):
             await codeflixbots.req_user(chat_id, user_id)
             # print(f"Added user {user_id} to request list for {chat_id}")
 
-@Client.on_message(filters.command('addchnl') & filters.private & admin))
+@Client.on_message(filters.command('addchnl') & filters.private & admin)
 async def add_force_sub(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     args = message.text.split(maxsplit=1)
