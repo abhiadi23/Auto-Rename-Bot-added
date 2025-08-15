@@ -16,6 +16,7 @@ class Config(object):
     ADMIN_URL = "https://t.me/adityaabhinav"
     BOT_UPTIME  = time.time()
     START_PIC   = os.environ.get("START_PIC", "https://graph.org/file/4b306f4b15c23a8f22e58.jpg")
+    LEADERBOARD_PIC = os.environ.get("LEADERBOARD_PIC", "https://graph.org/file/4b306f4b15c23a8f22e58.jpg")
     OWNER_ID = int(os.environ.get("OWNER_ID", "6701907262"))
     ADMIN       = [int(admin) if id_pattern.search(admin) else admin for admin in os.environ.get('ADMIN', '').split()]
     FORCE_SUB   = os.environ.get("FORCE_SUB", "") # No need to fill here 
