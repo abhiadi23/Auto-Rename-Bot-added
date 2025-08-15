@@ -8,6 +8,7 @@ import datetime # Keep this for datetime.date.today() and datetime.timedelta
 from datetime import timedelta # Explicitly import timedelta for cleaner usage
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from functools import wraps
+from plugins.helper_func import *
 import html # Import html for escaping names
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ def check_ban(func):
     return wrapper
 
 # Commands for adding admins by owner
-@Client.on_message(filters.command('add_admin') & filters.private & filters.user(Config.OWNER_ID))
+@Client.on_message(filters.command('add_admin') & filters.private & admin)
 async def add_admins(client: Client, message: Message):
     pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
     check = 0
@@ -87,7 +88,7 @@ async def add_admins(client: Client, message: Message):
         )
 
 
-@Client.on_message(filters.command('deladmin') & filters.private & filters.user(Config.OWNER_ID))
+@Client.on_message(filters.command('deladmin') & filters.private & admin)
 async def delete_admins(client: Client, message: Message):
     pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
     admin_ids = await codeflixbots.get_all_admins()
@@ -133,7 +134,7 @@ async def delete_admins(client: Client, message: Message):
         await pro.edit("<b><blockquote>No admin IDs available to delete.</blockquote></b>", reply_markup=reply_markup)
 
 
-@Client.on_message(filters.command('admins') & filters.user(Config.ADMIN))
+@Client.on_message(filters.command('admins') & filters.private & admin)
 async def get_admins(client: Client, message: Message):
     pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
     admin_ids = await codeflixbots.get_all_admins()
@@ -146,7 +147,7 @@ async def get_admins(client: Client, message: Message):
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
     await pro.edit(f"<b>⚡ Current Admin List:</b>\n\n{admin_list}", reply_markup=reply_markup)
 
-@Client.on_message(filters.private & filters.command("restart") & filters.user(OWNER_ID))
+@Client.on_message(filters.private & filters.command("restart") & filters.private & admin)
 async def restart_bot(b, m):
     global is_restarting
     if not is_restarting:
@@ -171,7 +172,7 @@ async def tutorial(bot, message):
         ])
     )
 
-@Client.on_message(filters.command(["stats", "status"]) & filters.user(OWNER_ID))
+@Client.on_message(filters.command(["stats", "status"]) & filters.private & admin)
 async def get_stats(bot, message):
     total_users = await codeflixbots.total_users_count()
     uptime = time.strftime("%Hh%Mm%Ss", time.gmtime(time.time() - bot.uptime))
@@ -181,7 +182,7 @@ async def get_stats(bot, message):
     time_taken_s = (end_t - start_t) * 1000
     await st.edit(text=f"**Bᴏᴛ Sᴛᴀᴛᴜꜱ:** \n\n**➲ Bᴏᴛ Uᴘᴛɪᴍᴇ:** `{uptime}` \n**➲ Pɪɴɢ:** `{time_taken_s:.3f} ms` \n**➲ Vᴇʀsɪᴏɴ:** 2.0.0 \n**➲ Tᴏᴛᴀʟ Uꜱᴇʀꜱ:** `{total_users}`")
 
-@Client.on_message(filters.command("broadcast") & filters.user(Config.ADMIN) & filters.reply)
+@Client.on_message(filters.command("broadcast") & filters.private & admin & filters.reply)
 async def broadcast_handler(bot: Client, m: Message):
     await bot.send_message(Config.LOG_CHANNEL, f"Bʀᴏᴀᴅᴄᴀsᴛ Sᴛᴀʀᴛᴇᴅ Bʏ {m.from_user.mention} or {m.from_user.id}")
     all_users = await codeflixbots.get_all_users()
@@ -227,7 +228,7 @@ async def send_msg(user_id, message):
         return 500
 
 # --- Ban User Command ---
-@Client.on_message(filters.command("ban") & filters.user(Config.ADMIN))
+@Client.on_message(filters.command("ban") & filters.private & admin)
 async def ban_user(bot, message):
     try:
         parts = message.text.split(maxsplit=2)
@@ -247,7 +248,7 @@ async def ban_user(bot, message):
         await message.reply_text(f"Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /ban <ᴜsᴇʀ_ɪᴅ> ʀᴇᴀsᴏɴ")
 
 # --- Unban User Command ---
-@Client.on_message(filters.command("unban") & filters.user(Config.ADMIN))
+@Client.on_message(filters.command("unban") & filters.private & admin)
 async def unban_user(bot, message):
     try:
         user_id = int(message.text.split()[1])
@@ -265,7 +266,7 @@ async def unban_user(bot, message):
 
 #banned user status 
 
-@Client.on_message(filters.command("banned") & filters.user(Config.ADMIN))
+@Client.on_message(filters.command("banned") & filters.private & admin)
 async def banned_list(bot, message):
     msg = await message.reply("**Pʟᴇᴀsᴇ ᴡᴀɪᴛ...**")
     cursor = codeflixbots.col.find({"ban_status.is_banned": True})
@@ -417,7 +418,7 @@ async def leaderboard_handler(bot: Client, message: Message):
         
         # FIX: Removed reply_markup=keyboard from the reply_text call
         sent_msg = await message.reply_photo(
-            photo=LEADERBOARD_PIC, 
+            photo=Config.LEADERBOARD_PIC, 
             caption=leaderboard_text
         )
         
