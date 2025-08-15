@@ -179,14 +179,14 @@ async def get_stats(bot, message):
     st = await message.reply('**Accessing The Details.....**')
     end_t = time.time()
     time_taken_s = (end_t - start_t) * 1000
-    await st.edit(text=f"**--Bot Status--** \n\n**⌚️ Bot Uptime :** {uptime} \n**🐌 Current Ping :** `{time_taken_s:.3f} ms` \n**👭 Total Users :** `{total_users}`")
+    await st.edit(text=f"**Bᴏᴛ Sᴛᴀᴛᴜꜱ:** \n\n**➲ Bᴏᴛ Uᴘᴛɪᴍᴇ:** `{uptime}` \n**➲ Pɪɴɢ:** `{time_taken_s:.3f} ms` \n**➲ Vᴇʀsɪᴏɴ:** 2.0.0 \n**➲ Tᴏᴛᴀʟ Uꜱᴇʀꜱ:** `{total_users}`")
 
 @Client.on_message(filters.command("broadcast") & filters.user(Config.ADMIN) & filters.reply)
 async def broadcast_handler(bot: Client, m: Message):
-    await bot.send_message(Config.LOG_CHANNEL, f"{m.from_user.mention} or {m.from_user.id} Is Started The Broadcast......")
+    await bot.send_message(Config.LOG_CHANNEL, f"Bʀᴏᴀᴅᴄᴀsᴛ Sᴛᴀʀᴛᴇᴅ Bʏ {m.from_user.mention} or {m.from_user.id}")
     all_users = await codeflixbots.get_all_users()
     broadcast_msg = m.reply_to_message
-    sts_msg = await m.reply_text("Broadcast Started..!") 
+    sts_msg = await m.reply_text("**Bʀᴏᴀᴅᴄᴀsᴛ Sᴛᴀʀᴛᴇᴅ...!!**") 
     done = 0
     failed = 0
     success = 0
@@ -289,12 +289,10 @@ async def banned_list(bot, message):
 async def leaderboard_handler(bot: Client, message: Message):
     try:
         user_id = message.from_user.id if message.from_user else None
-        # time_filter = "lifetime" # This variable is not actually used to determine the initial filter.
-                                 # The generate_leaderboard function is called with "lifetime" directly.
-
+        
         async def generate_leaderboard(filter_type):
             pipeline = []
-            current_time = datetime.datetime.now() # Corrected: Use datetime.datetime.now()
+            current_time = datetime.datetime.now() 
             
             if filter_type == "today":
                 start_time = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -310,29 +308,23 @@ async def leaderboard_handler(bot: Client, message: Message):
                 start_time = current_time.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
                 pipeline.append({"$match": {"rename_timestamp": {"$gte": start_time}}})
             
-            # For lifetime, no initial date filter is needed, but we still need the group stage for aggregation.
-            # Assuming 'rename_count' is directly stored for 'lifetime' or calculated via the pipeline.
             if filter_type != "lifetime":
                 pipeline.extend([
                     {"$group": {
                         "_id": "$_id",
                         "rename_count": {"$sum": 1},
-                        "first_name": {"$first": "$first_name"}, # These fields need to be present in the documents
-                        "username": {"$first": "$username"} # if you want to use them in the group stage.
+                        "first_name": {"$first": "$first_name"}, 
+                        "username": {"$first": "$username"} 
                     }},
-                     {"$sort": {"rename_count": -1}}, # Sort after grouping
-                     {"$limit": 10} # Limit after sorting
+                     {"$sort": {"rename_count": -1}}, 
+                     {"$limit": 10} 
                 ])
-            # Note: The logic for fetching users based on 'pipeline' vs. 'find()' was a bit convoluted.
-            # Simplified below to ensure proper query execution.
             
-            if pipeline and filter_type != "lifetime": # Execute pipeline for filtered views
-                # The 'codeflixbots.col.aggregate(pipeline)' part needs to be the correct collection for the data.
-                # Assuming 'Botskingdom.col' was a typo and should be 'codeflixbots.col'
+            if pipeline and filter_type != "lifetime": 
                 users = await codeflixbots.col.aggregate(pipeline).to_list(10)
             elif filter_type == "lifetime":
                 users = await codeflixbots.col.find().sort("rename_count", -1).limit(10).to_list(10)
-            else: # Fallback, should ideally not be reached if filter_type is always one of the specified
+            else: 
                 users = await codeflixbots.col.find().sort("rename_count", -1).limit(10).to_list(10)
             
             if not users:
@@ -342,14 +334,10 @@ async def leaderboard_handler(bot: Client, message: Message):
             user_count = 0
             
             if user_id:
-                if filter_type != "lifetime": # Logic for filtered leaderboards
-                    # Re-constructing the pipeline for the specific user's count and rank based on the filter.
-                    # This needs to be carefully constructed to avoid counting across the entire collection
-                    # when a time-based filter is active.
+                if filter_type != "lifetime": 
                     user_data_pipeline_for_current_user = [
                         {"$match": {"_id": user_id, "rename_timestamp": {"$gte": start_time}}}
                     ]
-                    # If we already have a grouping for count, we can reuse that for the user's data
                     user_data_pipeline_for_current_user.extend([
                         {"$group": {
                             "_id": "$_id",
@@ -362,7 +350,6 @@ async def leaderboard_handler(bot: Client, message: Message):
                     if user_data:
                         user_count = user_data[0].get("rename_count", 0)
                         
-                        # To find rank, count users with higher rename_count within the same filter
                         higher_count_pipeline = [
                             {"$match": {"rename_timestamp": {"$gte": start_time}}}
                         ]
@@ -376,7 +363,7 @@ async def leaderboard_handler(bot: Client, message: Message):
                         
                         higher_count_docs = await codeflixbots.col.aggregate(higher_count_pipeline).to_list(None)
                         user_rank = len(higher_count_docs) + 1
-                else: # Logic for lifetime leaderboard
+                else: 
                     user_data = await codeflixbots.col.find_one({"_id": user_id})
                     if user_data:
                         user_count = user_data.get("rename_count", 0)
@@ -401,7 +388,7 @@ async def leaderboard_handler(bot: Client, message: Message):
                     tg_user = await bot.get_users(u_id)
                     name = html.escape(tg_user.first_name or "Anonymous")
                     username = f"@{tg_user.username}" if tg_user.username else "No UN"
-                except Exception: # Catch general exceptions during get_users to avoid crashes
+                except Exception: 
                     name = html.escape(user.get('first_name', 'Anonymous').strip())
                     username = f"@{user['username']}" if user.get('username') else "No UN"
                 
@@ -414,11 +401,12 @@ async def leaderboard_handler(bot: Client, message: Message):
             if user_rank:
                 leaderboard.append(f"\n<b>Yᴏᴜʀ Rᴀɴᴋ:</b> {user_rank} ᴡɪᴛʜ {user_count} ʀᴇɴᴀᴍᴇs")
             
-            leaderboard.append(f"\nLᴀsᴛ ᴜᴘᴅᴀᴛᴇᴅ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}") # Corrected: Use datetime.datetime.now()
+            leaderboard.append(f"\nLᴀsᴛ ᴜᴘᴅᴀᴛᴇᴅ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
             leaderboard.append(f"\n<i>**Tʜɪs ᴍᴇssᴀɢᴇ ᴡɪʟʟ ᴀᴜᴛᴏ-ᴅᴇʟᴇᴛᴇ ɪɴ {Config.LEADERBOARD_DELETE_TIMER} sᴇᴄᴏɴᴅs**</i>")
             
             return "\n".join(leaderboard)
 
+        # Call the generate_leaderboard function, but it will always use "lifetime" now
         leaderboard_text = await generate_leaderboard("lifetime")
         
         if not leaderboard_text:
@@ -427,32 +415,14 @@ async def leaderboard_handler(bot: Client, message: Message):
             await no_data_msg.delete()
             return
         
-        sent_msg = await message.reply_text(leaderboard_text, reply_markup=keyboard)
+        # FIX: Removed reply_markup=keyboard from the reply_text call
+        sent_msg = await message.reply_photo(
+            photo=LEADERBOARD_PIC, 
+            caption=leaderboard_text
+        )
         
-        # NOTE: Defining callbacks inside an event handler can lead to multiple registrations
-        # if the command is triggered multiple times. For simple bots, it might work,
-        # but for robustness, consider registering callbacks at the top level or
-        # using a state management system.
-        @bot.on_callback_query(filters.regex("^lb_"))
-        async def leaderboard_callback(client, callback_query):
-            if callback_query.from_user.id != message.from_user.id:
-                await callback_query.answer("Tʜɪs ɪs ɴᴏᴛ ʏᴏᴜʀ ʟᴇᴀᴅᴇʀʙᴏᴀʀᴅ!", show_alert=True)
-                return
-
-            selected_filter = callback_query.data.split("_")[1]
-
-            new_leaderboard = await generate_leaderboard(selected_filter)
-            
-            if not new_leaderboard:
-                await callback_query.answer(f"Nᴏ ᴅᴀᴛᴀ ᴀᴠᴀɪʟᴀʙʟᴇ ғᴏʀ {selected_filter} ғɪʟᴛᴇʀ", show_alert=True)
-                return
-            
-            await callback_query.message.edit_text(
-                new_leaderboard,
-                reply_markup=keyboard 
-            )
-            
-            await callback_query.answer()
+        # NOTE: The leaderboard_callback function is no longer needed or registered, 
+        # so it has been removed.
         
         async def delete_messages():
             await asyncio.sleep(Config.LEADERBOARD_DELETE_TIMER)
