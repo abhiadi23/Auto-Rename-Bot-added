@@ -362,7 +362,13 @@ def extract_audio_info(filename):
         'English': re.compile(r'English', re.IGNORECASE),
         'Multi': re.compile(r'Multi(?:audio)?', re.IGNORECASE),
         'Telugu': re.compile(r'Telugu', re.IGNORECASE),
+        'Eng': re.compile(r'Eng', re.IGNORECASE),
+        'Sub': re.compile(r'Sub', re.IGNORECASE),
+        'Eng sub': re.compile(r'Eng sub', re.IGNORECASE),
+        'Dub': re.compile(r'Dub', re.IGNORECASE),
+        'Eng dub': re.compile(r'Eng dub', re.IGNORECASE),
         'Tamil': re.compile(r'Tamil', re.IGNORECASE),
+        'Jap': re.compile(r'Jap', re.IGNORECASE),
         'Dual': re.compile(r'Dual(?:audio)?', re.IGNORECASE),
         'Dual_Enhanced': re.compile(r'(?:DUAL(?:[\s._-]?AUDIO)?|\[DUAL\])', re.IGNORECASE),
         'AAC': re.compile(r'AAC', re.IGNORECASE),
@@ -381,7 +387,7 @@ def extract_audio_info(filename):
         detected_audio.append("Dual")
 
 
-    priority_keywords = ['Hindi', 'English', 'Telugu', 'Tamil']
+    priority_keywords = ['Hindi', 'English', 'Telugu', 'Tamil', 'Eng', 'Sub', 'Eng sub', 'Dub', 'Eng dub', 'Jap']
     for keyword in priority_keywords:
         if audio_keywords[keyword].search(filename):
             if keyword not in detected_audio:
