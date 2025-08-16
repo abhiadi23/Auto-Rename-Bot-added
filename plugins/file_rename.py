@@ -459,12 +459,13 @@ async def auto_rename_files(client, message):
         file_id = message.video.file_id
         file_name = message.video.file_name or "video"
         file_size = message.video.file_size
-        
+        duration = message.video.duration
         media_type = "video"
     elif message.audio:
         file_id = message.audio.file_id
         file_name = message.audio.file_name or "audio"
         file_size = message.audio.file_size
+        duration = message.audio.duration
         media_type = "audio"
     else:
         return await message.reply_text("Unsupported file type")
