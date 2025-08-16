@@ -459,6 +459,7 @@ async def auto_rename_files(client, message):
         file_id = message.video.file_id
         file_name = message.video.file_name or "video"
         file_size = message.video.file_size
+        
         media_type = "video"
     elif message.audio:
         file_id = message.audio.file_id
@@ -614,6 +615,7 @@ async def auto_rename_files(client, message):
             }
         )
 
+        c_caption = await codeflixbots.get_caption(message.chat.id) or f"**{new_file_name}**"
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
         ph_path = None
