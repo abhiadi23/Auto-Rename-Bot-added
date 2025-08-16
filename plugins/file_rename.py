@@ -587,8 +587,6 @@ async def auto_rename_files(client, message):
 
 
     msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-    
-    caption = await codeflixbots.get_caption(message.chat.id) or f"**{new_file_name}**"
 
     try:
         file_path = await client.download_media(
@@ -615,7 +613,16 @@ async def auto_rename_files(client, message):
             }
         )
 
-        c_caption = await codeflixbots.get_caption(message.chat.id) or f"**{new_file_name}**"
+        c_caption = await codeflixbots.get_caption(message.chat.id)
+        caption = (
+            c_caption.format(
+                filename=new_file_name,
+                filesize=humanbytes(message.document.file_size),
+                duration=convert(duration),
+            )
+            if c_caption
+            else f"**{new_file_name}**"
+        )
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
         ph_path = None
@@ -628,6 +635,7 @@ async def auto_rename_files(client, message):
         upload_params = {
             'chat_id': message.chat.id,
             'caption': caption,
+            'duration' : duration,
             'thumb': ph_path,
             'progress': progress_for_pyrogram,
             'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
