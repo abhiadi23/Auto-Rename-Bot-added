@@ -519,6 +519,7 @@ async def auto_rename_files(client, message):
     file_info = {
         "file_id": file_id,
         "file_name": file_name,
+        "duration" : duration,
         "message": message,
         "episode_num": extract_episode_number(file_name)
     }
