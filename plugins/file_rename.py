@@ -496,6 +496,8 @@ async def auto_rename_files(client, message):
         await message.reply_text("Could not determine file name.")
         return
 
+    human_readable_duration = convert(duration)
+
     if media_preference:
         media_type = media_preference
     else:
@@ -588,7 +590,6 @@ async def auto_rename_files(client, message):
     for pattern in quality_patterns:
         template = pattern.sub(quality_replacement, template)
 
-    template = re.sub(r'\[\s*\]', '', template)
     template = re.sub(r'\(\s*\)', '', template)
     template = re.sub(r'\{\s*\}', '', template)
 
