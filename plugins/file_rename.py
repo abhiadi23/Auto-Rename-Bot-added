@@ -436,6 +436,25 @@ async def start_sequence(client, message: Message):
         msg = await message.reply_text("Sᴇǫᴜᴇɴᴄᴇ sᴛᴀʀᴛᴇᴅ! Sᴇɴᴅ ʏᴏᴜʀ ғɪʟᴇs ɴᴏᴡ ʙʀᴏ....Fᴀsᴛ")
         message_ids[user_id].append(msg.id)
 
+
+    if file_id in renaming_operations:
+        if (datetime.now() - renaming_operations[file_id]).seconds < 10:
+            return
+    renaming_operations[file_id] = datetime.now()
+            
+    file_info = {
+        "file_id": file_id,
+        "file_name": file_name,
+        "message": message,
+        "episode_num": extract_episode_number(file_name)
+    }
+
+    if user_id in active_sequences:
+        active_sequences[user_id].append(file_info)
+        reply_msg = await message.reply_text("Wᴇᴡ...ғɪʟᴇs ʀᴇᴄᴇɪᴠᴇᴅ ɴᴏᴡ ᴜsᴇ /end_sequence ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs...!!")
+        message_ids[user_id].append(reply_msg.id)
+        return
+
 @Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
 @check_ban
 @check_fsub
@@ -444,6 +463,9 @@ async def auto_rename_files(client, message):
     user_id = message.from_user.id
     format_template = await codeflixbots.get_format_template(user_id)
     media_preference = await codeflixbots.get_media_preference(user_id)
+    
+    # Initialize duration to None
+    duration = None
 
     if not format_template:
         await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
@@ -459,13 +481,13 @@ async def auto_rename_files(client, message):
         file_id = message.video.file_id
         file_name = message.video.file_name or "video"
         file_size = message.video.file_size
-        duration = message.video.duration
+        duration = message.video.duration # <--- FIX 1: Get duration from video
         media_type = "video"
     elif message.audio:
         file_id = message.audio.file_id
         file_name = message.audio.file_name or "audio"
         file_size = message.audio.file_size
-        duration = message.audio.duration
+        duration = message.audio.duration # <--- FIX 2: Get duration from audio
         media_type = "audio"
     else:
         return await message.reply_text("Unsupported file type")
@@ -615,15 +637,18 @@ async def auto_rename_files(client, message):
         )
 
         c_caption = await codeflixbots.get_caption(message.chat.id)
-        caption = (
-            c_caption.format(
+        
+        # FIX 3: Add a check for duration before using it.
+        # It's good practice to make the caption flexible.
+        if c_caption:
+            caption = c_caption.format(
                 filename=new_file_name,
-                filesize=humanbytes(message.document.file_size),
-                duration=convert(duration),
+                filesize=humanbytes(file_size),
+                duration=convert(duration) if duration is not None else "N/A"
             )
-            if c_caption
-            else f"**{new_file_name}**"
-        )
+        else:
+            caption = f"**{new_file_name}**"
+            
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
         ph_path = None
@@ -636,11 +661,15 @@ async def auto_rename_files(client, message):
         upload_params = {
             'chat_id': message.chat.id,
             'caption': caption,
-            'duration' : duration,
             'thumb': ph_path,
             'progress': progress_for_pyrogram,
             'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         }
+        
+        # FIX 4: Add duration to upload_params if it exists for video/audio.
+        if duration is not None:
+            upload_params['duration'] = duration
+
 
         if media_type == "document":
             await client.send_document(document=file_path, **upload_params)
