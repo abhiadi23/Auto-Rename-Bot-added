@@ -590,6 +590,7 @@ async def auto_rename_files(client, message):
     for pattern in quality_patterns:
         template = pattern.sub(quality_replacement, template)
 
+    template = re.sub(r'\[\s*\]', '', template)
     template = re.sub(r'\(\s*\)', '', template)
     template = re.sub(r'\{\s*\}', '', template)
 
