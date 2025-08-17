@@ -496,7 +496,7 @@ async def auto_rename_files(client, message):
         await message.reply_text("Could not determine file name.")
         return
 
-    human_readable_duration = convert(duration)
+    human_readable_duration = convert(duration) if duration is not None else "N/A"
 
     if media_preference:
         media_type = media_preference
