@@ -658,7 +658,7 @@ async def auto_rename_files(client, message):
                 ph_path = await client.download_media(message.video.thumbs[0].file_id)
 
         upload_params = {
-            'chat_id': message.chat_id,
+            'chat_id': message.chat.id,  # Corrected from message.chat_id to message.chat.id
             'caption': caption,
             'thumb': ph_path,
             'progress': progress_for_pyrogram,
