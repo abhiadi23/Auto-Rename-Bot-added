@@ -481,13 +481,13 @@ async def auto_rename_files(client, message):
         file_id = message.video.file_id
         file_name = message.video.file_name or "video"
         file_size = message.video.file_size
-        duration = message.video.duration # <--- FIX 1: Get duration from video
+        duration = message.video.duration  # Extract duration from video
         media_type = "video"
     elif message.audio:
         file_id = message.audio.file_id
         file_name = message.audio.file_name or "audio"
         file_size = message.audio.file_size
-        duration = message.audio.duration # <--- FIX 2: Get duration from audio
+        duration = message.audio.duration  # Extract duration from audio
         media_type = "audio"
     else:
         return await message.reply_text("Unsupported file type")
@@ -521,7 +521,7 @@ async def auto_rename_files(client, message):
     file_info = {
         "file_id": file_id,
         "file_name": file_name,
-        "duration" : duration,
+        "duration": duration,
         "message": message,
         "episode_num": extract_episode_number(file_name)
     }
@@ -548,11 +548,9 @@ async def auto_rename_files(client, message):
         (re.compile(r'\{season\}', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\{Season\}', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\{SEASON\}', re.IGNORECASE), season_value_formatted),
-
         (re.compile(r'\bseason\b', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\bSeason\b', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\bSEASON\b', re.IGNORECASE), season_value_formatted),
-
         (re.compile(r'Season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
         (re.compile(r'season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
         (re.compile(r'SEASON[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
@@ -611,7 +609,6 @@ async def auto_rename_files(client, message):
     makedirs(os.path.dirname(metadata_path), exist_ok=True)
     makedirs(os.path.dirname(output_path), exist_ok=True)
 
-
     msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
 
     try:
@@ -641,8 +638,7 @@ async def auto_rename_files(client, message):
 
         c_caption = await codeflixbots.get_caption(message.chat.id)
         
-        # FIX 3: Add a check for duration before using it.
-        # It's good practice to make the caption flexible.
+        # Ensure duration is used if available
         if c_caption:
             caption = c_caption.format(
                 filename=new_file_name,
@@ -662,26 +658,30 @@ async def auto_rename_files(client, message):
                 ph_path = await client.download_media(message.video.thumbs[0].file_id)
 
         upload_params = {
-            'chat_id': message.chat.id,
+            'chat_id': message.chat_id,
             'caption': caption,
             'thumb': ph_path,
             'progress': progress_for_pyrogram,
             'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         }
         
-        # FIX 4: Add duration to upload_params if it exists for video/audio.
+        # Explicitly add duration to upload_params if it exists
         if duration is not None:
             upload_params['duration'] = duration
 
-
-        if media_type == "document":
-            await client.send_document(document=file_path, **upload_params)
-        elif media_type == "video":
-            await client.send_video(video=file_path, **upload_params)
-        elif media_type == "audio":
-            await client.send_audio(audio=file_path, **upload_params)
-
-        await msg.delete()
+        # Upload the file with the correct media type and duration
+        try:
+            if media_type == "document":
+                await client.send_document(document=file_path, **upload_params)
+            elif media_type == "video":
+                await client.send_video(video=file_path, **upload_params)
+            elif media_type == "audio":
+                await client.send_audio(audio=file_path, **upload_params)
+        except Exception as e:
+            await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ᴜᴘʟᴏᴀᴅ: {str(e)}")
+            raise
+        finally:
+            await msg.delete()
 
     except Exception as e:
         await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
