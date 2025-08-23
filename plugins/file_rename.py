@@ -6,14 +6,13 @@ import asyncio
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.enums import ChatAction, ChatMemberStatus
 from pyrogram.errors import UserNotParticipant, MessageIdInvalid
-from datetime import datetime, timedelta
 from plugins.antinsfw import check_anti_nsfw
 from helper.utils import progress_for_pyrogram, humanbytes, convert
 from helper.database import codeflixbots
@@ -319,26 +318,16 @@ def extract_season_number(filename):
     ]
     quality_pattern_for_exclusion = r'(?:' + '|'.join([f'(?:[\s._-]*{ind})' for ind in quality_and_year_indicators]) + r')'
 
-
     patterns = [
         re.compile(r'S(\d+)[._-]?E\d+', re.IGNORECASE),
-
         re.compile(r'(?:Season|SEASON|season)[\s._-]*(\d+)', re.IGNORECASE),
-
         re.compile(r'\bS(\d+)\b(?!E\d|' + quality_pattern_for_exclusion + r')', re.IGNORECASE),
-
         re.compile(r'[\[\(]S(\d+)[\]\)]', re.IGNORECASE),
-
         re.compile(r'[._-]S(\d+)(?:[._-]|$)', re.IGNORECASE),
-
         re.compile(r'(?:season|SEASON|Season)[\s._-]*(\d+)', re.IGNORECASE),
-
         re.compile(r'(?:^|[\s._-])(?:season|SEASON|Season)[\s._-]*(\d+)(?:[\s._-]|$)', re.IGNORECASE),
-
         re.compile(r'[\[\(](?:season|SEASON|Season)[\s._-]*(\d+)[\]\)]', re.IGNORECASE),
-
         re.compile(r'(?:season|SEASON|Season)[._\s-]+(\d+)', re.IGNORECASE),
-
         re.compile(r'(?:^season|season$)[\s._-]*(\d+)', re.IGNORECASE),
     ]
 
@@ -386,7 +375,6 @@ def extract_audio_info(filename):
         detected_audio.append("Multi")
     if re.search(r'\bDual(?:audio)?\b', filename, re.IGNORECASE):
         detected_audio.append("Dual")
-
 
     priority_keywords = ['Hindi', 'English', 'Telugu', 'Tamil', 'Eng', 'Sub', 'Eng sub', 'Dub', 'Eng dub', 'Jap']
     for keyword in priority_keywords:
@@ -437,101 +425,6 @@ async def start_sequence(client, message: Message):
         msg = await message.reply_text("Sᴇǫᴜᴇɴᴄᴇ sᴛᴀʀᴛᴇᴅ! Sᴇɴᴅ ʏᴏᴜʀ ғɪʟᴇs ɴᴏᴡ ʙʀᴏ....Fᴀsᴛ")
         message_ids[user_id].append(msg.id)
 
-
-    if file_id in renaming_operations:
-        if (datetime.now() - renaming_operations[file_id]).seconds < 10:
-            return
-    renaming_operations[file_id] = datetime.now()
-            
-    file_info = {
-        "file_id": file_id,
-        "file_name": file_name,
-        "message": message,
-        "episode_num": extract_episode_number(file_name)
-    }
-
-    if user_id in active_sequences:
-        active_sequences[user_id].append(file_info)
-        reply_msg = await message.reply_text("Wᴇᴡ...ғɪʟᴇs ʀᴇᴄᴇɪᴠᴇᴅ ɴᴏᴡ ᴜsᴇ /end_sequence ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs...!!")
-        message_ids[user_id].append(reply_msg.id)
-        return
-
-async def detect_video_resolution(file_path):
-    """Detect actual video duration using FFmpeg"""
-    ffprobe = shutil.which('ffprobe')
-    if not ffprobe:
-        logger.error("ffprobe not found in PATH")
-        raise RuntimeError("ffprobe not found in PATH")
-
-    cmd = [
-        ffprobe,
-        '-v', 'quiet',
-        '-print_format', 'json',
-        '-show_streams',
-        '-show_format',
-        '-select_streams', 'v:0',
-        file_path
-    ]
-
-    process = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    stdout, stderr = await process.communicate()
-
-    try:
-        info = json.loads(stdout)
-        streams = info.get('streams', [])
-        format_info = info.get('format', {})
-        print(f"DEBUG: ffprobe output - Streams: {streams}, Format: {format_info}")
-
-        if not streams:
-            print(f"DEBUG: No video streams detected in {file_path}")
-            return 0
-
-        video_stream = streams[0]
-        # Extract duration from format info (more reliable) or stream
-        duration = float(format_info.get('duration', 0)) or float(video_stream.get('duration', 0))
-        print(f"DEBUG: Detected duration from ffprobe: {duration} seconds")
-
-        return duration
-
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON decode error in ffprobe output: {e}, Stderr: {stderr.decode()}")
-        return 0
-    except Exception as e:
-        logger.error(f"Resolution detection error: {e}, Stderr: {stderr.decode()}")
-        return 0
-
-async def reencode_file(input_path, output_path):
-    """Re-encode file to fix metadata using FFmpeg"""
-    ffmpeg = shutil.which('ffmpeg')
-    if not ffmpeg:
-        raise RuntimeError("ffmpeg not found in PATH")
-
-    cmd = [
-        ffmpeg,
-        '-i', input_path,
-        '-c:v', 'copy',  # Copy video stream to avoid re-encoding
-        '-c:a', 'copy',  # Copy audio stream
-        '-map', '0',
-        '-y',  # Overwrite output file
-        output_path
-    ]
-
-    process = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    _, stderr = await process.communicate()
-
-    if process.returncode != 0:
-        logger.error(f"FFmpeg re-encode error: {stderr.decode()}")
-        raise RuntimeError(f"Re-encode failed: {stderr.decode()}")
-    return output_path
-
 @Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
 @check_ban
 @check_fsub
@@ -580,6 +473,9 @@ async def auto_rename_files(client, message):
     if duration is None or duration <= 0:
         duration = 0
         print(f"DEBUG: Duration invalid or None, set to {duration} seconds")
+    else:
+        duration = int(duration)  # Convert to integer to avoid float issues
+        print(f"DEBUG: Converted duration to integer: {duration} seconds")
 
     human_readable_duration = convert(duration) if duration > 0 else "0:00"
     print(f"DEBUG: Initial human-readable duration: {human_readable_duration}")
@@ -732,7 +628,7 @@ async def auto_rename_files(client, message):
             msg = await message.reply_text("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
             print(f"DEBUG: Message ID invalid, sent new message with ID: {msg.id}")
 
-        await add_metadata(file_path, metadata_path, user_id)
+        await add_metadata(file_path, metadata_path, user_id, duration=duration)  # Pass duration
         file_path = metadata_path
 
         # Handle message edit with error catching
@@ -764,7 +660,7 @@ async def auto_rename_files(client, message):
                 duration=convert(duration) if duration > 0 else "0:00"
             )
         else:
-            caption = f"**{new_file_name}**"
+            caption = f"**{new_file_name}** (Duration: {convert(duration) if duration > 0 else '0:00'})"
             
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
@@ -830,8 +726,7 @@ async def auto_rename_files(client, message):
                 try:
                     os.remove(file_path)
                 except Exception as cleanup_e:
-                    print(f"Error during file cleanup for {file_path}: {cleanup_e}")
-                    pass
+                    logger.error(f"Error during file cleanup for {file_path}: {cleanup_e}")
 
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
@@ -893,10 +788,13 @@ async def process_thumb_async(ph_path):
 
     return await asyncio.to_thread(_resize_thumb, ph_path)
 
-async def add_metadata(input_path, output_path, user_id):
+async def add_metadata(input_path, output_path, user_id, duration=None):
     ffmpeg_cmd = shutil.which('ffmpeg')
     if not ffmpeg_cmd:
         raise RuntimeError("FFmpeg not found in PATH")
+
+    # Convert duration to string for FFmpeg metadata
+    duration_str = str(int(duration)) if duration is not None and duration > 0 else "0"
 
     metadata_command = [
         ffmpeg_cmd,
@@ -909,6 +807,7 @@ async def add_metadata(input_path, output_path, user_id):
         '-metadata:s:s', f'title={await codeflixbots.get_subtitle(user_id)}',
         '-metadata', f'encoded_by={await codeflixbots.get_encoded_by(user_id)}',
         '-metadata', f'custom_tag={await codeflixbots.get_custom_tag(user_id)}',
+        '-metadata', f'duration={duration_str}',  # Add duration metadata
         '-map', '0',
         '-c', 'copy',
         '-loglevel', 'error',
