@@ -459,6 +459,7 @@ async def detect_video_resolution(file_path):
     """Detect actual video duration using FFmpeg"""
     ffprobe = shutil.which('ffprobe')
     if not ffprobe:
+        logger.error("ffprobe not found in PATH")
         raise RuntimeError("ffprobe not found in PATH")
 
     cmd = [
@@ -482,19 +483,53 @@ async def detect_video_resolution(file_path):
         info = json.loads(stdout)
         streams = info.get('streams', [])
         format_info = info.get('format', {})
+        print(f"DEBUG: ffprobe output - Streams: {streams}, Format: {format_info}")
 
         if not streams:
+            print(f"DEBUG: No video streams detected in {file_path}")
             return 0
 
         video_stream = streams[0]
-        # Extract duration from format info (more reliable than stream duration)
+        # Extract duration from format info (more reliable) or stream
         duration = float(format_info.get('duration', 0)) or float(video_stream.get('duration', 0))
+        print(f"DEBUG: Detected duration from ffprobe: {duration} seconds")
 
         return duration
 
-    except Exception as e:
-        logger.error(f"Resolution detection error: {e}")
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in ffprobe output: {e}, Stderr: {stderr.decode()}")
         return 0
+    except Exception as e:
+        logger.error(f"Resolution detection error: {e}, Stderr: {stderr.decode()}")
+        return 0
+
+async def reencode_file(input_path, output_path):
+    """Re-encode file to fix metadata using FFmpeg"""
+    ffmpeg = shutil.which('ffmpeg')
+    if not ffmpeg:
+        raise RuntimeError("ffmpeg not found in PATH")
+
+    cmd = [
+        ffmpeg,
+        '-i', input_path,
+        '-c:v', 'copy',  # Copy video stream to avoid re-encoding
+        '-c:a', 'copy',  # Copy audio stream
+        '-map', '0',
+        '-y',  # Overwrite output file
+        output_path
+    ]
+
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    _, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        logger.error(f"FFmpeg re-encode error: {stderr.decode()}")
+        raise RuntimeError(f"Re-encode failed: {stderr.decode()}")
+    return output_path
 
 @Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
 @check_ban
@@ -546,7 +581,7 @@ async def auto_rename_files(client, message):
         print(f"DEBUG: Duration invalid or None, set to {duration} seconds")
 
     human_readable_duration = convert(duration) if duration > 0 else "0:00"
-    print(f"DEBUG: Human-readable duration: {human_readable_duration}")
+    print(f"DEBUG: Initial human-readable duration: {human_readable_duration}")
 
     if media_preference:
         media_type = media_preference
@@ -676,7 +711,17 @@ async def auto_rename_files(client, message):
                 duration = detected_duration
                 print(f"DEBUG: Updated duration from ffprobe: {duration} seconds")
             else:
-                print(f"DEBUG: ffprobe detected duration as 0, keeping original: {duration} seconds")
+                print(f"DEBUG: ffprobe detected duration as 0, attempting re-encode")
+                reencoded_path = f"reencoded/{new_file_name}"
+                makedirs(os.path.dirname(reencoded_path), exist_ok=True)
+                reencoded_path = await reencode_file(file_path, reencoded_path)
+                os.remove(file_path)  # Remove original
+                file_path = reencoded_path
+                duration = await detect_video_resolution(file_path)
+                if duration > 0:
+                    print(f"DEBUG: Re-encoded duration: {duration} seconds")
+                else:
+                    print(f"DEBUG: Re-encode failed to fix duration, keeping 0")
 
         await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
         await add_metadata(file_path, metadata_path, user_id)
@@ -702,10 +747,10 @@ async def auto_rename_files(client, message):
             caption = c_caption.format(
                 filename=new_file_name,
                 filesize=humanbytes(file_size),
-                duration=human_readable_duration  # Always use human-readable duration
+                duration=convert(duration) if duration > 0 else "0:00"
             )
         else:
-            caption = f"**{new_file_name}**"
+            caption = f"**{new_file_name}** (Duration: {convert(duration) if duration > 0 else '0:00'})"
             
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
@@ -729,7 +774,7 @@ async def auto_rename_files(client, message):
             upload_params['duration'] = duration
             print(f"DEBUG: Added duration to upload_params: {duration} seconds")
         else:
-            print(f"DEBUG: Duration not added (None or 0), using default")
+            print(f"DEBUG: Duration not added (0), using default")
 
         # Upload the file with the correct media type and duration
         try:
@@ -755,6 +800,8 @@ async def auto_rename_files(client, message):
         cleanup_files = [download_path, metadata_path, output_path]
         if ph_path:
             cleanup_files.append(ph_path)
+        if 'reencoded_path' in locals() and os.path.exists(reencoded_path):
+            cleanup_files.append(reencoded_path)
 
         for file_path in cleanup_files:
             if file_path and os.path.exists(file_path):
