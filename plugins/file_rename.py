@@ -482,72 +482,87 @@ async def auto_rename_files(client, message):
     format_template = await codeflixbots.get_format_template(user_id)
     media_preference = await codeflixbots.get_media_preference(user_id)
     
-    # Initialize duration to None
+    # Initialize variables
     duration = None
+    file_id = None
+    file_name = None
+    file_size = 0
+    media_type = None
 
     if not format_template:
         await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
         return
     
-    # Correctly identify file properties and initial media type
-    if message.document:
-        file_id = message.document.file_id
-        file_name = message.document.file_name
-        file_size = message.document.file_size
-        media_type = "document"
-        print(f"DEBUG: Document - Duration not available initially, setting to None")
-    elif message.video:
-        file_id = message.video.file_id
-        file_name = message.video.file_name or "video"
-        file_size = message.video.file_size
-        duration = message.video.duration  # Initial duration from Telegram
-        media_type = "video"
-        print(f"DEBUG: Video - Initial duration from Telegram: {duration} seconds")
-    elif message.audio:
-        file_id = message.audio.file_id
-        file_name = message.audio.file_name or "audio"
-        file_size = message.audio.file_size
-        duration = message.audio.duration  # Initial duration from Telegram
-        media_type = "audio"
-        print(f"DEBUG: Audio - Initial duration from Telegram: {duration} seconds")
-    else:
-        return await message.reply_text("Unsupported file type")
-        
+    # Identify file properties and initial media type
+    try:
+        if message.document:
+            file_id = message.document.file_id
+            file_name = message.document.file_name
+            file_size = message.document.file_size
+            media_type = "document"
+            print(f"DEBUG: Processing document - File name: {file_name}, Size: {humanbytes(file_size)}")
+        elif message.video:
+            file_id = message.video.file_id
+            file_name = message.video.file_name or "video"
+            file_size = message.video.file_size
+            duration = message.video.duration
+            media_type = "video"
+            print(f"DEBUG: Processing video - File name: {file_name}, Size: {humanbytes(file_size)}, Duration: {duration} seconds")
+        elif message.audio:
+            file_id = message.audio.file_id
+            file_name = message.audio.file_name or "audio"
+            file_size = message.audio.file_size
+            duration = message.audio.duration
+            media_type = "audio"
+            print(f"DEBUG: Processing audio - File name: {file_name}, Size: {humanbytes(file_size)}, Duration: {duration} seconds")
+        else:
+            await message.reply_text("Unsupported file type")
+            return
+    except Exception as e:
+        await message.reply_text(f"Error identifying file: {str(e)}. Please contact the developer.")
+        return
+
     if not file_name:
         await message.reply_text("Could not determine file name.")
         return
 
-    # Ensure duration is always set, defaulting to 0 if not detected
-    if duration is None or duration <= 0:
-        duration = 0
-        print(f"DEBUG: Duration invalid or None, set to {duration} seconds")
+    # Ensure duration is valid
+    if duration is not None:
+        try:
+            duration = int(float(duration)) if float(duration) > 0 else 0
+        except (ValueError, TypeError):
+            duration = 0
+            print(f"DEBUG: Invalid duration value, set to {duration} seconds")
     else:
-        duration = int(duration)  # Convert to integer to avoid float issues
-        print(f"DEBUG: Converted duration to integer: {duration} seconds")
+        duration = 0
+        print(f"DEBUG: No initial duration, set to {duration} seconds")
 
     human_readable_duration = convert(duration) if duration > 0 else "0:00"
-    print(f"DEBUG: Initial human-readable duration: {human_readable_duration}")
+    print(f"DEBUG: Human-readable duration: {human_readable_duration}")
 
+    # Apply media preference or guess type
     if media_preference:
         media_type = media_preference
     else:
-        # Fallback to intelligent guessing if no preference is set
-        if file_name.endswith((".mp4", ".mkv", ".avi", ".webm")):
+        if file_name.lower().endswith((".mp4", ".mkv", ".avi", ".webm")):
             media_type = "document"
-        elif file_name.endswith((".mp3", ".flac", ".wav", ".ogg")):
+        elif file_name.lower().endswith((".mp3", ".flac", ".wav", ".ogg")):
             media_type = "audio"
         else:
             media_type = "video"
 
+    # NSFW check
     if await check_anti_nsfw(file_name, message):
-        await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
+        await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟᴇ ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
         return
 
+    # Rate limiting
     if file_id in renaming_operations:
         if (datetime.now() - renaming_operations[file_id]).seconds < 10:
             return
     renaming_operations[file_id] = datetime.now()
-            
+
+    # Store file info for sequence
     file_info = {
         "file_id": file_id,
         "file_name": file_name,
@@ -562,13 +577,15 @@ async def auto_rename_files(client, message):
         message_ids[user_id].append(reply_msg.id)
         return
 
+    # Extract metadata from filename
     episode_number = extract_episode_number(file_name)
     season_number = extract_season_number(file_name)
     audio_info_extracted = extract_audio_info(file_name)
     quality_extracted = extract_quality(file_name)
 
-    print(f"DEBUG: Final extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
+    print(f"DEBUG: Extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
 
+    # Format template
     season_value_formatted = str(season_number).zfill(2) if season_number is not None else "01"
     episode_value_formatted = str(episode_number).zfill(2) if episode_number is not None else "01"
 
@@ -623,10 +640,6 @@ async def auto_rename_files(client, message):
     template = re.sub(r'\{\s*\}', '', template)
 
     _, file_extension = os.path.splitext(file_name)
-
-    print(f"Cleaned template: '{template}'")
-    print(f"File extension: '{file_extension}'")
-
     if not file_extension.startswith('.'):
         file_extension = '.' + file_extension if file_extension else ''
 
@@ -640,9 +653,10 @@ async def auto_rename_files(client, message):
     makedirs(os.path.dirname(output_path), exist_ok=True)
 
     msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-    ph_path = None  # Initialize ph_path to avoid reference error
+    ph_path = None
 
     try:
+        # Download file
         file_path = await client.download_media(
             message,
             file_name=download_path,
@@ -650,7 +664,7 @@ async def auto_rename_files(client, message):
             progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         )
 
-        # Detect accurate duration after download for video/audio
+        # Update duration if video or audio
         if media_type in ["video", "audio"]:
             detected_duration = await detect_video_resolution(file_path)
             if detected_duration > 0:
@@ -661,7 +675,7 @@ async def auto_rename_files(client, message):
                 reencoded_path = f"reencoded/{new_file_name}"
                 makedirs(os.path.dirname(reencoded_path), exist_ok=True)
                 reencoded_path = await reencode_file(file_path, reencoded_path)
-                os.remove(file_path)  # Remove original
+                os.remove(file_path)
                 file_path = reencoded_path
                 duration = await detect_video_resolution(file_path)
                 if duration > 0:
@@ -669,17 +683,17 @@ async def auto_rename_files(client, message):
                 else:
                     print(f"DEBUG: Re-encode failed to fix duration, keeping 0")
 
-        # Handle message edit with error catching
+        # Add metadata
         try:
             await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
         except MessageIdInvalid:
             msg = await message.reply_text("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
             print(f"DEBUG: Message ID invalid, sent new message with ID: {msg.id}")
 
-        await add_metadata(file_path, metadata_path, user_id, duration=duration)  # Pass duration
+        await add_metadata(file_path, metadata_path, user_id, duration=duration)
         file_path = metadata_path
 
-        # Handle message edit with error catching
+        # Upload file
         try:
             await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
         except MessageIdInvalid:
@@ -699,19 +713,13 @@ async def auto_rename_files(client, message):
         )
 
         c_caption = await codeflixbots.get_caption(message.chat.id)
-        
-        # Ensure duration is always included, defaulting to "0:00" if invalid
-        if c_caption:
-            caption = c_caption.format(
-                filename=new_file_name,
-                filesize=humanbytes(file_size),
-                duration=convert(duration) if duration > 0 else "0:00"
-            )
-        else:
-            caption = f"**{new_file_name}**"
-            
-        c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
+        caption = c_caption.format(
+            filename=new_file_name,
+            filesize=humanbytes(file_size),
+            duration=convert(duration) if duration > 0 else "0:00"
+        ) if c_caption else f"**{new_file_name}** (Duration: {convert(duration) if duration > 0 else '0:00'})"
 
+        c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
         if c_thumb:
             ph_path = await client.download_media(c_thumb)
         elif media_type == "video" and getattr(message.video, "thumbs", None):
@@ -725,39 +733,26 @@ async def auto_rename_files(client, message):
             'progress': progress_for_pyrogram,
             'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         }
-        
-        # Explicitly add duration to upload_params if it exists and is valid
+
         if duration is not None and duration > 0:
             upload_params['duration'] = duration
             print(f"DEBUG: Added duration to upload_params: {duration} seconds")
         else:
             print(f"DEBUG: Duration not added (0), using default")
 
-        # Upload the file with the correct media type and duration
-        try:
-            if media_type == "document":
-                await client.send_document(document=file_path, **upload_params)
-            elif media_type == "video":
-                await client.send_video(video=file_path, **upload_params)
-            elif media_type == "audio":
-                await client.send_audio(audio=file_path, **upload_params)
-        except Exception as e:
-            try:
-                await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ᴜᴘʟᴏᴀᴅ: {str(e)}")
-            except MessageIdInvalid:
-                await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ᴜᴘʟᴏᴀᴅ: {str(e)}")
-            raise
-        finally:
-            try:
-                await msg.delete()
-            except MessageIdInvalid:
-                print(f"DEBUG: Could not delete message, ID invalid")
+        if media_type == "document":
+            await client.send_document(document=file_path, **upload_params)
+        elif media_type == "video":
+            await client.send_video(video=file_path, **upload_params)
+        elif media_type == "audio":
+            await client.send_audio(audio=file_path, **upload_params)
 
     except Exception as e:
         try:
             await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
         except MessageIdInvalid:
             await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
+        logger.error(f"Renaming error for user {user_id}: {str(e)}")
         raise
     finally:
         if file_id in renaming_operations:
@@ -841,9 +836,17 @@ async def add_metadata(input_path, output_path, user_id, duration=None):
     if not ffmpeg_cmd:
         raise RuntimeError("FFmpeg not found in PATH")
 
-    # Convert duration to string for FFmpeg metadata
-    duration_str = str(int(duration)) if duration is not None and duration > 0 else "0"
+    # Validate and sanitize duration
+    if duration is not None:
+        try:
+            duration_str = str(int(float(duration))) if float(duration) > 0 else "0"
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid duration value: {duration}, defaulting to 0")
+            duration_str = "0"
+    else:
+        duration_str = "0"
 
+    # Build metadata command
     metadata_command = [
         ffmpeg_cmd,
         '-i', input_path,
@@ -855,19 +858,24 @@ async def add_metadata(input_path, output_path, user_id, duration=None):
         '-metadata:s:s', f'title={await codeflixbots.get_subtitle(user_id)}',
         '-metadata', f'encoded_by={await codeflixbots.get_encoded_by(user_id)}',
         '-metadata', f'custom_tag={await codeflixbots.get_custom_tag(user_id)}',
-        '-metadata', f'duration={duration_str}',  # Add duration metadata
+        # Use a custom metadata key instead of 'duration' to avoid potential conflicts
+        '-metadata', f'custom_duration={duration_str}',
         '-map', '0',
         '-c', 'copy',
-        '-loglevel', 'error',
+        '-loglevel', 'info',  # Changed to info for more detailed output
         output_path
     ]
 
+    logger.debug(f"Executing FFmpeg command: {' '.join(metadata_command)}")
     process = await asyncio.create_subprocess_exec(
         *metadata_command,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
-    _, stderr = await process.communicate()
+    stdout, stderr = await process.communicate()
 
     if process.returncode != 0:
+        logger.error(f"FFmpeg error: {stderr.decode()}")
         raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
+    else:
+        logger.debug(f"FFmpeg stdout: {stdout.decode()}")
