@@ -3,16 +3,16 @@ import re
 import time
 import shutil
 import asyncio
-import json
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.enums import ChatAction, ChatMemberStatus
-from pyrogram.errors import UserNotParticipant, MessageIdInvalid
+from pyrogram.errors import UserNotParticipant
+from datetime import datetime, timedelta
 from plugins.antinsfw import check_anti_nsfw
 from helper.utils import progress_for_pyrogram, humanbytes, convert
 from helper.database import codeflixbots
@@ -218,54 +218,6 @@ renaming_operations = {}
 # Thread pool for CPU-intensive operations
 thread_pool = ThreadPoolExecutor(max_workers=4)
 
-async def detect_video_resolution(file_path):
-    """Detect actual video duration using FFmpeg"""
-    ffprobe = shutil.which('ffprobe')
-    if not ffprobe:
-        logger.error("ffprobe not found in PATH")
-        raise RuntimeError("ffprobe not found in PATH")
-
-    cmd = [
-        ffprobe,
-        '-v', 'quiet',
-        '-print_format', 'json',
-        '-show_streams',
-        '-show_format',
-        '-select_streams', 'v:0',
-        file_path
-    ]
-
-    process = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    stdout, stderr = await process.communicate()
-
-    try:
-        info = json.loads(stdout)
-        streams = info.get('streams', [])
-        format_info = info.get('format', {})
-        print(f"DEBUG: ffprobe output - Streams: {streams}, Format: {format_info}")
-
-        if not streams:
-            print(f"DEBUG: No video streams detected in {file_path}")
-            return 0
-
-        video_stream = streams[0]
-        # Extract duration from format info (more reliable) or stream
-        duration = float(format_info.get('duration', 0)) or float(video_stream.get('duration', 0))
-        print(f"DEBUG: Detected duration from ffprobe: {duration} seconds")
-
-        return duration
-
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON decode error in ffprobe output: {e}, Stderr: {stderr.decode()}")
-        return 0
-    except Exception as e:
-        logger.error(f"Resolution detection error: {e}, Stderr: {stderr.decode()}")
-        return 0
-
 def detect_quality(file_name):
     quality_order = {"360p": 0, "480p": 1, "720p": 2, "1080p": 3, "1440p": 4, "2160p": 5, "4k": 6}
     match = re.search(r"(360p|480p|720p|1080p|1440p|2160p|4k)\b", file_name, re.IGNORECASE)
@@ -366,16 +318,26 @@ def extract_season_number(filename):
     ]
     quality_pattern_for_exclusion = r'(?:' + '|'.join([f'(?:[\s._-]*{ind})' for ind in quality_and_year_indicators]) + r')'
 
+
     patterns = [
         re.compile(r'S(\d+)[._-]?E\d+', re.IGNORECASE),
+
         re.compile(r'(?:Season|SEASON|season)[\s._-]*(\d+)', re.IGNORECASE),
+
         re.compile(r'\bS(\d+)\b(?!E\d|' + quality_pattern_for_exclusion + r')', re.IGNORECASE),
+
         re.compile(r'[\[\(]S(\d+)[\]\)]', re.IGNORECASE),
+
         re.compile(r'[._-]S(\d+)(?:[._-]|$)', re.IGNORECASE),
+
         re.compile(r'(?:season|SEASON|Season)[\s._-]*(\d+)', re.IGNORECASE),
+
         re.compile(r'(?:^|[\s._-])(?:season|SEASON|Season)[\s._-]*(\d+)(?:[\s._-]|$)', re.IGNORECASE),
+
         re.compile(r'[\[\(](?:season|SEASON|Season)[\s._-]*(\d+)[\]\)]', re.IGNORECASE),
+
         re.compile(r'(?:season|SEASON|Season)[._\s-]+(\d+)', re.IGNORECASE),
+
         re.compile(r'(?:^season|season$)[\s._-]*(\d+)', re.IGNORECASE),
     ]
 
@@ -423,6 +385,7 @@ def extract_audio_info(filename):
         detected_audio.append("Multi")
     if re.search(r'\bDual(?:audio)?\b', filename, re.IGNORECASE):
         detected_audio.append("Dual")
+
 
     priority_keywords = ['Hindi', 'English', 'Telugu', 'Tamil', 'Eng', 'Sub', 'Eng sub', 'Dub', 'Eng dub', 'Jap']
     for keyword in priority_keywords:
@@ -473,100 +436,15 @@ async def start_sequence(client, message: Message):
         msg = await message.reply_text("Sᴇǫᴜᴇɴᴄᴇ sᴛᴀʀᴛᴇᴅ! Sᴇɴᴅ ʏᴏᴜʀ ғɪʟᴇs ɴᴏᴡ ʙʀᴏ....Fᴀsᴛ")
         message_ids[user_id].append(msg.id)
 
-@Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
-@check_ban
-@check_fsub
-async def auto_rename_files(client, message):
-    """Main handler for auto-renaming files"""
-    user_id = message.from_user.id
-    format_template = await codeflixbots.get_format_template(user_id)
-    media_preference = await codeflixbots.get_media_preference(user_id)
-    
-    # Initialize variables
-    duration = None
-    file_id = None
-    file_name = None
-    file_size = 0
-    media_type = None
 
-    if not format_template:
-        await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
-        return
-    
-    # Identify file properties and initial media type
-    try:
-        if message.document:
-            file_id = message.document.file_id
-            file_name = message.document.file_name
-            file_size = message.document.file_size
-            media_type = "document"
-            print(f"DEBUG: Processing document - File name: {file_name}, Size: {humanbytes(file_size)}")
-        elif message.video:
-            file_id = message.video.file_id
-            file_name = message.video.file_name or "video"
-            file_size = message.video.file_size
-            duration = message.video.duration
-            media_type = "video"
-            print(f"DEBUG: Processing video - File name: {file_name}, Size: {humanbytes(file_size)}, Duration: {duration} seconds")
-        elif message.audio:
-            file_id = message.audio.file_id
-            file_name = message.audio.file_name or "audio"
-            file_size = message.audio.file_size
-            duration = message.audio.duration
-            media_type = "audio"
-            print(f"DEBUG: Processing audio - File name: {file_name}, Size: {humanbytes(file_size)}, Duration: {duration} seconds")
-        else:
-            await message.reply_text("Unsupported file type")
-            return
-    except Exception as e:
-        await message.reply_text(f"Error identifying file: {str(e)}. Please contact the developer.")
-        return
-
-    if not file_name:
-        await message.reply_text("Could not determine file name.")
-        return
-
-    # Ensure duration is valid
-    if duration is not None:
-        try:
-            duration = int(float(duration)) if float(duration) > 0 else 0
-        except (ValueError, TypeError):
-            duration = 0
-            print(f"DEBUG: Invalid duration value, set to {duration} seconds")
-    else:
-        duration = 0
-        print(f"DEBUG: No initial duration, set to {duration} seconds")
-
-    human_readable_duration = convert(duration) if duration > 0 else "0:00"
-    print(f"DEBUG: Human-readable duration: {human_readable_duration}")
-
-    # Apply media preference or guess type
-    if media_preference:
-        media_type = media_preference
-    else:
-        if file_name.lower().endswith((".mp4", ".mkv", ".avi", ".webm")):
-            media_type = "document"
-        elif file_name.lower().endswith((".mp3", ".flac", ".wav", ".ogg")):
-            media_type = "audio"
-        else:
-            media_type = "video"
-
-    # NSFW check
-    if await check_anti_nsfw(file_name, message):
-        await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟᴇ ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
-        return
-
-    # Rate limiting
     if file_id in renaming_operations:
         if (datetime.now() - renaming_operations[file_id]).seconds < 10:
             return
     renaming_operations[file_id] = datetime.now()
-
-    # Store file info for sequence
+            
     file_info = {
         "file_id": file_id,
         "file_name": file_name,
-        "duration": duration,
         "message": message,
         "episode_num": extract_episode_number(file_name)
     }
@@ -577,15 +455,90 @@ async def auto_rename_files(client, message):
         message_ids[user_id].append(reply_msg.id)
         return
 
-    # Extract metadata from filename
+@Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
+@check_ban
+@check_fsub
+async def auto_rename_files(client, message):
+    """Main handler for auto-renaming files"""
+    user_id = message.from_user.id
+    format_template = await codeflixbots.get_format_template(user_id)
+    media_preference = await codeflixbots.get_media_preference(user_id)
+    
+    # Initialize duration to None
+    duration = None
+
+    if not format_template:
+        await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
+        return
+    
+    # Correctly identify file properties and initial media type
+    if message.document:
+        file_id = message.document.file_id
+        file_name = message.document.file_name
+        file_size = message.document.file_size
+        media_type = "document"
+    elif message.video:
+        file_id = message.video.file_id
+        file_name = message.video.file_name or "video"
+        file_size = message.video.file_size
+        duration = message.video.duration # <--- FIX 1: Get duration from video
+        media_type = "video"
+    elif message.audio:
+        file_id = message.audio.file_id
+        file_name = message.audio.file_name or "audio"
+        file_size = message.audio.file_size
+        duration = message.audio.duration # <--- FIX 2: Get duration from audio
+        media_type = "audio"
+    else:
+        return await message.reply_text("Unsupported file type")
+        
+    if not file_name:
+        await message.reply_text("Could not determine file name.")
+        return
+
+    human_readable_duration = convert(duration) if duration is not None else "N/A"
+
+    if media_preference:
+        media_type = media_preference
+    else:
+        # Fallback to intelligent guessing if no preference is set
+        if file_name.endswith((".mp4", ".mkv", ".avi", ".webm")):
+            media_type = "document"
+        elif file_name.endswith((".mp3", ".flac", ".wav", ".ogg")):
+            media_type = "audio"
+        else:
+            media_type = "video"
+
+    if await check_anti_nsfw(file_name, message):
+        await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
+        return
+
+    if file_id in renaming_operations:
+        if (datetime.now() - renaming_operations[file_id]).seconds < 10:
+            return
+    renaming_operations[file_id] = datetime.now()
+            
+    file_info = {
+        "file_id": file_id,
+        "file_name": file_name,
+        "duration" : duration,
+        "message": message,
+        "episode_num": extract_episode_number(file_name)
+    }
+
+    if user_id in active_sequences:
+        active_sequences[user_id].append(file_info)
+        reply_msg = await message.reply_text("Wᴇᴡ...ғɪʟᴇs ʀᴇᴄᴇɪᴠᴇᴅ ɴᴏᴡ ᴜsᴇ /end_sequence ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs...!!")
+        message_ids[user_id].append(reply_msg.id)
+        return
+
     episode_number = extract_episode_number(file_name)
     season_number = extract_season_number(file_name)
     audio_info_extracted = extract_audio_info(file_name)
     quality_extracted = extract_quality(file_name)
 
-    print(f"DEBUG: Extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
+    print(f"DEBUG: Final extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
 
-    # Format template
     season_value_formatted = str(season_number).zfill(2) if season_number is not None else "01"
     episode_value_formatted = str(episode_number).zfill(2) if episode_number is not None else "01"
 
@@ -595,9 +548,11 @@ async def auto_rename_files(client, message):
         (re.compile(r'\{season\}', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\{Season\}', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\{SEASON\}', re.IGNORECASE), season_value_formatted),
+
         (re.compile(r'\bseason\b', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\bSeason\b', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\bSEASON\b', re.IGNORECASE), season_value_formatted),
+
         (re.compile(r'Season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
         (re.compile(r'season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
         (re.compile(r'SEASON[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
@@ -640,6 +595,10 @@ async def auto_rename_files(client, message):
     template = re.sub(r'\{\s*\}', '', template)
 
     _, file_extension = os.path.splitext(file_name)
+
+    print(f"Cleaned template: '{template}'")
+    print(f"File extension: '{file_extension}'")
+
     if not file_extension.startswith('.'):
         file_extension = '.' + file_extension if file_extension else ''
 
@@ -652,11 +611,10 @@ async def auto_rename_files(client, message):
     makedirs(os.path.dirname(metadata_path), exist_ok=True)
     makedirs(os.path.dirname(output_path), exist_ok=True)
 
+
     msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-    ph_path = None
 
     try:
-        # Download file
         file_path = await client.download_media(
             message,
             file_name=download_path,
@@ -664,42 +622,11 @@ async def auto_rename_files(client, message):
             progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         )
 
-        # Update duration if video or audio
-        if media_type in ["video", "audio"]:
-            detected_duration = await detect_video_resolution(file_path)
-            if detected_duration > 0:
-                duration = detected_duration
-                print(f"DEBUG: Updated duration from ffprobe: {duration} seconds")
-            else:
-                print(f"DEBUG: ffprobe detected duration as 0, attempting re-encode")
-                reencoded_path = f"reencoded/{new_file_name}"
-                makedirs(os.path.dirname(reencoded_path), exist_ok=True)
-                reencoded_path = await reencode_file(file_path, reencoded_path)
-                os.remove(file_path)
-                file_path = reencoded_path
-                duration = await detect_video_resolution(file_path)
-                if duration > 0:
-                    print(f"DEBUG: Re-encoded duration: {duration} seconds")
-                else:
-                    print(f"DEBUG: Re-encode failed to fix duration, keeping 0")
-
-        # Add metadata
-        try:
-            await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
-        except MessageIdInvalid:
-            msg = await message.reply_text("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
-            print(f"DEBUG: Message ID invalid, sent new message with ID: {msg.id}")
-
-        await add_metadata(file_path, metadata_path, user_id, duration=duration)
+        await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+        await add_metadata(file_path, metadata_path, user_id)
         file_path = metadata_path
 
-        # Upload file
-        try:
-            await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-        except MessageIdInvalid:
-            msg = await message.reply_text("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-            print(f"DEBUG: Message ID invalid, sent new message with ID: {msg.id}")
-
+        await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
         await codeflixbots.col.update_one(
             {"_id": user_id},
             {
@@ -713,13 +640,21 @@ async def auto_rename_files(client, message):
         )
 
         c_caption = await codeflixbots.get_caption(message.chat.id)
-        caption = c_caption.format(
-            filename=new_file_name,
-            filesize=humanbytes(file_size),
-            duration=convert(duration) if duration > 0 else "0:00"
-        ) if c_caption else f"**{new_file_name}** (Duration: {convert(duration) if duration > 0 else '0:00'})"
-
+        
+        # FIX 3: Add a check for duration before using it.
+        # It's good practice to make the caption flexible.
+        if c_caption:
+            caption = c_caption.format(
+                filename=new_file_name,
+                filesize=humanbytes(file_size),
+                duration=convert(duration) if duration is not None else "N/A"
+            )
+        else:
+            caption = f"**{new_file_name}**"
+            
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
+
+        ph_path = None
         if c_thumb:
             ph_path = await client.download_media(c_thumb)
         elif media_type == "video" and getattr(message.video, "thumbs", None):
@@ -733,12 +668,11 @@ async def auto_rename_files(client, message):
             'progress': progress_for_pyrogram,
             'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         }
-
-        if duration is not None and duration > 0:
+        
+        # FIX 4: Add duration to upload_params if it exists for video/audio.
+        if duration is not None:
             upload_params['duration'] = duration
-            print(f"DEBUG: Added duration to upload_params: {duration} seconds")
-        else:
-            print(f"DEBUG: Duration not added (0), using default")
+
 
         if media_type == "document":
             await client.send_document(document=file_path, **upload_params)
@@ -747,21 +681,17 @@ async def auto_rename_files(client, message):
         elif media_type == "audio":
             await client.send_audio(audio=file_path, **upload_params)
 
+        await msg.delete()
+
     except Exception as e:
-        try:
-            await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
-        except MessageIdInvalid:
-            await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
-        logger.error(f"Renaming error for user {user_id}: {str(e)}")
+        await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
         raise
     finally:
         if file_id in renaming_operations:
             del renaming_operations[file_id]
 
         cleanup_files = [download_path, metadata_path, output_path]
-        if 'reencoded_path' in locals() and os.path.exists(reencoded_path):
-            cleanup_files.append(reencoded_path)
-        if ph_path and os.path.exists(ph_path):
+        if ph_path:
             cleanup_files.append(ph_path)
 
         for file_path in cleanup_files:
@@ -769,7 +699,8 @@ async def auto_rename_files(client, message):
                 try:
                     os.remove(file_path)
                 except Exception as cleanup_e:
-                    logger.error(f"Error during file cleanup for {file_path}: {cleanup_e}")
+                    print(f"Error during file cleanup for {file_path}: {cleanup_e}")
+                    pass
 
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
@@ -831,22 +762,11 @@ async def process_thumb_async(ph_path):
 
     return await asyncio.to_thread(_resize_thumb, ph_path)
 
-async def add_metadata(input_path, output_path, user_id, duration=None):
+async def add_metadata(input_path, output_path, user_id):
     ffmpeg_cmd = shutil.which('ffmpeg')
     if not ffmpeg_cmd:
         raise RuntimeError("FFmpeg not found in PATH")
 
-    # Validate and sanitize duration
-    if duration is not None:
-        try:
-            duration_str = str(int(float(duration))) if float(duration) > 0 else "0"
-        except (ValueError, TypeError):
-            logger.warning(f"Invalid duration value: {duration}, defaulting to 0")
-            duration_str = "0"
-    else:
-        duration_str = "0"
-
-    # Build metadata command
     metadata_command = [
         ffmpeg_cmd,
         '-i', input_path,
@@ -858,24 +778,18 @@ async def add_metadata(input_path, output_path, user_id, duration=None):
         '-metadata:s:s', f'title={await codeflixbots.get_subtitle(user_id)}',
         '-metadata', f'encoded_by={await codeflixbots.get_encoded_by(user_id)}',
         '-metadata', f'custom_tag={await codeflixbots.get_custom_tag(user_id)}',
-        # Use a custom metadata key instead of 'duration' to avoid potential conflicts
-        '-metadata', f'custom_duration={duration_str}',
         '-map', '0',
         '-c', 'copy',
-        '-loglevel', 'info',  # Changed to info for more detailed output
+        '-loglevel', 'error',
         output_path
     ]
 
-    logger.debug(f"Executing FFmpeg command: {' '.join(metadata_command)}")
     process = await asyncio.create_subprocess_exec(
         *metadata_command,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
-    stdout, stderr = await process.communicate()
+    _, stderr = await process.communicate()
 
     if process.returncode != 0:
-        logger.error(f"FFmpeg error: {stderr.decode()}")
         raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
-    else:
-        logger.debug(f"FFmpeg stdout: {stdout.decode()}")
