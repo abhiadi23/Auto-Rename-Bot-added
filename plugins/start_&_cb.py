@@ -293,7 +293,7 @@ async def cb_handler(client, query: CallbackQuery):
 
     elif data == "meta":
         await query.message.edit_text(
-            text=Txt.SEND_METADATA,
+            text=Txt.META_TXT,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
