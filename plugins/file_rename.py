@@ -752,7 +752,7 @@ async def auto_rename_files(client, message):
                 duration=convert(duration) if duration > 0 else "0:00"
             )
         else:
-            caption = f"**{new_file_name}** (Duration: {convert(duration) if duration > 0 else '0:00'})"
+            caption = f"**{new_file_name}**"
             
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
