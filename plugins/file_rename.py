@@ -218,6 +218,54 @@ renaming_operations = {}
 # Thread pool for CPU-intensive operations
 thread_pool = ThreadPoolExecutor(max_workers=4)
 
+async def detect_video_resolution(file_path):
+    """Detect actual video duration using FFmpeg"""
+    ffprobe = shutil.which('ffprobe')
+    if not ffprobe:
+        logger.error("ffprobe not found in PATH")
+        raise RuntimeError("ffprobe not found in PATH")
+
+    cmd = [
+        ffprobe,
+        '-v', 'quiet',
+        '-print_format', 'json',
+        '-show_streams',
+        '-show_format',
+        '-select_streams', 'v:0',
+        file_path
+    ]
+
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    stdout, stderr = await process.communicate()
+
+    try:
+        info = json.loads(stdout)
+        streams = info.get('streams', [])
+        format_info = info.get('format', {})
+        print(f"DEBUG: ffprobe output - Streams: {streams}, Format: {format_info}")
+
+        if not streams:
+            print(f"DEBUG: No video streams detected in {file_path}")
+            return 0
+
+        video_stream = streams[0]
+        # Extract duration from format info (more reliable) or stream
+        duration = float(format_info.get('duration', 0)) or float(video_stream.get('duration', 0))
+        print(f"DEBUG: Detected duration from ffprobe: {duration} seconds")
+
+        return duration
+
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in ffprobe output: {e}, Stderr: {stderr.decode()}")
+        return 0
+    except Exception as e:
+        logger.error(f"Resolution detection error: {e}, Stderr: {stderr.decode()}")
+        return 0
+
 def detect_quality(file_name):
     quality_order = {"360p": 0, "480p": 1, "720p": 2, "1080p": 3, "1440p": 4, "2160p": 5, "4k": 6}
     match = re.search(r"(360p|480p|720p|1080p|1440p|2160p|4k)\b", file_name, re.IGNORECASE)
