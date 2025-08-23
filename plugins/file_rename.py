@@ -455,6 +455,47 @@ async def start_sequence(client, message: Message):
         message_ids[user_id].append(reply_msg.id)
         return
 
+async def detect_video_resolution(file_path):
+    """Detect actual video duration using FFmpeg"""
+    ffprobe = shutil.which('ffprobe')
+    if not ffprobe:
+        raise RuntimeError("ffprobe not found in PATH")
+
+    cmd = [
+        ffprobe,
+        '-v', 'quiet',
+        '-print_format', 'json',
+        '-show_streams',
+        '-show_format',
+        '-select_streams', 'v:0',
+        file_path
+    ]
+
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    stdout, stderr = await process.communicate()
+
+    try:
+        info = json.loads(stdout)
+        streams = info.get('streams', [])
+        format_info = info.get('format', {})
+
+        if not streams:
+            return 0
+
+        video_stream = streams[0]
+        # Extract duration from format info (more reliable than stream duration)
+        duration = float(format_info.get('duration', 0)) or float(video_stream.get('duration', 0))
+
+        return duration
+
+    except Exception as e:
+        logger.error(f"Resolution detection error: {e}")
+        return 0
+
 @Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
 @check_ban
 @check_fsub
@@ -477,18 +518,21 @@ async def auto_rename_files(client, message):
         file_name = message.document.file_name
         file_size = message.document.file_size
         media_type = "document"
+        print(f"DEBUG: Document - Duration not available initially, setting to None")
     elif message.video:
         file_id = message.video.file_id
         file_name = message.video.file_name or "video"
         file_size = message.video.file_size
-        duration = message.video.duration  # Extract duration from video
+        duration = message.video.duration  # Initial duration from Telegram
         media_type = "video"
+        print(f"DEBUG: Video - Initial duration from Telegram: {duration} seconds")
     elif message.audio:
         file_id = message.audio.file_id
         file_name = message.audio.file_name or "audio"
         file_size = message.audio.file_size
-        duration = message.audio.duration  # Extract duration from audio
+        duration = message.audio.duration  # Initial duration from Telegram
         media_type = "audio"
+        print(f"DEBUG: Audio - Initial duration from Telegram: {duration} seconds")
     else:
         return await message.reply_text("Unsupported file type")
         
@@ -496,7 +540,13 @@ async def auto_rename_files(client, message):
         await message.reply_text("Could not determine file name.")
         return
 
-    human_readable_duration = convert(duration) if duration is not None else "N/A"
+    # Ensure duration is always set, defaulting to 0 if not detected
+    if duration is None or duration <= 0:
+        duration = 0
+        print(f"DEBUG: Duration invalid or None, set to {duration} seconds")
+
+    human_readable_duration = convert(duration) if duration > 0 else "0:00"
+    print(f"DEBUG: Human-readable duration: {human_readable_duration}")
 
     if media_preference:
         media_type = media_preference
@@ -619,6 +669,15 @@ async def auto_rename_files(client, message):
             progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         )
 
+        # Detect accurate duration after download for video/audio
+        if media_type in ["video", "audio"]:
+            detected_duration = await detect_video_resolution(file_path)
+            if detected_duration > 0:
+                duration = detected_duration
+                print(f"DEBUG: Updated duration from ffprobe: {duration} seconds")
+            else:
+                print(f"DEBUG: ffprobe detected duration as 0, keeping original: {duration} seconds")
+
         await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
         await add_metadata(file_path, metadata_path, user_id)
         file_path = metadata_path
@@ -638,15 +697,15 @@ async def auto_rename_files(client, message):
 
         c_caption = await codeflixbots.get_caption(message.chat.id)
         
-        # Ensure duration is used if available
+        # Ensure duration is always included, defaulting to "0:00" if invalid
         if c_caption:
             caption = c_caption.format(
                 filename=new_file_name,
                 filesize=humanbytes(file_size),
-                duration=convert(duration) if duration is not None else "N/A"
+                duration=human_readable_duration  # Always use human-readable duration
             )
         else:
-            caption = f"**{new_file_name}**"
+            caption = f"**{new_file_name}** (Duration: {human_readable_duration})"
             
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
@@ -658,16 +717,19 @@ async def auto_rename_files(client, message):
                 ph_path = await client.download_media(message.video.thumbs[0].file_id)
 
         upload_params = {
-            'chat_id': message.chat.id,  # Corrected from message.chat_id to message.chat.id
+            'chat_id': message.chat.id,
             'caption': caption,
             'thumb': ph_path,
             'progress': progress_for_pyrogram,
             'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         }
         
-        # Explicitly add duration to upload_params if it exists
-        if duration is not None:
+        # Explicitly add duration to upload_params if it exists and is valid
+        if duration is not None and duration > 0:
             upload_params['duration'] = duration
+            print(f"DEBUG: Added duration to upload_params: {duration} seconds")
+        else:
+            print(f"DEBUG: Duration not added (None or 0), using default")
 
         # Upload the file with the correct media type and duration
         try:
