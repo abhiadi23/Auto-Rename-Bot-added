@@ -12,7 +12,7 @@ from PIL import Image
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.enums import ChatAction, ChatMemberStatus
-from pyrogram.errors import UserNotParticipant
+from pyrogram.errors import UserNotParticipant, MessageIdInvalid
 from datetime import datetime, timedelta
 from plugins.antinsfw import check_anti_nsfw
 from helper.utils import progress_for_pyrogram, humanbytes, convert
@@ -725,11 +725,23 @@ async def auto_rename_files(client, message):
                 else:
                     print(f"DEBUG: Re-encode failed to fix duration, keeping 0")
 
-        await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+        # Handle message edit with error catching
+        try:
+            await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+        except MessageIdInvalid:
+            msg = await message.reply_text("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+            print(f"DEBUG: Message ID invalid, sent new message with ID: {msg.id}")
+
         await add_metadata(file_path, metadata_path, user_id)
         file_path = metadata_path
 
-        await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+        # Handle message edit with error catching
+        try:
+            await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+        except MessageIdInvalid:
+            msg = await message.reply_text("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+            print(f"DEBUG: Message ID invalid, sent new message with ID: {msg.id}")
+
         await codeflixbots.col.update_one(
             {"_id": user_id},
             {
@@ -786,13 +798,22 @@ async def auto_rename_files(client, message):
             elif media_type == "audio":
                 await client.send_audio(audio=file_path, **upload_params)
         except Exception as e:
-            await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ᴜᴘʟᴏᴀᴅ: {str(e)}")
+            try:
+                await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ᴜᴘʟᴏᴀᴅ: {str(e)}")
+            except MessageIdInvalid:
+                await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ᴜᴘʟᴏᴀᴅ: {str(e)}")
             raise
         finally:
-            await msg.delete()
+            try:
+                await msg.delete()
+            except MessageIdInvalid:
+                print(f"DEBUG: Could not delete message, ID invalid")
 
     except Exception as e:
-        await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
+        try:
+            await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
+        except MessageIdInvalid:
+            await message.reply_text(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
         raise
     finally:
         if file_id in renaming_operations:
