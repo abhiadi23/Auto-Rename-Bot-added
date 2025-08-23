@@ -678,7 +678,7 @@ async def auto_rename_files(client, message):
                 duration=human_readable_duration
             )
         else:
-            caption = f"**{new_file_name}**\nDuration: {human_readable_duration}"
+            caption = f"**{new_file_name}**"
             
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
