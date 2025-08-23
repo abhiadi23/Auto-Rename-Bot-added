@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import time
 import shutil
 import asyncio
@@ -222,6 +223,38 @@ def detect_quality(file_name):
     quality_order = {"360p": 0, "480p": 1, "720p": 2, "1080p": 3, "1440p": 4, "2160p": 5, "4k": 6}
     match = re.search(r"(360p|480p|720p|1080p|1440p|2160p|4k)\b", file_name, re.IGNORECASE)
     return quality_order.get(match.group(1).lower(), 7) if match else 7
+
+# --- Duration Detection Function (from the first bot) ---
+async def detect_duration(file_path):
+    """Detect the duration of a video or audio file using ffprobe."""
+    ffprobe = shutil.which('ffprobe')
+    if not ffprobe:
+        logger.error("ffprobe not found in PATH")
+        raise RuntimeError("ffprobe not found in PATH")
+
+    cmd = [
+        ffprobe,
+        '-v', 'quiet',
+        '-print_format', 'json',
+        '-show_format',
+        file_path
+    ]
+
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    stdout, stderr = await process.communicate()
+
+    try:
+        info = json.loads(stdout)
+        format_info = info.get('format', {})
+        duration = float(format_info.get('duration', 0))
+        return duration
+    except Exception as e:
+        logger.error(f"Duration detection error: {e}")
+        return 0
 
 # --- REVISED extract_episode_number ---
 def extract_episode_number(filename):
@@ -464,9 +497,6 @@ async def auto_rename_files(client, message):
     format_template = await codeflixbots.get_format_template(user_id)
     media_preference = await codeflixbots.get_media_preference(user_id)
     
-    # Initialize duration to None
-    duration = None
-
     if not format_template:
         await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
         return
@@ -481,13 +511,11 @@ async def auto_rename_files(client, message):
         file_id = message.video.file_id
         file_name = message.video.file_name or "video"
         file_size = message.video.file_size
-        duration = message.video.duration # <--- FIX 1: Get duration from video
         media_type = "video"
     elif message.audio:
         file_id = message.audio.file_id
         file_name = message.audio.file_name or "audio"
         file_size = message.audio.file_size
-        duration = message.audio.duration # <--- FIX 2: Get duration from audio
         media_type = "audio"
     else:
         return await message.reply_text("Unsupported file type")
@@ -495,8 +523,6 @@ async def auto_rename_files(client, message):
     if not file_name:
         await message.reply_text("Could not determine file name.")
         return
-
-    human_readable_duration = convert(duration) if duration is not None else "N/A"
 
     if media_preference:
         media_type = media_preference
@@ -510,7 +536,7 @@ async def auto_rename_files(client, message):
             media_type = "video"
 
     if await check_anti_nsfw(file_name, message):
-        await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟe ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
+        await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟᴇ ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
         return
 
     if file_id in renaming_operations:
@@ -521,7 +547,6 @@ async def auto_rename_files(client, message):
     file_info = {
         "file_id": file_id,
         "file_name": file_name,
-        "duration" : duration,
         "message": message,
         "episode_num": extract_episode_number(file_name)
     }
@@ -548,11 +573,9 @@ async def auto_rename_files(client, message):
         (re.compile(r'\{season\}', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\{Season\}', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\{SEASON\}', re.IGNORECASE), season_value_formatted),
-
         (re.compile(r'\bseason\b', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\bSeason\b', re.IGNORECASE), season_value_formatted),
         (re.compile(r'\bSEASON\b', re.IGNORECASE), season_value_formatted),
-
         (re.compile(r'Season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
         (re.compile(r'season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
         (re.compile(r'SEASON[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
@@ -611,7 +634,6 @@ async def auto_rename_files(client, message):
     makedirs(os.path.dirname(metadata_path), exist_ok=True)
     makedirs(os.path.dirname(output_path), exist_ok=True)
 
-
     msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
 
     try:
@@ -621,6 +643,14 @@ async def auto_rename_files(client, message):
             progress=progress_for_pyrogram,
             progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         )
+
+        # Detect duration for video or audio files
+        if media_type in ["video", "audio"] or file_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".mp3", ".flac", ".wav", ".ogg")):
+            duration = await detect_duration(file_path)
+        else:
+            duration = 0
+
+        human_readable_duration = convert(duration) if duration > 0 else "N/A"
 
         await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
         await add_metadata(file_path, metadata_path, user_id)
@@ -641,16 +671,14 @@ async def auto_rename_files(client, message):
 
         c_caption = await codeflixbots.get_caption(message.chat.id)
         
-        # FIX 3: Add a check for duration before using it.
-        # It's good practice to make the caption flexible.
         if c_caption:
             caption = c_caption.format(
                 filename=new_file_name,
                 filesize=humanbytes(file_size),
-                duration=convert(duration) if duration is not None else "N/A"
+                duration=human_readable_duration
             )
         else:
-            caption = f"**{new_file_name}**"
+            caption = f"**{new_file_name}**\nDuration: {human_readable_duration}"
             
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
@@ -669,10 +697,8 @@ async def auto_rename_files(client, message):
             'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         }
         
-        # FIX 4: Add duration to upload_params if it exists for video/audio.
-        if duration is not None:
-            upload_params['duration'] = duration
-
+        if duration > 0:
+            upload_params['duration'] = int(duration)
 
         if media_type == "document":
             await client.send_document(document=file_path, **upload_params)
@@ -699,7 +725,7 @@ async def auto_rename_files(client, message):
                 try:
                     os.remove(file_path)
                 except Exception as cleanup_e:
-                    print(f"Error during file cleanup for {file_path}: {cleanup_e}")
+                    logger.error(f"Error during file cleanup for {file_path}: {cleanup_e}")
                     pass
 
 @Client.on_message(filters.command("end_sequence") & filters.private)
