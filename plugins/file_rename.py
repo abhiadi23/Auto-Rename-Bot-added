@@ -3,6 +3,7 @@ import re
 import time
 import shutil
 import asyncio
+import json
 import logging
 import uuid
 from datetime import datetime
@@ -695,6 +696,7 @@ async def auto_rename_files(client, message):
     makedirs(os.path.dirname(output_path), exist_ok=True)
 
     msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+    ph_path = None  # Initialize ph_path to avoid reference error
 
     try:
         file_path = await client.download_media(
@@ -750,11 +752,10 @@ async def auto_rename_files(client, message):
                 duration=convert(duration) if duration > 0 else "0:00"
             )
         else:
-            caption = f"**{new_file_name}**"
+            caption = f"**{new_file_name}** (Duration: {convert(duration) if duration > 0 else '0:00'})"
             
         c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
-        ph_path = None
         if c_thumb:
             ph_path = await client.download_media(c_thumb)
         elif media_type == "video" and getattr(message.video, "thumbs", None):
@@ -798,10 +799,10 @@ async def auto_rename_files(client, message):
             del renaming_operations[file_id]
 
         cleanup_files = [download_path, metadata_path, output_path]
-        if ph_path:
-            cleanup_files.append(ph_path)
         if 'reencoded_path' in locals() and os.path.exists(reencoded_path):
             cleanup_files.append(reencoded_path)
+        if ph_path and os.path.exists(ph_path):
+            cleanup_files.append(ph_path)
 
         for file_path in cleanup_files:
             if file_path and os.path.exists(file_path):
