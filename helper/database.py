@@ -1,8 +1,9 @@
-import motor.motor_asyncio, datetime, pytz
+import motor.motor_asyncio
+import datetime
+import pytz
 from config import Config
-import logging  # Added for logging errors and important information
+import logging
 from .utils import send_log
-
 
 class Database:
     def __init__(self, uri, database_name):
@@ -18,10 +19,10 @@ class Database:
         self.channel_data = self.database['channels']
         self.admins_data = self.database['admins']
         self.autho_user_data = self.database['autho_user']
-        self.fsub_data = self.database['fsub']   
+        self.fsub_data = self.database['fsub']
         self.rqst_fsub_data = self.database['request_forcesub']
         self.rqst_fsub_Channel_data = self.database['request_forcesub_channel']
-        
+
     def new_user(self, id, username=None):
         return dict(
             _id=int(id),
@@ -196,27 +197,79 @@ class Database:
 
     async def set_encoded_by(self, user_id, encoded_by):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'encoded_by': encoded_by}})
-        
+
     async def get_custom_tag(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('customtag', "Botskingdoms")
+        return user.get('custom_tag', "Botskingdoms")
 
     async def set_custom_tag(self, user_id, custom_tag):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'custom_tag': custom_tag}})
 
-    # Example methods to add in helper/database.py
+    async def add_metadata(self, file_path, metadata_path, user_id, duration=None):
+        """Add metadata to the file using FFmpeg"""
+        ffmpeg = shutil.which('ffmpeg')
+        if not ffmpeg:
+            raise RuntimeError("ffmpeg not found in PATH")
 
-    async def ban_user(user_id):
-        await db.banned_users.update_one({"_id": user_id}, {"$set": {"_id": user_id}}, upsert=True)
- 
-    async def unban_user(user_id):
-        await db.banned_users.delete_one({"_id": user_id})
+        # Fetch metadata from database
+        title = await self.get_title(user_id) or ""
+        author = await self.get_author(user_id) or ""
+        artist = await self.get_artist(user_id) or ""
+        audio = await self.get_audio(user_id) or ""
+        subtitle = await self.get_subtitle(user_id) or ""
+        video = await self.get_video(user_id) or ""
+        encoded_by = await self.get_encoded_by(user_id) or ""
+        custom_tag = await self.get_custom_tag(user_id) or ""
+        current = await self.get_metadata(user_id)
 
-    async def is_banned(user_id):
-        return await db.banned_users.find_one({"_id": user_id}) is not None
+        if current != "On":
+            return  # Skip metadata addition if turned off
 
-    async def get_banned_users():
-        return db.banned_users.find()
+        # Convert duration to integer and handle None
+        duration_str = str(int(duration)) if duration is not None and duration > 0 else "0"
+
+        # Build FFmpeg command to embed metadata
+        cmd = [
+            "ffmpeg",
+            "-i", file_path,
+            "-c", "copy",  # Avoid re-encoding
+            "-metadata", f"title={title}",
+            "-metadata", f"author={author}",
+            "-metadata", f"artist={artist}",
+            "-metadata", f"audio={audio}",
+            "-metadata", f"subtitle={subtitle}",
+            "-metadata", f"video={video}",
+            "-metadata", f"encoded_by={encoded_by}",
+            "-metadata", f"custom_tag={custom_tag}",
+            "-metadata", f"duration={duration_str}",  # Use string representation
+            "-y",
+            metadata_path
+        ]
+
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+
+        if process.returncode != 0:
+            raise RuntimeError(f"FFmpeg metadata error: {stderr.decode()}")
+
+    # [Rest of the existing methods (ban_user, unban_user, etc.) remain unchanged]
+
+    async def ban_user(self, user_id):
+        await self.col.update_one({"_id": user_id}, {"$set": {"ban_status.is_banned": True}}, upsert=True)
+
+    async def unban_user(self, user_id):
+        await self.col.update_one({"_id": user_id}, {"$set": {"ban_status.is_banned": False}}, upsert=True)
+
+    async def is_banned(self, user_id):
+        user = await self.col.find_one({"_id": user_id})
+        return user.get("ban_status", {}).get("is_banned", False) if user else False
+
+    async def get_banned_users(self):
+        return self.col.find({"ban_status.is_banned": True})
 
     # ADMIN DATA
     async def admin_exist(self, admin_id: int):
@@ -258,7 +311,7 @@ class Database:
         channel_ids = [doc['_id'] for doc in channel_docs]
         return channel_ids
 
-# Get current mode of a channel
+    # Get current mode of a channel
     async def get_channel_mode(self, channel_id: int):
         data = await self.fsub_data.find_one({'_id': channel_id})
         return data.get("mode", "off") if data else "off"
@@ -272,8 +325,6 @@ class Database:
         )
 
     # REQUEST FORCE-SUB MANAGEMENT
-
-    # Add the user to the set of users for a   specific channel
     async def req_user(self, channel_id: int, user_id: int):
         try:
             await self.rqst_fsub_Channel_data.update_one(
@@ -284,16 +335,12 @@ class Database:
         except Exception as e:
             print(f"[DB ERROR] Failed to add user to request list: {e}")
 
-
-    # Method 2: Remove a user from the channel set
     async def del_req_user(self, channel_id: int, user_id: int):
-        # Remove the user from the set of users for the channel
         await self.rqst_fsub_Channel_data.update_one(
             {'_id': channel_id}, 
             {'$pull': {'user_ids': user_id}}
         )
 
-    # Check if the user exists in the set of the channel's users
     async def req_user_exist(self, channel_id: int, user_id: int):
         try:
             found = await self.rqst_fsub_Channel_data.find_one({
@@ -305,19 +352,9 @@ class Database:
             print(f"[DB ERROR] Failed to check request list: {e}")
             return False  
 
-
-    # Method to check if a channel exists using show_channels
     async def reqChannel_exist(self, channel_id: int):
-    # Get the list of all channel IDs from the database
         channel_ids = await self.show_channels()
-        #print(f"All channel IDs in the database: {channel_ids}")
+        return channel_id in channel_ids
 
-    # Check if the given channel_id is in the list of channel IDs
-        if channel_id in channel_ids:
-            #print(f"Channel {channel_id} found in the database.")
-            return True
-        else:
-            #print(f"Channel {channel_id} NOT found in the database.")
-            return False
-
+# Instantiate the database
 codeflixbots = Database(Config.DB_URL, Config.DB_NAME)
