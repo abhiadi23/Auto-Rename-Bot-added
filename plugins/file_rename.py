@@ -644,74 +644,74 @@ async def auto_rename_files(client, message):
             progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         )
 
-    # Detect duration for video or audio files
-    duration = 0
-    if media_type in ["video", "audio"] or file_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".mp3", ".flac", ".wav", ".ogg")):
-        try:
-            duration = await detect_duration(file_path)
-        except Exception as e:
-            logger.error(f"Failed to detect duration: {e}")
-            duration = 0
+        # Detect duration for video or audio files
+        duration = 0
+        if media_type in ["video", "audio"] or file_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".mp3", ".flac", ".wav", ".ogg")):
+            try:
+                duration = await detect_duration(file_path)
+            except Exception as e:
+                logger.error(f"Failed to detect duration: {e}")
+                duration = 0
 
-    human_readable_duration = convert(duration) if duration > 0 else "N/A"
+        human_readable_duration = convert(duration) if duration > 0 else "N/A"
 
-    await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
-    await add_metadata(file_path, metadata_path, user_id)
-    file_path = metadata_path
+        await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+        await add_metadata(file_path, metadata_path, user_id)
+        file_path = metadata_path
 
-    await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-    await codeflixbots.col.update_one(
-        {"_id": user_id},
-        {
-            "$inc": {"rename_count": 1},
-            "$set": {
-                "first_name": message.from_user.first_name,
-                "username": message.from_user.username,
-                "last_activity_timestamp": datetime.now()
+        await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+        await codeflixbots.col.update_one(
+            {"_id": user_id},
+            {
+                "$inc": {"rename_count": 1},
+                "$set": {
+                    "first_name": message.from_user.first_name,
+                    "username": message.from_user.username,
+                    "last_activity_timestamp": datetime.now()
+                }
             }
-        }
-    )
-
-    c_caption = await codeflixbots.get_caption(message.chat.id)
-    
-    if c_caption:
-        caption = c_caption.format(
-            filename=new_file_name,
-            filesize=humanbytes(file_size),
-            duration=human_readable_duration
         )
-    else:
-        caption = f"**{new_file_name}**"
+
+        c_caption = await codeflixbots.get_caption(message.chat.id)
         
-    c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
+        if c_caption:
+            caption = c_caption.format(
+                filename=new_file_name,
+                filesize=humanbytes(file_size),
+                duration=human_readable_duration
+            )
+        else:
+            caption = f"**{new_file_name}**"
+            
+        c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
-    ph_path = None
-    if c_thumb:
-        ph_path = await client.download_media(c_thumb)
-    elif media_type == "video" and getattr(message.video, "thumbs", None):
-        if message.video.thumbs:
-            ph_path = await client.download_media(message.video.thumbs[0].file_id)
+        ph_path = None
+        if c_thumb:
+            ph_path = await client.download_media(c_thumb)
+        elif media_type == "video" and getattr(message.video, "thumbs", None):
+            if message.video.thumbs:
+                ph_path = await client.download_media(message.video.thumbs[0].file_id)
 
-    # Define common upload parameters
-    common_upload_params = {
-        'chat_id': message.chat.id,
-        'caption': caption,
-        'thumb': ph_path,
-        'progress': progress_for_pyrogram,
-        'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
-    }
+        # Define common upload parameters
+        common_upload_params = {
+            'chat_id': message.chat.id,
+            'caption': caption,
+            'thumb': ph_path,
+            'progress': progress_for_pyrogram,
+            'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
+        }
 
-    if media_type == "document":
-        await client.send_document(document=file_path, **common_upload_params)
-    elif media_type == "video":
-        if duration > 0:
-            common_upload_params['duration'] = int(duration)
-        await client.send_video(video=file_path, **common_upload_params)
-    elif media_type == "audio":
-        if duration > 0:
-            common_upload_params['duration'] = int(duration)
-        await client.send_audio(audio=file_path, **common_upload_params)
-        
+        if media_type == "document":
+            await client.send_document(document=file_path, **common_upload_params)
+        elif media_type == "video":
+            if duration > 0:
+                common_upload_params['duration'] = int(duration)
+            await client.send_video(video=file_path, **common_upload_params)
+        elif media_type == "audio":
+            if duration > 0:
+                common_upload_params['duration'] = int(duration)
+            await client.send_audio(audio=file_path, **common_upload_params)
+            
         await msg.delete()
 
     except Exception as e:
