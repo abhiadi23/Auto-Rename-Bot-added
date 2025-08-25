@@ -39,7 +39,7 @@ async def metadata(client, message):
             InlineKeyboardButton(f"Off{' ✅' if current == 'Off' else ''}", callback_data='off_metadata')
         ],
         [
-            InlineKeyboardButton("How to Set Metadata", callback_data="metainfo")
+            InlineKeyboardButton("How to Set Metadata", callback_data="meta")
         ]
     ]
     keyboard = InlineKeyboardMarkup(buttons)
@@ -47,7 +47,7 @@ async def metadata(client, message):
     await message.reply_text(text=text, reply_markup=keyboard, disable_web_page_preview=True)
 
 
-@Client.on_callback_query(filters.regex(r"on_metadata|off_metadata|metainfo"))
+@Client.on_callback_query(filters.regex(r"on_metadata|off_metadata|meta"))
 async def metadata_callback(client, query: CallbackQuery):
     user_id = query.from_user.id
     data = query.data
@@ -56,7 +56,7 @@ async def metadata_callback(client, query: CallbackQuery):
         await db.set_metadata(user_id, "On")
     elif data == "off_metadata":
         await db.set_metadata(user_id, "Off")
-    elif data == "metainfo":
+    elif data == "meta":
         await query.message.edit_text(
             text=Txt.META_TXT,
             disable_web_page_preview=True,
