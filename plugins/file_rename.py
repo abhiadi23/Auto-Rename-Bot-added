@@ -501,12 +501,6 @@ file_info = {
         "episode_num": extract_episode_number(file_name)
     }
 
-    if user_id in active_sequences:
-        active_sequences[user_id].append(file_info)
-        reply_msg = await message.reply_text("Wᴇᴡ...ғɪʟᴇs ʀᴇᴄᴇɪᴠᴇᴅ ɴᴏᴡ ᴜsᴇ /end_sequence ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs...!!")
-        message_ids[user_id].append(reply_msg.id)
-        return
-
 @Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
 @check_ban
 @check_fsub
