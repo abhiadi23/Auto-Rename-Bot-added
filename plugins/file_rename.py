@@ -491,9 +491,10 @@ async def start_sequence(client, message: Message):
 if file_id in renaming_operations:
         if (datetime.now() - renaming_operations[file_id]).seconds < 10:
             return
-    renaming_operations[file_id] = datetime.now()
-            
-    file_info = {
+
+renaming_operations[file_id] = datetime.now()
+
+file_info = {
         "file_id": file_id,
         "file_name": file_name,
         "message": message,
