@@ -469,25 +469,6 @@ async def start_sequence(client, message: Message):
         msg = await message.reply_text("Sᴇǫᴜᴇɴᴄᴇ sᴛᴀʀᴛᴇᴅ! Sᴇɴᴅ ʏᴏᴜʀ ғɪʟᴇs ɴᴏᴡ ʙʀᴏ....Fᴀsᴛ")
         message_ids[user_id].append(msg.id)
 
-
-    if file_id in renaming_operations:
-        if (datetime.now() - renaming_operations[file_id]).seconds < 10:
-            return
-    renaming_operations[file_id] = datetime.now()
-            
-    file_info = {
-        "file_id": file_id,
-        "file_name": file_name,
-        "message": message,
-        "episode_num": extract_episode_number(file_name)
-    }
-
-    if user_id in active_sequences:
-        active_sequences[user_id].append(file_info)
-        reply_msg = await message.reply_text("Wᴇᴡ...ғɪʟᴇs ʀᴇᴄᴇɪᴠᴇᴅ ɴᴏᴡ ᴜsᴇ /end_sequence ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs...!!")
-        message_ids[user_id].append(reply_msg.id)
-        return
-
 @Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
 @check_ban
 @check_fsub
@@ -522,6 +503,24 @@ async def auto_rename_files(client, message):
         
     if not file_name:
         await message.reply_text("Could not determine file name.")
+        return
+
+    if file_id in renaming_operations:
+        if (datetime.now() - renaming_operations[file_id]).seconds < 10:
+            return
+    renaming_operations[file_id] = datetime.now()
+            
+    file_info = {
+        "file_id": file_id,
+        "file_name": file_name,
+        "message": message,
+        "episode_num": extract_episode_number(file_name)
+    }
+
+    if user_id in active_sequences:
+        active_sequences[user_id].append(file_info)
+        reply_msg = await message.reply_text("Wᴇᴡ...ғɪʟᴇs ʀᴇᴄᴇɪᴠᴇᴅ ɴᴏᴡ ᴜsᴇ /end_sequence ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs...!!")
+        message_ids[user_id].append(reply_msg.id)
         return
 
     if media_preference:
