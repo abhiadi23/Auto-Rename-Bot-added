@@ -273,7 +273,7 @@ async def cb_handler(client, query: CallbackQuery):
 
     if data == "home":
         await query.message.edit_text(
-            text=Txt.START_TXT.format(query.from_user.mention)
+            text=Txt.START_TXT.format(query.from_user.mention),
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs •", callback_data='help')],
