@@ -237,14 +237,22 @@ async def start(client, message: Message):
     if Config.START_PIC:
         await message.reply_photo(
             Config.START_PIC,
-            caption=Txt.START_TXT.format(user.mention),
-            id=message.from_user.id,
+            caption=Txt.START_TXT.format(first=message.from_user.first_name,
+                last=message.from_user.last_name,
+                username=None if not message.from_user.username else '@' + message.from_user.username,
+                mention=message.from_user.mention,
+                id=message.from_user.id
+            ),
             reply_markup=buttons,
             message_effect_id=5104841245755180586)  # 🔥
     else:
         await message.reply_text(
-            text=Txt.START_TXT.format(user.mention),
-            id=message.from_user.id,
+            text=Txt.START_TXT.format(first=message.from_user.first_name,
+                last=message.from_user.last_name,
+                username=None if not message.from_user.username else '@' + message.from_user.username,
+                mention=message.from_user.mention,
+                id=message.from_user.id
+            ),
             reply_markup=buttons,
             message_effect_id=5104841245755180586,  # 🔥
             disable_web_page_preview=True)
@@ -265,7 +273,7 @@ async def cb_handler(client, query: CallbackQuery):
 
     if data == "home":
         await query.message.edit_text(
-            text=Txt.START_TXT.format(query.from_user.mention),
+            text=Txt.START_TXT.format(query.from_user.mention)
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs •", callback_data='help')],
@@ -284,13 +292,14 @@ async def cb_handler(client, query: CallbackQuery):
 
     elif data == "help":
         await query.message.edit_text(
-            text=Txt.HELP_TXT.format(client.me.mention),
+            text=Txt.HELP_TXT.format(query.from_user.mention),
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴀᴜᴛᴏ ʀᴇɴᴀᴍᴇ ғᴏʀᴍᴀᴛ •", callback_data='file_names')],
                 [InlineKeyboardButton('• ᴛʜᴜᴍʙɴᴀɪʟ', callback_data='thumbnail'), InlineKeyboardButton('ᴄᴀᴘᴛɪᴏɴ •', callback_data='caption')],
                 [InlineKeyboardButton('• ᴍᴇᴛᴀᴅᴀᴛᴀ', callback_data='meta'), InlineKeyboardButton('ᴅᴏɴᴀᴛᴇ •', callback_data='donate')],
-                [InlineKeyboardButton('• ʜᴏᴍᴇ', callback_data='home')]
+                [InlineKeyboardButton("• Sᴇǫᴜᴇɴᴄᴇ" , callback_data='home'),
+                [InlineKeyboardButton('• ʜᴏᴍᴇ •', callback_data='home')]
             ])
         )
 
