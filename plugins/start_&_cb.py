@@ -217,6 +217,7 @@ async def start(client, message: Message):
     await m.delete()
 
     await message.reply_chat_action(ChatAction.CHOOSE_STICKER)
+    await asyncio.sleep(2)
     await message.reply_sticker("CAACAgUAAxkBAAEOtVNoUAphgIzDsgHV10rbfmFKNIgMlwACPQsAApWaqVbHL7SvWBBaITYE")
 
     buttons = InlineKeyboardMarkup([
