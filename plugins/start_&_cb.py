@@ -246,9 +246,8 @@ async def start(client, message: Message):
             text=Txt.START_TXT.format(user.mention),
             id=message.from_user.id,
             reply_markup=buttons,
-            message_effect_id=5104841245755180586),  # 🔥
-            disable_web_page_preview=True
-        )
+            message_effect_id=5104841245755180586,  # 🔥
+            disable_web_page_preview=True)
 
 @Client.on_callback_query()
 async def cb_handler(client, query: CallbackQuery):
