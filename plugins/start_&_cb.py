@@ -203,7 +203,7 @@ logging.basicConfig(level=logging.INFO)
 @check_fsub
 async def start(client, message: Message):
     print(f"DEBUG: /start command received from user {message.from_user.id}")
-    user = message.from_user
+    user = message.from_user.id
     await codeflixbots.add_user(client, message)
 
     m = await message.reply_text("Wᴇᴡ...Hᴏᴡ ᴀʀᴇ ʏᴏᴜ ᴅᴜᴅᴇ \nᴡᴀɪᴛ ᴀ ᴍᴏᴍᴇɴᴛ. . .")
