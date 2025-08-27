@@ -216,6 +216,7 @@ async def start(client, message: Message):
     await asyncio.sleep(0.4)
     await m.delete()
 
+    await message.reply_chat_action(ChatAction.CHOOSE_STICKER)
     await message.reply_sticker("CAACAgUAAxkBAAEOtVNoUAphgIzDsgHV10rbfmFKNIgMlwACPQsAApWaqVbHL7SvWBBaITYE")
 
     buttons = InlineKeyboardMarkup([
@@ -236,15 +237,17 @@ async def start(client, message: Message):
         await message.reply_photo(
             Config.START_PIC,
             caption=Txt.START_TXT.format(user.mention),
-            reply_markup=buttons
-        )
+            id=message.from_user.id,
+            reply_markup=buttons,
+            message_effect_id=5104841245755180586)  # 🔥
     else:
         await message.reply_text(
             text=Txt.START_TXT.format(user.mention),
+            id=message.from_user.id,
             reply_markup=buttons,
+            message_effect_id=5104841245755180586),  # 🔥
             disable_web_page_preview=True
         )
-
 
 @Client.on_callback_query()
 async def cb_handler(client, query: CallbackQuery):
@@ -294,6 +297,7 @@ async def cb_handler(client, query: CallbackQuery):
     elif data == "meta":
         await query.message.edit_text(
             text=Txt.META_TXT,
+            disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
