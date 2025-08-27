@@ -212,12 +212,12 @@ async def start(client, message: Message):
     await asyncio.sleep(0.5)
     await m.edit_text("⚡")
     await asyncio.sleep(0.5)
+    await message.reply_chat_action(ChatAction.CHOOSE_STICKER)
+    await asyncio.sleep(3)
     await m.edit_text("**Iᴀᴍ sᴛᴀʀᴛɪɴɢ...!!**")
     await asyncio.sleep(0.4)
     await m.delete()
 
-    await message.reply_chat_action(ChatAction.CHOOSE_STICKER)
-    await asyncio.sleep(2)
     await message.reply_sticker("CAACAgUAAxkBAAEOtVNoUAphgIzDsgHV10rbfmFKNIgMlwACPQsAApWaqVbHL7SvWBBaITYE")
 
     buttons = InlineKeyboardMarkup([
@@ -298,7 +298,7 @@ async def cb_handler(client, query: CallbackQuery):
                 [InlineKeyboardButton("• ᴀᴜᴛᴏ ʀᴇɴᴀᴍᴇ ғᴏʀᴍᴀᴛ •", callback_data='file_names')],
                 [InlineKeyboardButton('• ᴛʜᴜᴍʙɴᴀɪʟ', callback_data='thumbnail'), InlineKeyboardButton('ᴄᴀᴘᴛɪᴏɴ •', callback_data='caption')],
                 [InlineKeyboardButton('• ᴍᴇᴛᴀᴅᴀᴛᴀ', callback_data='meta'), InlineKeyboardButton('ᴅᴏɴᴀᴛᴇ •', callback_data='donate')],
-                [InlineKeyboardButton("• Sᴇǫᴜᴇɴᴄᴇ" , callback_data='home'),
+                [InlineKeyboardButton("• Sᴇǫᴜᴇɴᴄᴇ" , callback_data='home')],
                 [InlineKeyboardButton('• ʜᴏᴍᴇ •', callback_data='home')]
             ])
         )
