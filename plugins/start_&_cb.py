@@ -328,15 +328,14 @@ async def cb_handler(client, query: CallbackQuery):
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
         )
-elif data == "sequence":
+        elif data == "sequence":
         await query.message.edit_text(
             text=Txt.SEQUENCE_TXT,
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
                 InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="home")
-            ]])
-)
+            ]]))
     elif data == "thumbnail":
         if query.message.photo:
             await query.message.edit_caption(
