@@ -298,7 +298,7 @@ async def cb_handler(client, query: CallbackQuery):
                 [InlineKeyboardButton("• ᴀᴜᴛᴏ ʀᴇɴᴀᴍᴇ ғᴏʀᴍᴀᴛ •", callback_data='file_names')],
                 [InlineKeyboardButton('• ᴛʜᴜᴍʙɴᴀɪʟ', callback_data='thumbnail'), InlineKeyboardButton('ᴄᴀᴘᴛɪᴏɴ •', callback_data='caption')],
                 [InlineKeyboardButton('• ᴍᴇᴛᴀᴅᴀᴛᴀ', callback_data='meta'), InlineKeyboardButton('ᴅᴏɴᴀᴛᴇ •', callback_data='donate')],
-                [InlineKeyboardButton("• Sᴇǫᴜᴇɴᴄᴇ" , callback_data='home')],
+                [InlineKeyboardButton("• Sᴇǫᴜᴇɴᴄᴇ" , callback_data='sequence')],
                 [InlineKeyboardButton('• ʜᴏᴍᴇ •', callback_data='home')]
             ])
         )
@@ -328,6 +328,15 @@ async def cb_handler(client, query: CallbackQuery):
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
         )
+elif data == "sequence":
+        await query.message.edit_text(
+            text=Txt.SEQUENCE_TXT,
+            disable_web_page_preview=True,
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
+                InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="home")
+            ]])
+)
     elif data == "thumbnail":
         if query.message.photo:
             await query.message.edit_caption(
@@ -343,6 +352,7 @@ async def cb_handler(client, query: CallbackQuery):
                     [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
                 ])
             )
+            
     elif data == "metadatax":
         if query.message.photo:
             await query.message.edit_caption(
