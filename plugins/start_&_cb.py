@@ -272,7 +272,6 @@ async def cb_handler(client, query: CallbackQuery):
         )
 
     if data == "home":
-        await query.answer()
         await query.message.edit_text(
             text=Txt.START_TXT.format(query.from_user.mention),
             disable_web_page_preview=True,
@@ -290,7 +289,6 @@ async def cb_handler(client, query: CallbackQuery):
                 [InlineKeyboardButton("• sᴜᴘᴘᴏʀᴛ", url='https://t.me/botskingdomsgroup'), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
         )
-
     elif data == "help":
         await query.message.edit_text(
             text=Txt.HELP_TXT.format(query.from_user.mention),
@@ -303,7 +301,18 @@ async def cb_handler(client, query: CallbackQuery):
                 [InlineKeyboardButton('• ʜᴏᴍᴇ •', callback_data='home')]
             ])
         )
-
+    elif data == "sequence":
+        try:
+            await query.message.edit_text(
+                text=Txt.SEQUENCE_TXT,
+                disable_web_page_preview=True,
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
+                    InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="home")
+                ]]))
+        except Exception as e:
+            print(f"Error handling sequence callback: {e}")
+            await query.answer(f"An error occurred: {e}", show_alert=True)
     elif data == "meta":
         await query.answer()
         await query.message.edit_text(
@@ -329,23 +338,7 @@ async def cb_handler(client, query: CallbackQuery):
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
-        )
-    elif data == "sequence":
-        try:
-            await query.answer()
-            await query.message.edit_text(
-                text=Txt.SEQUENCE_TXT,
-                disable_web_page_preview=True,
-                reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
-                    InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="home")
-                ]]))
-        except Exception as e:
-            # Log the error to your console
-            print(f"Error handling sequence callback: {e}")
-            # Optionally, send an alert to the user
-            await query.answer(f"An error occurred: {e}", show_alert=True)
-        
+        )    
     elif data == "thumbnail":
         if query.message.photo:
             await query.message.edit_caption(
@@ -360,8 +353,7 @@ async def cb_handler(client, query: CallbackQuery):
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
                 ])
-            )
-            
+            )    
     elif data == "metadatax":
         if query.message.photo:
             await query.message.edit_caption(
