@@ -303,7 +303,7 @@ async def cb_handler(client, query: CallbackQuery):
     elif data == "sequence":
         try:
             await query.message.edit_text(
-                text=Txt.SEQUENCE_TXT,
+                text=Config.Txt.SEQUENCE_TXT,
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
