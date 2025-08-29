@@ -272,6 +272,7 @@ async def cb_handler(client, query: CallbackQuery):
         )
 
     if data == "home":
+        await query.answer()
         await query.message.edit_text(
             text=Txt.START_TXT.format(query.from_user.mention),
             disable_web_page_preview=True,
@@ -304,6 +305,7 @@ async def cb_handler(client, query: CallbackQuery):
         )
 
     elif data == "meta":
+        await query.answer()
         await query.message.edit_text(
             text=Txt.META_TXT,
             disable_web_page_preview=True,
@@ -329,6 +331,7 @@ async def cb_handler(client, query: CallbackQuery):
             ])
         )
     elif data == "sequence":
+        await query.answer()
         await query.message.edit_text(
             text=Txt.SEQUENCE_TXT,
             disable_web_page_preview=True,
