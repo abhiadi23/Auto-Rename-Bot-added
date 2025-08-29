@@ -331,14 +331,15 @@ async def cb_handler(client, query: CallbackQuery):
             ])
         )
     elif data == "sequence":
-        await query.answer()
-        await query.message.edit_text(
-            text=Txt.SEQUENCE_TXT,
-            disable_web_page_preview=True,
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
-                InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="home")
-            ]]))
+        try:
+            await query.answer()
+            await query.message.edit_text(
+                text=Txt.SEQUENCE_TXT,
+                disable_web_page_preview=True,
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
+                    InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="home")
+                ]]))
         except Exception as e:
             # Log the error to your console
             print(f"Error handling sequence callback: {e}")
@@ -445,4 +446,4 @@ async def cb_handler(client, query: CallbackQuery):
         await query.message.edit_text(
             "sᴇʟᴇᴄᴛ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ɪᴛs ғᴏʀᴄᴇ-sᴜʙ ᴍᴏᴅᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
-)
+    )
