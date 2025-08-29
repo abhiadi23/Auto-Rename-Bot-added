@@ -339,6 +339,12 @@ async def cb_handler(client, query: CallbackQuery):
                 InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
                 InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="home")
             ]]))
+        except Exception as e:
+            # Log the error to your console
+            print(f"Error handling sequence callback: {e}")
+            # Optionally, send an alert to the user
+            await query.answer(f"An error occurred: {e}", show_alert=True)
+        
     elif data == "thumbnail":
         if query.message.photo:
             await query.message.edit_caption(
