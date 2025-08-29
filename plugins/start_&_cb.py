@@ -116,7 +116,6 @@ async def not_joined(client: Client, message: Message):
 
             await message.reply_chat_action(ChatAction.TYPING)
 
-            # Re-check is_sub status for this logic
             try:
                 member = await client.get_chat_member(chat_id, user_id)
                 is_member = member.status in {
@@ -438,4 +437,4 @@ async def cb_handler(client, query: CallbackQuery):
         await query.message.edit_text(
             "sᴇʟᴇᴄᴛ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ɪᴛs ғᴏʀᴄᴇ-sᴜʙ ᴍᴏᴅᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
-    )
+        )
