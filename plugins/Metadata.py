@@ -1,7 +1,7 @@
 from helper.database import codeflixbots as db
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
-from config import Txt
+from config import *
 
 @Client.on_message(filters.command("metadata"))
 async def metadata(client, message):
@@ -58,7 +58,7 @@ async def metadata_callback(client, query: CallbackQuery):
         await db.set_metadata(user_id, "Off")
     elif data == "meta":
         await query.message.edit_text(
-            text=Txt.META_TXT,
+            text=Config.META_TXT,
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [
