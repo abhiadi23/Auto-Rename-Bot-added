@@ -272,7 +272,7 @@ async def cb_handler(client, query: CallbackQuery):
 
     if data == "home":
         await query.message.edit_text(
-            text=Txt.START_TXT.format(query.from_user.mention),
+            text=Config.START_TXT.format(query.from_user.mention),
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs •", callback_data='help')],
@@ -282,7 +282,7 @@ async def cb_handler(client, query: CallbackQuery):
         )
     elif data == "caption":
         await query.message.edit_text(
-            text=Txt.CAPTION_TXT,
+            text=Config.CAPTION_TXT,
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• sᴜᴘᴘᴏʀᴛ", url='https://t.me/botskingdomsgroup'), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
@@ -290,7 +290,7 @@ async def cb_handler(client, query: CallbackQuery):
         )
     elif data == "help":
         await query.message.edit_text(
-            text=Txt.HELP_TXT.format(query.from_user.mention),
+            text=Config.HELP_TXT.format(query.from_user.mention),
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴀᴜᴛᴏ ʀᴇɴᴀᴍᴇ ғᴏʀᴍᴀᴛ •", callback_data='file_names')],
@@ -303,7 +303,7 @@ async def cb_handler(client, query: CallbackQuery):
     elif data == "sequence":
         try:
             await query.message.edit_text(
-                text=Config.Txt.SEQUENCE_TXT,
+                text=Config.SEQUENCE_TXT,
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
@@ -315,7 +315,7 @@ async def cb_handler(client, query: CallbackQuery):
     elif data == "meta":
         await query.answer()
         await query.message.edit_text(
-            text=Txt.META_TXT,
+            text=Config.META_TXT,
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
@@ -323,7 +323,7 @@ async def cb_handler(client, query: CallbackQuery):
         )
     elif data == "donate":
         await query.message.edit_text(
-            text=Txt.DONATE_TXT,
+            text=Config.DONATE_TXT,
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="help"), InlineKeyboardButton("ᴏᴡɴᴇʀ •", url='https://t.me/botskingdoms')]
@@ -341,14 +341,14 @@ async def cb_handler(client, query: CallbackQuery):
     elif data == "thumbnail":
         if query.message.photo:
             await query.message.edit_caption(
-                caption=Txt.THUMBNAIL_TXT,
+                caption=Config.THUMBNAIL_TXT,
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
                 ])
             )
         else:
             await query.message.edit_text(
-                text=Txt.THUMBNAIL_TXT,
+                text=Config.THUMBNAIL_TXT,
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
                 ])
@@ -356,21 +356,21 @@ async def cb_handler(client, query: CallbackQuery):
     elif data == "metadatax":
         if query.message.photo:
             await query.message.edit_caption(
-                caption=Txt.SEND_METADATA,
+                caption=Config.SEND_METADATA,
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
                 ])
             )
         else:
             await query.message.edit_text(
-                text=Txt.SEND_METADATA,
+                text=Config.SEND_METADATA,
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
                 ])
             )
     elif data == "about":
         await query.message.edit_text(
-            text=Txt.ABOUT_TXT,
+            text=Config.ABOUT_TXT,
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
