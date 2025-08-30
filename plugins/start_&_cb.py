@@ -17,6 +17,7 @@ FSUB_PIC = Config.FSUB_PIC
 BOT_USERNAME = Config.BOT_USERNAME
 OWNER_ID = Config.OWNER_ID
 FSUB_LINK_EXPIRY = 10
+SEQUENCE_TXT = Config.SEQUENCE_TXT
 
 def check_ban(func):
     @wraps(func)
