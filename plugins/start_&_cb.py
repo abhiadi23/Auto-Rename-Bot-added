@@ -303,8 +303,7 @@ async def cb_handler(client, query: CallbackQuery):
         )
     elif data == "sequence":
         try:
-            await query.message.edit_text(
-                text=Config.SEQUENCE_TXT,
+            await query.message.edit_text( <b>Sᴇɴᴅ ᴍᴇ ғɪʟᴇs ᴀɴᴅ I ᴡɪʟʟ ɢɪᴠᴇ ʏᴏᴜ ᴛʜᴀᴛ ғɪʟᴇs ɪɴ ᴀ ᴘᴇʀғᴇᴄᴛ sᴇǫᴜᴇɴᴄᴇ...!! \n\nʜᴇʀᴇ ɪꜱ ʜᴇʟᴘ ᴍᴇɴᴜ ғᴏʀ sᴇǫᴜᴇɴᴄᴇ ᴄᴏᴍᴍᴀɴᴅꜱ: \n\nᴀᴡᴇsᴏᴍᴇ Cᴏᴍᴍᴀɴᴅs🫧 \n\n/start_sequence - Tᴏ sᴛᴀʀᴛ sᴇǫᴜᴇɴᴄᴇ. \n/end_sequence - Tᴏ ᴇɴᴅ sᴇǫᴜᴇɴᴄᴇ.</b>,
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
