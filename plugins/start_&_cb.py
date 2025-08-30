@@ -8,7 +8,7 @@ from pyrogram.errors import UserNotParticipant
 from datetime import datetime, timedelta
 
 from helper.database import codeflixbots
-from config import Config, Txt
+from config import *
 from functools import wraps
 
 chat_data_cache = {}
@@ -236,7 +236,7 @@ async def start(client, message: Message):
     if Config.START_PIC:
         await message.reply_photo(
             Config.START_PIC,
-            caption=Txt.START_TXT.format(first=message.from_user.first_name,
+            caption=Config.START_TXT.format(first=message.from_user.first_name,
                 last=message.from_user.last_name,
                 username=None if not message.from_user.username else '@' + message.from_user.username,
                 mention=message.from_user.mention,
@@ -246,7 +246,7 @@ async def start(client, message: Message):
             message_effect_id=5104841245755180586)  # 🔥
     else:
         await message.reply_text(
-            text=Txt.START_TXT.format(first=message.from_user.first_name,
+            text=Config.START_TXT.format(first=message.from_user.first_name,
                 last=message.from_user.last_name,
                 username=None if not message.from_user.username else '@' + message.from_user.username,
                 mention=message.from_user.mention,
@@ -332,7 +332,7 @@ async def cb_handler(client, query: CallbackQuery):
     elif data == "file_names":
         format_template = await codeflixbots.get_format_template(user_id)
         await query.message.edit_text(
-            text=Txt.FILE_NAME_TXT.format(format_template=format_template),
+            text=Config.FILE_NAME_TXT.format(format_template=format_template),
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
