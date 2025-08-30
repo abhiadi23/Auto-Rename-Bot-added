@@ -313,7 +313,7 @@ async def cb_handler(client, query: CallbackQuery):
             await query.answer(f"An error occurred: {e}", show_alert=True)
         elif data == "meta":
         await query.message.edit_text(  # Change edit_caption to edit_text
-            text=Txt.SEND_METADATA,  # Changed from caption to text
+            text=Config.SEND_METADATA,  # Changed from caption to text
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
