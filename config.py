@@ -26,11 +26,7 @@ class Config(object):
     LEADERBOARD_DELETE_TIMER = 30
     # wes response configuration     
     WEBHOOK = bool(os.environ.get("WEBHOOK", "True"))
-
-
-class Txt(object):
-    # part of text configuration
-        
+    #========================================================================================   
     START_TXT = """<b>ʜᴇʏ! {mention}  
 
 » ɪ ᴀᴍ ᴀᴅᴠᴀɴᴄᴇᴅ ʀᴇɴᴀᴍᴇ ʙᴏᴛ! ᴡʜɪᴄʜ ᴄᴀɴ ᴀᴜᴛᴏʀᴇɴᴀᴍᴇ ʏᴏᴜʀ ғɪʟᴇs ᴡɪᴛʜ ᴄᴜsᴛᴏᴍ ᴄᴀᴘᴛɪᴏɴ ᴀɴᴅ ᴛʜᴜᴍʙɴᴀɪʟ ᴀɴᴅ ᴀʟsᴏ sᴇǫᴜᴇɴᴄᴇ ᴛʜᴇᴍ ᴘᴇʀғᴇᴄᴛʟʏ.I ᴀʟsᴏ ʜᴀᴠᴇ sᴇᴀsᴏɴ, ᴀᴜᴅɪᴏ, ǫᴜᴀʟɪᴛʏ, ᴇᴘɪsᴏᴅᴇ ᴇxᴛʀᴀᴄᴛɪᴏɴ sʏsᴛᴇᴍ ᴀɴᴅ ᴀʟsᴏ sᴜᴘᴘᴏʀᴛs ᴀᴅᴠᴀɴᴄᴇ ғᴇᴀᴛᴜʀᴇs.</b>"""
