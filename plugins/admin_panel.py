@@ -1,4 +1,4 @@
-from config import Config, Txt
+from config import *
 from helper.database import codeflixbots
 from pyrogram.types import Message
 from pyrogram import Client, filters
@@ -165,7 +165,7 @@ async def tutorial(bot, message):
     user_id = message.from_user.id
     format_template = await codeflixbots.get_format_template(user_id)
     await message.reply_text(
-        text=Txt.FILE_NAME_TXT.format(format_template=format_template),
+        text=Config.FILE_NAME_TXT.format(format_template=format_template),
         disable_web_page_preview=True,
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("•Sᴜᴘᴘᴏʀᴛ•", url="https://t.me/BOTSKINGDOMSGROUP"), InlineKeyboardButton("•⚡Main hub•", url="https://t.me/botskingdoms")]
