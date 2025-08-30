@@ -311,11 +311,9 @@ async def cb_handler(client, query: CallbackQuery):
         except Exception as e:
             print(f"Error handling sequence callback: {e}")
             await query.answer(f"An error occurred: {e}", show_alert=True)
-    elif data == "meta":
-        await query.answer()
-        await query.message.edit_text(
-            text=Config.META_TXT,
-            disable_web_page_preview=True,
+        elif data == "meta":
+        await query.message.edit_text(  # Change edit_caption to edit_text
+            text=Txt.SEND_METADATA,  # Changed from caption to text
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
