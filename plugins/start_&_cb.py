@@ -302,18 +302,21 @@ async def cb_handler(client, query: CallbackQuery):
         )
     elif data == "sequence":
         try:
-            await query.message.edit_text("<b>Sᴇɴᴅ ᴍᴇ ғɪʟᴇs ᴀɴᴅ I ᴡɪʟʟ ɢɪᴠᴇ ʏᴏᴜ ᴛʜᴀᴛ ғɪʟᴇs ɪɴ ᴀ ᴘᴇʀғᴇᴄᴛ sᴇǫᴜᴇɴᴄᴇ...!! \n\nʜᴇʀᴇ ɪꜱ ʜᴇʟᴘ ᴍᴇɴᴜ ғᴏʀ sᴇǫᴜᴇɴᴄᴇ ᴄᴏᴍᴍᴀɴᴅꜱ: \n\nᴀᴡᴇsᴏᴍᴇ Cᴏᴍᴍᴀɴᴅs🫧 \n\n/start_sequence - Tᴏ sᴛᴀʀᴛ sᴇǫᴜᴇɴᴄᴇ. \n/end_sequence - Tᴏ ᴇɴᴅ sᴇǫᴜᴇɴᴄᴇ.</b>",
+            await query.message.edit_text(
+                "<b>Sᴇɴᴅ ᴍᴇ ғɪʟᴇs ᴀɴᴅ I ᴡɪʟʟ ɢɪᴠᴇ ʏᴏᴜ ᴛʜᴀᴛ ғɪʟᴇs ɪɴ ᴀ ᴘᴇʀғᴇᴄᴛ sᴇǫᴜᴇɴᴄᴇ...!! \n\nʜᴇʀᴇ ɪꜱ ʜᴇʟᴘ ᴍᴇɴᴜ ғᴏʀ sᴇǫᴜᴇɴᴄᴇ ᴄᴏᴍᴍᴀɴᴅꜱ: \n\nᴀᴡᴇsᴏᴍᴇ Cᴏᴍᴍᴀɴᴅs🫧 \n\n/start_sequence - Tᴏ sᴛᴀʀᴛ sᴇǫᴜᴇɴᴄᴇ. \n/end_sequence - Tᴏ ᴇɴᴅ sᴇǫᴜᴇɴᴄᴇ.</b>",
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
                     InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="home")
-                ]]))
+                ]])
+            )
         except Exception as e:
             print(f"Error handling sequence callback: {e}")
             await query.answer(f"An error occurred: {e}", show_alert=True)
-        elif data == "meta":
-        await query.message.edit_text(  # Change edit_caption to edit_text
-            text=Config.SEND_METADATA,  # Changed from caption to text
+    elif data == "meta":
+        await query.message.edit_text(
+            text=Config.SEND_METADATA,
+            disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
@@ -336,35 +339,13 @@ async def cb_handler(client, query: CallbackQuery):
             ])
         )    
     elif data == "thumbnail":
-        if query.message.photo:
-            await query.message.edit_caption(
-                caption=Config.THUMBNAIL_TXT,
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
-                ])
-            )
-        else:
-            await query.message.edit_text(
-                text=Config.THUMBNAIL_TXT,
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
-                ])
-            )    
-    elif data == "metadatax":
-        if query.message.photo:
-            await query.message.edit_caption(
-                caption=Config.SEND_METADATA,
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
-                ])
-            )
-        else:
-            await query.message.edit_text(
-                text=Config.SEND_METADATA,
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
-                ])
-            )
+        await query.message.edit_text(
+            text=Config.THUMBNAIL_TXT,
+            disable_web_page_preview=True,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
+            ])
+        )    
     elif data == "about":
         await query.message.edit_text(
             text=Config.ABOUT_TXT,
@@ -372,7 +353,8 @@ async def cb_handler(client, query: CallbackQuery):
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
                 InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="home")
-            ]]))
+            ]])
+        )
     elif data == "close":
         try:
             await query.message.delete()
