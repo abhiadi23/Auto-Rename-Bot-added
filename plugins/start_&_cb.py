@@ -314,8 +314,7 @@ async def cb_handler(client, query: CallbackQuery):
             print(f"Error handling sequence callback: {e}")
             await query.answer(f"An error occurred: {e}", show_alert=True)
     elif data == "meta":
-        await query.message.edit_text(
-            text=Config.SEND_METADATA,
+        await query.message.edit_text(<b>--Metadata Settings:--</b> \n\n➜ /metadata: Turn on or off metadata. \n\n<b><u>Description</b></u> <b><i>: Metadata will change MKV video files including all audio, streams, and subtitle titles.</b></i>",
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
