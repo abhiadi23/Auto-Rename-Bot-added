@@ -314,18 +314,10 @@ async def cb_handler(client, query: CallbackQuery):
             print(f"Error handling sequence callback: {e}")
             await query.answer(f"An error occurred: {e}", show_alert=True)
     elif data == "meta":
-        await query.message.edit_text(<b>--Metadata Settings:--</b> \n\n➜ /metadata: Turn on or off metadata. \n\n<b><u>Description</u></b> <b><i>: Metadata will change MKV video files including all audio, streams, and subtitle titles.</i></b>",
+        await query.message.edit_text("<b>--Metadata Settings:--</b> \n\n➜ /metadata: Turn on or off metadata. \n\n<b><u>Description</u></b> <b><i>: Metadata will change MKV video files including all audio, streams, and subtitle titles.</i></b>",
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
-            ])
-        )
-    elif data == "metainfo":
-        await query.message.edit_text(
-            text=Config.META_TXT,
-            disable_web_page_preview=True,
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("• sᴜᴘᴘᴏʀᴛ", url='https://t.me/botskingdomsgroup'), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
         )
     elif data == "donate":
