@@ -242,8 +242,7 @@ async def start(client, message: Message):
                 mention=message.from_user.mention,
                 id=message.from_user.id
             ),
-            reply_markup=buttons,
-            message_effect_id=5104841245755180586)  # 🔥
+            reply_markup=buttons)
     else:
         await message.reply_text(
             text=Config.START_TXT.format(first=message.from_user.first_name,
@@ -253,7 +252,6 @@ async def start(client, message: Message):
                 id=message.from_user.id
             ),
             reply_markup=buttons,
-            message_effect_id=5104841245755180586,  # 🔥
             disable_web_page_preview=True)
 
 @Client.on_callback_query()
