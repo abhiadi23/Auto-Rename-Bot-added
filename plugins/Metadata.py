@@ -35,11 +35,11 @@ async def metadata(client, message):
     # Inline buttons to toggle metadata
     buttons = [
         [
-            InlineKeyboardButton(f"On{' ✅' if current == 'On' else ''}", callback_data='on_metadata'),
-            InlineKeyboardButton(f"Off{' ✅' if current == 'Off' else ''}", callback_data='off_metadata')
+            InlineKeyboardButton(f"Oɴ{' ✅' if current == 'On' else ''}", callback_data='on_metadata'),
+            InlineKeyboardButton(f"Oғғ{' ✅' if current == 'Off' else ''}", callback_data='off_metadata')
         ],
         [
-            InlineKeyboardButton("How to Set Metadata", callback_data="meta")
+            InlineKeyboardButton("Hᴏᴡ ᴛᴏ Sᴇᴛ Mᴇᴛᴀᴅᴀᴛᴀ...!!", callback_data="metainfo")
         ]
     ]
     keyboard = InlineKeyboardMarkup(buttons)
@@ -47,7 +47,7 @@ async def metadata(client, message):
     await message.reply_text(text=text, reply_markup=keyboard, disable_web_page_preview=True)
 
 
-@Client.on_callback_query(filters.regex(r"on_metadata|off_metadata|meta"))
+@Client.on_callback_query(filters.regex(r"on_metadata|off_metadata|metainfo"))
 async def metadata_callback(client, query: CallbackQuery):
     user_id = query.from_user.id
     data = query.data
@@ -56,7 +56,7 @@ async def metadata_callback(client, query: CallbackQuery):
         await db.set_metadata(user_id, "On")
     elif data == "off_metadata":
         await db.set_metadata(user_id, "Off")
-    elif data == "meta":
+    elif data == "metainfo":
         await query.message.edit_text(
             text=Config.META_TXT,
             disable_web_page_preview=True,
@@ -97,11 +97,11 @@ async def metadata_callback(client, query: CallbackQuery):
     # Update inline buttons
     buttons = [
         [
-            InlineKeyboardButton(f"On{' ✅' if current == 'On' else ''}", callback_data='on_metadata'),
-            InlineKeyboardButton(f"Off{' ✅' if current == 'Off' else ''}", callback_data='off_metadata')
+            InlineKeyboardButton(f"Oɴ{' ✅' if current == 'On' else ''}", callback_data='on_metadata'),
+            InlineKeyboardButton(f"Oғғ{' ✅' if current == 'Off' else ''}", callback_data='off_metadata')
         ],
         [
-            InlineKeyboardButton("How to Set Metadata", callback_data="meta")
+            InlineKeyboardButton("Hᴏᴡ ᴛᴏ Sᴇᴛ Mᴇᴛᴀᴅᴀᴛᴀ...!!", callback_data="metainfo")
         ]
     ]
     await query.message.edit_text(text=text, reply_markup=InlineKeyboardMarkup(buttons), disable_web_page_preview=True)
