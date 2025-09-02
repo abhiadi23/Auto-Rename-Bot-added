@@ -669,9 +669,8 @@ async def auto_rename_files(client, message):
         ph_path = None
         if c_thumb:
             ph_path = await client.download_media(c_thumb)
-        elif media_type == "video" and getattr(message.video, "thumbs", None):
-            if message.video.thumbs:
-                ph_path = await client.download_media(message.video.thumbs[0].file_id)
+        elif media_type == "video" and message.video.thumbs:
+            ph_path = await client.download_media(message.video.thumbs[0].file_id)
 
         # Define common upload parameters
         common_upload_params = {
