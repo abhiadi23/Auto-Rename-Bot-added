@@ -39,7 +39,7 @@ async def metadata(client, message):
             InlineKeyboardButton(f"Oғғ{' ✅' if current == 'Off' else ''}", callback_data='off_metadata')
         ],
         [
-            InlineKeyboardButton("Hᴏᴡ ᴛᴏ Sᴇᴛ Mᴇᴛᴀᴅᴀᴛᴀ...!!", callback_data="metainfo")
+            InlineKeyboardButton("Hᴏᴡ ᴛᴏ Sᴇᴛ Mᴇᴛᴀᴅᴀᴛᴀ...!!", callback_data="meta")
         ]
     ]
     keyboard = InlineKeyboardMarkup(buttons)
@@ -57,8 +57,7 @@ async def metadata_callback(client, query: CallbackQuery):
     elif data == "off_metadata":
         await db.set_metadata(user_id, "Off")
     elif data == "metainfo":
-        await query.message.edit_text(
-            text=Config.META_TXT,
+        await query.message.edit_text("<b><u>ᴍᴀɴᴀɢɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ғᴏʀ ʏᴏᴜʀ ᴠɪᴅᴇᴏs ᴀɴᴅ ғɪʟᴇs</u></b> \n\n<b><u>ᴠᴀʀɪᴏᴜꜱ ᴍᴇᴛᴀᴅᴀᴛᴀ:</u></b> \n\n- <b>ᴛɪᴛʟᴇ</b>: Descriptive title of the media. \n- <b>ᴀᴜᴛʜᴏʀ</b>: The creator or owner of the media. \n- <b>ᴀʀᴛɪꜱᴛ</b>: The artist associated with the media. \n- <b>ᴀᴜᴅɪᴏ</b>: Title or description of audio content. \n- <b>ꜱᴜʙᴛɪᴛʟᴇ</b>: Title of subtitle content. \n- <b>ᴠɪᴅᴇᴏ</b>: Title or description of video content. \n\n<b><u>ᴄᴏᴍᴍᴀɴᴅꜱ ᴛᴏ ᴛᴜʀɴ ᴏɴ ᴏғғ ᴍᴇᴛᴀᴅᴀᴛᴀ:</u></b> \n➜ /metadata: Turn on or off metadata. \n\n<b><u>ᴄᴏᴍᴍᴀɴᴅꜱ ᴛᴏ ꜱᴇᴛ ᴍᴇᴛᴀᴅᴀᴛᴀ:</u></b> \n\n➜ /settitle: Set a custom title of media. \n➜ /setauthor: Set the author. \n➜ /setartist: Set the artist. \n➜ /setaudio: Set audio title. \n➜ /setsubtitle: Set subtitle title. \n➜ /setvideo: Set video title. \n➜ /setencoded_by: Set encoded by title. \n➜ /setcustom_tag: Set custom tag title. \n\n<b><u>ᴇxᴀᴍᴘʟᴇ:</u></b> /settitle Your Title Here \n\n<b>ᴜꜱᴇ ᴛʜᴇꜱᴇ ᴄᴏᴍᴍᴀɴᴅꜱ ᴛᴏ ᴇɴʀɪᴄʜ ʏᴏᴜʀ ᴍᴇᴅɪᴀ ᴡɪᴛʜ ᴀᴅᴅɪᴛɪᴏɴᴀʟ ᴍᴇᴛᴀᴅᴀᴛᴀ ɪɴꜰᴏʀᴍᴀᴛɪᴏɴ!</b>",
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [
