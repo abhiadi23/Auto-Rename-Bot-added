@@ -675,8 +675,6 @@ async def auto_rename_files(client, message):
         elif media_type == "video" and message.video.thumbs:
             ph_path = await client.download_media(message.video.thumbs[0].file_id)
 
-        ph_path = await process_thumb_async(ph_path)
-
         # Define common upload parameters
         common_upload_params = {
             'chat_id': message.chat.id,
