@@ -616,6 +616,7 @@ async def auto_rename_files(client, message):
     makedirs(os.path.dirname(output_path), exist_ok=True)
 
     msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+    await message.reply_chat_action(ChatAction.PLAYING_GAME)
 
     try:
         file_path = await client.download_media(
@@ -637,10 +638,12 @@ async def auto_rename_files(client, message):
         human_readable_duration = convert(duration) if duration > 0 else "N/A"
 
         await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+        await message.reply_chat_action(ChatAction.PLAYING_GAME)
         await add_metadata(file_path, metadata_path, user_id)
         file_path = metadata_path
 
         await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+        await message.reply_chat_action(ChatAction.PLAYING_GAME)
         await codeflixbots.col.update_one(
             {"_id": user_id},
             {
@@ -671,6 +674,8 @@ async def auto_rename_files(client, message):
             ph_path = await client.download_media(c_thumb)
         elif media_type == "video" and message.video.thumbs:
             ph_path = await client.download_media(message.video.thumbs[0].file_id)
+
+        ph_path = await process_thumb_async(ph_path)
 
         # Define common upload parameters
         common_upload_params = {
