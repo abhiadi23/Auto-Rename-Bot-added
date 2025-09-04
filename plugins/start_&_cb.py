@@ -269,8 +269,8 @@ async def cb_handler(client, query: CallbackQuery):
         )
 
     if data == "home":
-        await query.message.edit_text(
-            text=Config.START_TXT.format(query.from_user.mention),
+        await query.message.edit_caption(
+            caption=Config.START_TXT.format(query.from_user.mention),
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs •", callback_data='help')],
@@ -305,7 +305,7 @@ async def cb_handler(client, query: CallbackQuery):
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
-                    InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="home")
+                    InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="help")
                 ]])
             )
         except Exception as e:
