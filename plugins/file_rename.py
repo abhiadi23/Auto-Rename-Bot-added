@@ -707,10 +707,6 @@ async def auto_rename_files(client, message):
                     os.remove(metadata_path)
                     if os.path.exists(ph_path):
                         os.remove(ph_path)
-                        
-                except Exception as cleanup_e:
-                    logger.error(f"Error during file cleanup for {file_path}: {cleanup_e}")
-                    pass
 
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
