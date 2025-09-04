@@ -7,7 +7,6 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
@@ -213,11 +212,6 @@ logging.basicConfig(level=logging.INFO)
 active_sequences = {}
 message_ids = {}
 renaming_operations = {}
-
-# --- Enhanced Semaphores for better concurrency ---
-
-# Thread pool for CPU-intensive operations
-thread_pool = ThreadPoolExecutor(max_workers=4)
 
 def detect_quality(file_name):
     quality_order = {"360p": 0, "480p": 1, "720p": 2, "1080p": 3, "1440p": 4, "2160p": 5, "4k": 6}
@@ -706,17 +700,14 @@ async def auto_rename_files(client, message):
         await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
         raise
     finally:
-        if file_id in renaming_operations:
-            del renaming_operations[file_id]
-
-        cleanup_files = [download_path, metadata_path, output_path, ph_path]
-        if ph_path:
-            cleanup_files.append(ph_path)
-
-        for file_path in cleanup_files:
-            if file_path and os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
+        cleanup_files = [download_path, metadata_path, ph_path]
+        if os.path.exists(download_path):
+                os.remove(download_path)
+                if os.path.exists(metadata_path):
+                    os.remove(metadata_path)
+                    if os.path.exists(ph_path):
+                        os.remove(ph_path)
+                        
                 except Exception as cleanup_e:
                     logger.error(f"Error during file cleanup for {file_path}: {cleanup_e}")
                     pass
