@@ -675,6 +675,11 @@ async def auto_rename_files(client, message):
         elif media_type == "video" and message.video.thumbs:
             ph_path = await client.download_media(message.video.thumbs[0].file_id)
 
+        if ph_path:
+            img = Image.open(ph_path).convert("RGB")
+            img = img.resize((320, 320))
+            img.save(ph_path, "JPEG")
+
         # Define common upload parameters
         common_upload_params = {
             'chat_id': message.chat.id,
@@ -704,7 +709,7 @@ async def auto_rename_files(client, message):
         if file_id in renaming_operations:
             del renaming_operations[file_id]
 
-        cleanup_files = [download_path, metadata_path, output_path]
+        cleanup_files = [download_path, metadata_path, output_path, ph_path]
         if ph_path:
             cleanup_files.append(ph_path)
 
@@ -767,15 +772,7 @@ async def end_sequence(client, message: Message):
             await client.delete_messages(chat_id=message.chat.id, message_ids=delete_messages)
         except Exception as e:
             print(f"Error deleting messages: {e}")
-
-async def process_thumb_async(ph_path):
-    def _resize_thumb(path):
-        img = Image.open(path).convert("RGB")
-        img = img.resize((320, 320))
-        img.save(path, "JPEG")
-
-    return await asyncio.to_thread(_resize_thumb, ph_path)
-
+        
 async def add_metadata(input_path, output_path, user_id):
     ffmpeg_cmd = shutil.which('ffmpeg')
     if not ffmpeg_cmd:
