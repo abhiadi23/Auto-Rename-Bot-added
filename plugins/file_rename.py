@@ -711,7 +711,7 @@ async def auto_rename_files(client, message):
                     if os.path.exists(ph_path):
                         try:
                         os.remove(ph_path)
-
+                        
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
 @check_fsub
