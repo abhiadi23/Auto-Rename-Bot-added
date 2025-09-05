@@ -708,6 +708,7 @@ async def auto_rename_files(client, message):
                     try:
                         os.remove(metadata_path)
                         
+                        
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
 @check_fsub
