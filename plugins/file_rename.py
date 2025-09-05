@@ -707,7 +707,8 @@ async def auto_rename_files(client, message):
                 if os.path.exists(metadata_path):
                     try:
                         os.remove(metadata_path)
-                        
+                        except Exception:
+                            pass
                         
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
