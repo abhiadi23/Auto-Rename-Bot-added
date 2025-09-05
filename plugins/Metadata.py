@@ -39,7 +39,7 @@ async def metadata(client, message):
             InlineKeyboardButton(f"Oғғ{' ✅' if current == 'Off' else ''}", callback_data='off_metadata')
         ],
         [
-            InlineKeyboardButton("Hᴏᴡ ᴛᴏ Sᴇᴛ Mᴇᴛᴀᴅᴀᴛᴀ...!!", callback_data="meta")
+            InlineKeyboardButton("Hᴏᴡ ᴛᴏ Sᴇᴛ Mᴇᴛᴀᴅᴀᴛᴀ...!!", callback_data="metainfo")
         ]
     ]
     keyboard = InlineKeyboardMarkup(buttons)
