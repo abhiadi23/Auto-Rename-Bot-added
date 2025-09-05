@@ -700,12 +700,16 @@ async def auto_rename_files(client, message):
         await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
         raise
     finally:
-        cleanup_files = [download_path, metadata_path, ph_path]
         if os.path.exists(download_path):
+            try:
                 os.remove(download_path)
+                
                 if os.path.exists(metadata_path):
+                    try:
                     os.remove(metadata_path)
+                    
                     if os.path.exists(ph_path):
+                        try:
                         os.remove(ph_path)
 
 @Client.on_message(filters.command("end_sequence") & filters.private)
