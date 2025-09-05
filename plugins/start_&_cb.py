@@ -269,8 +269,13 @@ async def cb_handler(client, query: CallbackQuery):
         )
 
     if data == "home":
-        await query.message.edit_caption(
-            caption=Config.START_TXT.format(query.from_user.mention),
+        await query.message.reply_text(
+            caption=Config.START_TXT.format(query.first=message.from_user.first_name,
+                last=message.from_user.last_name,
+                username=None if not message.from_user.username else '@' + message.from_user.username,
+                mention=message.from_user.mention,
+                id=message.from_user.id
+            ),
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs •", callback_data='help')],
