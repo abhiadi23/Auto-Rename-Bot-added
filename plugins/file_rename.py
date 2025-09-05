@@ -703,14 +703,15 @@ async def auto_rename_files(client, message):
         if os.path.exists(download_path):
             try:
                 os.remove(download_path)
+            except Exception as e:
+                print(f"Error removing download file: {e}")
+
+        if os.path.exists(metadata_path):
+            try:
+                os.remove(metadata_path)
+            except Exception as e:
+                print(f"Error removing metadata file: {e}")
                 
-                if os.path.exists(metadata_path):
-                    try:
-                        os.remove(metadata_path)
-                        
-                        except Exception:
-                            pass
-                        
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
 @check_fsub
