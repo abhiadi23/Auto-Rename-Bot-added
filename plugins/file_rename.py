@@ -671,14 +671,15 @@ async def auto_rename_files(client, message):
                 ph_path = await client.download_media(message.video.thumbs[0].file_id)
                 except IndexError:
                     ph_path = None
-    except Exception as e:
-        logger.error(f"Failed to download video thumbnail: {e}")
-        ph_path = None
 
-if ph_path:
+    if ph_path:
+        try:
             img = Image.open(ph_path).convert("RGB")
             img = img.resize((320, 320))
             img.save(ph_path, "JPEG")
+            except Exception as e:
+                logger.error(f"Failed to process video thumbnail: {e}")
+                ph_path = None
 
         # Define common upload parameters
         common_upload_params = {
