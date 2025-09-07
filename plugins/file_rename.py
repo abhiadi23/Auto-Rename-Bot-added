@@ -666,10 +666,16 @@ async def auto_rename_files(client, message):
         ph_path = None
         if c_thumb:
             ph_path = await client.download_media(c_thumb)
-        elif media_type == "video" and message.video.thumbs:
-            ph_path = await client.download_media(message.video.thumbs[0].file_id)
+        elif media_type == "video" and message.video and message.video.thumbs:
+            try:
+                ph_path = await client.download_media(message.video.thumbs[0].file_id)
+                except IndexError:
+                    ph_path = None
+    except Exception as e:
+        logger.error(f"Failed to download video thumbnail: {e}")
+        ph_path = None
 
-        if ph_path:
+if ph_path:
             img = Image.open(ph_path).convert("RGB")
             img = img.resize((320, 320))
             img.save(ph_path, "JPEG")
