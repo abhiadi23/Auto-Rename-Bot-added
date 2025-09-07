@@ -669,8 +669,8 @@ async def auto_rename_files(client, message):
         elif media_type == "video" and message.video and message.video.thumbs:
             try:
                 ph_path = await client.download_media(message.video.thumbs[0].file_id)
-                except IndexError:
-                    ph_path = None
+            except IndexError:
+                ph_path = None
 
     if ph_path:
         try:
