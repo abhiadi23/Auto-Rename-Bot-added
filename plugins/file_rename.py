@@ -802,3 +802,38 @@ async def add_metadata(input_path, output_path, user_id):
 
     if process.returncode != 0:
         raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
+
+    for pattern in patterns:
+        match = re.search(pattern, filename, re.IGNORECASE)
+        if match:
+            return match.group(1).zfill(2)
+    
+    return None
+
+async def convert_to_mkv(input_path, output_path):
+    """Convert video file to MKV format"""
+    ffmpeg = shutil.which('ffmpeg')
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg not found in PATH")
+
+    cmd = [
+        ffmpeg,
+        '-hide_banner',
+        '-i', input_path,
+        '-map', '0',
+        '-c', 'copy',
+        '-f', 'matroska',
+        '-y',
+        output_path
+    ]
+
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    _, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        error_msg = stderr.decode().strip()
+        raise RuntimeError(f"MKV conversion failed: {error_msg}")
