@@ -672,11 +672,11 @@ async def auto_rename_files(client, message):
             except IndexError:
                 ph_path = None
 
-    if ph_path:
-        try:
-            img = Image.open(ph_path).convert("RGB")
-            img = img.resize((320, 320))
-            img.save(ph_path, "JPEG")
+        if ph_path:
+            try:
+                img = Image.open(ph_path).convert("RGB")
+                img = img.resize((320, 320))
+                img.save(ph_path, "JPEG")
             except Exception as e:
                 logger.error(f"Failed to process video thumbnail: {e}")
                 ph_path = None
