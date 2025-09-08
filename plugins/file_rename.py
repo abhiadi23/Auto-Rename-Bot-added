@@ -619,7 +619,20 @@ async def auto_rename_files(client, message):
             progress=progress_for_pyrogram,
             progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         )
-
+        
+if file_path.lower().endswith(".mp4"):
+    await msg.edit("__**ᴡᴀɪᴛ ᴀ sᴇᴄ...**__")
+    await message.reply_chat_action(ChatAction.PLAYING)
+    await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ Nᴏᴡ Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
+    await message.reply_chat_action(ChatAction.PLAYING)
+    mkv_path = os.path.splitext(file_path)[0] + ".mkv"
+    await convert_to_mkv(file_path, mkv_path)
+    os.remove(file_path)
+    file_path = mkv_path
+    new_file_name = os.path.basename(mkv_path)
+else:
+    pass
+    
         # Detect duration for video or audio files
         duration = 0
         if media_type in ["video", "audio"] or file_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".mp3", ".flac", ".wav", ".ogg")):
