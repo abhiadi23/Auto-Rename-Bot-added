@@ -625,11 +625,14 @@ if file_path.lower().endswith(".mp4"):
     await message.reply_chat_action(ChatAction.PLAYING)
     await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ Nᴏᴡ Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
     await message.reply_chat_action(ChatAction.PLAYING)
-    mkv_path = os.path.splitext(file_path)[0] + ".mkv"
-    await convert_to_mkv(file_path, mkv_path)
-    os.remove(file_path)
-    file_path = mkv_path
-    new_file_name = os.path.basename(mkv_path)
+    try:
+        mkv_path = os.path.splitext(file_path)[0] + ".mkv"
+        await convert_to_mkv(file_path, mkv_path)
+        os.remove(file_path)
+        file_path = mkv_path
+        new_file_name = os.path.basename(mkv_path)
+    except Exception as e:
+        await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄʜᴀɴɢɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
 else:
     pass
     
