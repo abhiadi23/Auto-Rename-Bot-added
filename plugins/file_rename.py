@@ -622,11 +622,11 @@ if not final_extension.startswith('.'):
             progress=progress_for_pyrogram,
             progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         )
-
-        if file_extension.lower() in ['.mp4', '.m4v']:
-        await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
-        await message.reply_chat_action(ChatAction.PLAYING)
         
+        if file_extension.lower() in ['.mp4', '.m4v']:
+            await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
+            await message.reply_chat_action(ChatAction.PLAYING)
+
         try:
             await convert_to_mkv(file_path, metadata_path, output_path, input_path)
             os.remove(file_path)
