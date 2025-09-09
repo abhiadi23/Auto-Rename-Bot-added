@@ -594,11 +594,14 @@ async def auto_rename_files(client, message):
 
     _, file_extension = os.path.splitext(file_name)
 
-    print(f"Cleaned template: '{template}'")
-    print(f"File extension: '{file_extension}'")
+# Force MP4 files to be converted to MKV to ensure subtitle compatibility
+if file_extension.lower() in ['.mp4', '.m4v']:
+    final_extension = ".mkv"
+else:
+    final_extension = file_extension
 
-    if not file_extension.startswith('.'):
-        file_extension = '.' + file_extension if file_extension else ''
+if not final_extension.startswith('.'):
+    final_extension = '.' + final_extension if file_extension else ''
 
     new_file_name = f"{template}{file_extension}"
     download_path = f"downloads/{new_file_name}"
@@ -620,19 +623,18 @@ async def auto_rename_files(client, message):
             progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
         )
 
-        if file_path.lower().endswith(".mp4"):
-            await msg.edit("__**ᴡᴀɪᴛ ᴀ sᴇᴄ...**__")
-            await message.reply_chat_action(ChatAction.PLAYING)
-            await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ Nᴏᴡ Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
-            await message.reply_chat_action(ChatAction.PLAYING)
-            try:
-                mkv_path = os.path.splitext(file_path)[0] + ".mkv"
-                await convert_to_mkv(file_path, mkv_path)
-                os.remove(file_path)
-                file_path = mkv_path
-                new_file_name = os.path.basename(mkv_path)
-            except Exception as e:
-                await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄʜᴀɴɢɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
+        if file_extension.lower() in ['.mp4', '.m4v']:
+        await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
+        await message.reply_chat_action(ChatAction.PLAYING)
+        
+        try:
+            await convert_to_mkv(file_path, metadata_path, output_path, input_path)
+            os.remove(file_path)
+            file_path = metadata_path
+            metadata_path = None
+        except Exception as e:
+            await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
+            return
         else:
             pass
     
@@ -646,7 +648,7 @@ async def auto_rename_files(client, message):
                 duration = 0
 
         human_readable_duration = convert(duration) if duration > 0 else "N/A"
-
+        
         await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
         await message.reply_chat_action(ChatAction.PLAYING)
         await add_metadata(file_path, metadata_path, user_id)
