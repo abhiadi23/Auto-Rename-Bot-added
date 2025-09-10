@@ -628,7 +628,7 @@ async def auto_rename_files(client, message):
             await message.reply_chat_action(ChatAction.PLAYING)
 
             try:
-                await convert_to_mkv(file_path, metadata_path)
+                await convert_to_mkv(file_path, metadata_path, user_id)
                 os.remove(file_path)
                 file_path = metadata_path
                 metadata_path = None
