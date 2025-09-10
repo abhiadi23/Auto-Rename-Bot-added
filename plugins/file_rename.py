@@ -628,7 +628,7 @@ if not final_extension.startswith('.'):
             await message.reply_chat_action(ChatAction.PLAYING)
 
         try:
-            await convert_to_mkv(file_path, metadata_path, output_path, input_path)
+            await convert_to_mkv(file_path, metadata_path)
             os.remove(file_path)
             file_path = metadata_path
             metadata_path = None
