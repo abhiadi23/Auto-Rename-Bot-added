@@ -595,18 +595,18 @@ async def auto_rename_files(client, message):
     _, file_extension = os.path.splitext(file_name)
 
 # Force MP4 files to be converted to MKV to ensure subtitle compatibility
-if file_extension.lower() in ['.mp4', '.m4v']:
-    final_extension = ".mkv"
-else:
-    final_extension = file_extension
+    if file_extension.lower() in ['.mp4', '.m4v']:
+        final_extension = ".mkv"
+    else:
+        final_extension = file_extension
 
-if not final_extension.startswith('.'):
-    final_extension = '.' + final_extension if file_extension else ''
+    if not final_extension.startswith('.'):
+        final_extension = '.' + final_extension if file_extension else ''
 
-    new_file_name = f"{template}{file_extension}"
+    new_file_name = f"{template}{final_extension}"
     download_path = f"downloads/{new_file_name}"
     metadata_path = f"metadata/{new_file_name}"
-    output_path = f"processed/{os.path.splitext(new_file_name)[0]}{os.path.splitext(new_file_name)[1]}"
+    output_path = f"processed/{os.path.splitext(new_file_name)[0]}{final_extension}"
 
     makedirs(os.path.dirname(download_path), exist_ok=True)
     makedirs(os.path.dirname(metadata_path), exist_ok=True)
@@ -627,17 +627,15 @@ if not final_extension.startswith('.'):
             await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
             await message.reply_chat_action(ChatAction.PLAYING)
 
-        try:
-            await convert_to_mkv(file_path, metadata_path)
-            os.remove(file_path)
-            file_path = metadata_path
-            metadata_path = None
-        except Exception as e:
-            await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
-            return
-        else:
-            pass
-    
+            try:
+                await convert_to_mkv(file_path, metadata_path)
+                os.remove(file_path)
+                file_path = metadata_path
+                metadata_path = None
+            except Exception as e:
+                await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
+                return
+        
         # Detect duration for video or audio files
         duration = 0
         if media_type in ["video", "audio"] or file_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".mp3", ".flac", ".wav", ".ogg")):
@@ -736,7 +734,7 @@ if not final_extension.startswith('.'):
                 os.remove(metadata_path)
             except Exception as e:
                 print(f"Error removing metadata file: {e}")
-                
+
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
 @check_fsub
@@ -821,14 +819,14 @@ async def add_metadata(input_path, output_path, user_id):
     if process.returncode != 0:
         raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
         
-async def convert_to_mkv(input_path, output_path):
+async def convert_to_mkv(input_path, output_path, user_id):
     """Convert video file to MKV format"""
-    ffmpeg = shutil.which('ffmpeg')
+    ffmpeg_cmd = shutil.which('ffmpeg')
     if not ffmpeg:
         raise RuntimeError("FFmpeg not found in PATH")
 
     cmd = [
-        ffmpeg,
+        ffmpeg_cmd,
         '-hide_banner',
         '-i', input_path,
         '-map', '0',
