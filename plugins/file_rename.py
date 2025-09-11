@@ -823,7 +823,7 @@ async def add_metadata(input_path, output_path, user_id):
 async def convert_to_mkv(input_path, output_path, user_id):
     """Convert video file to MKV format"""
     ffmpeg_cmd = shutil.which('ffmpeg')
-    if not ffmpeg:
+    if not ffmpeg_cmd:
         raise RuntimeError("FFmpeg not found in PATH")
 
     metadata_add_cmd = [
