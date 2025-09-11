@@ -825,7 +825,7 @@ async def convert_to_mkv(input_path, output_path, user_id):
     if not ffmpeg:
         raise RuntimeError("FFmpeg not found in PATH")
 
-    cmd = [
+    metadata_add_cmd = [
         ffmpeg_cmd,
         '-hide_banner',
         '-i', input_path,
@@ -837,7 +837,7 @@ async def convert_to_mkv(input_path, output_path, user_id):
     ]
 
     process = await asyncio.create_subprocess_exec(
-        *cmd,
+        *metadata_add_cmd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
