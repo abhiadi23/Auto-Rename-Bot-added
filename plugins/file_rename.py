@@ -629,7 +629,6 @@ async def auto_rename_files(client, message):
 
             try:
                 await convert_to_mkv(file_path, metadata_path, user_id)
-                os.remove(file_path)
             except Exception as e:
                 await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
                 return
