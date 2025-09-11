@@ -806,6 +806,7 @@ async def add_metadata(input_path, output_path, user_id):
         '-map', '0',
         '-c', 'copy',
         '-loglevel', 'error',
+        '-y',
         output_path
     ]
 
@@ -829,6 +830,14 @@ async def convert_to_mkv(input_path, output_path, user_id):
         ffmpeg_cmd,
         '-hide_banner',
         '-i', input_path,
+        '-metadata', f'title={await codeflixbots.get_title(user_id)}',
+        '-metadata', f'artist={await codeflixbots.get_artist(user_id)}',
+        '-metadata', f'author={await codeflixbots.get_author(user_id)}',
+        '-metadata:s:v', f'title={await codeflixbots.get_video(user_id)}',
+        '-metadata:s:a', f'title={await codeflixbots.get_audio(user_id)}',
+        '-metadata:s:s', f'title={await codeflixbots.get_subtitle(user_id)}',
+        '-metadata', f'encoded_by={await codeflixbots.get_encoded_by(user_id)}',
+        '-metadata', f'custom_tag={await codeflixbots.get_custom_tag(user_id)}',
         '-map', '0',
         '-c', 'copy',
         '-f', 'matroska',
