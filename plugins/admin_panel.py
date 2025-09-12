@@ -4,7 +4,7 @@ from pyrogram.types import Message
 from pyrogram import Client, filters
 from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, PeerIdInvalid
 import os, sys, time, asyncio, logging
-from utils import get_seconds
+from database.utils import get_seconds
 import datetime
 from datetime import timedelta
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
