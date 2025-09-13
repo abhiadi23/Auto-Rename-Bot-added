@@ -305,11 +305,10 @@ async def plan(client, message):
     ]])
 
 PREMIUM_TXT = "<b>👋 ʜᴇʏ {mention}\n\n🎁 ᴘʀᴇᴍɪᴜᴍ ғᴇᴀᴛᴜʀᴇ ʙᴇɴɪꜰɪᴛꜱ:</blockquote>\n\n›› ɴᴏ ɴᴇᴇᴅ ᴛᴏ ᴏᴘᴇɴ ʟɪɴᴋꜱ\n❏ ɢᴇᴛ ᴅɪʀᴇᴄᴛ ғɪʟᴇs\n›› ᴀᴅ-ғʀᴇᴇ ᴇxᴘᴇʀɪᴇɴᴄᴇ\n❏ ʜɪɢʜ-sᴘᴇᴇᴅ ᴅᴏᴡɴʟᴏᴀᴅ ʟɪɴᴋ\n›› ᴍᴜʟᴛɪ-ᴘʟᴀʏᴇʀ sᴛʀᴇᴀᴍɪɴɢ ʟɪɴᴋs\n❏ ᴜɴʟɪᴍɪᴛᴇᴅ ᴍᴏᴠɪᴇs ᴀɴᴅ sᴇʀɪᴇs\n›› ꜰᴜʟʟ ᴀᴅᴍɪɴ sᴜᴘᴘᴏʀᴛ\n❏ ʀᴇǫᴜᴇsᴛ ᴡɪʟʟ ʙᴇ ᴄᴏᴍᴘʟᴇᴛᴇᴅ ɪɴ 𝟷ʜ [ ɪꜰ ᴀᴠᴀɪʟᴀʙʟᴇ ]\n\n›› ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴀᴄᴛɪᴠᴇ ᴘʟᴀɴ: /myplan\n</b>".format(first=message.from_user.first_name, last=message.from_user.last_name, username=None if not message.from_user.username else '@' + message.from_user.username, mention=message.from_user.mention, id=message.from_user.id)
-
-    await message.reply_photo(
-        photo="https://envs.sh/Wdj.jpg", 
-        caption=PREMIUM_TXT,
-        reply_markup=keyboard)
+await message.reply_photo(
+	photo="https://envs.sh/Wdj.jpg", 
+	caption=PREMIUM_TXT,
+	reply_markup=keyboard)
         #==================================================================================
 
 @Client.on_message(filters.private & filters.command("restart") & filters.private & admin)
@@ -333,7 +332,7 @@ async def tutorial(bot, message):
         text=Config.FILE_NAME_TXT.format(format_template=format_template),
         disable_web_page_preview=True,
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("•Sᴜᴘᴘᴏʀᴛ•", url="https://t.me/BOTSKINGDOMSGROUP"), InlineKeyboardButton("•⚡Main hub•", url="https://t.me/botskingdoms")]
+            [InlineKeyboardButton("• Sᴜᴘᴘᴏʀᴛ •", url="https://t.me/BOTSKINGDOMSGROUP"), InlineKeyboardButton("• ⚡Main hub •", url="https://t.me/botskingdoms")]
         ])
     )
 
