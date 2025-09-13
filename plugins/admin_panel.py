@@ -272,12 +272,61 @@ async def premium_user(client, message):
             user_count += 1
         else:
 			await message.reply_text("Nᴏ ᴜsᴇʀ ғᴏᴜɴᴅ ɪɴ ᴛʜᴇ ᴅᴀᴛᴀʙᴀsᴇ")
+		else:
+			pass
     try:    
         await aa.edit_text(new)
     except MessageTooLong:
         with open('usersplan.txt', 'w+') as outfile:
             outfile.write(new)
         await message.reply_document('usersplan.txt', caption="Paid Users:")
+
+@Client.on_message(filters.command("plan"))
+async def plan(client, message):
+    user_id = message.from_user.id 
+    users = message.from_user.mention 
+    keyboard = InlineKeyboardMarkup([[
+            InlineKeyboardButton('• Rᴇғᴇʀ •', callback_data='reffff')
+        ],[
+            InlineKeyboardButton('• ʙʀᴏɴᴢᴇ ', callback_data='broze'),
+            InlineKeyboardButton('• ꜱɪʟᴠᴇʀ ', callback_data='silver')
+        ],[
+            InlineKeyboardButton('• ɢᴏʟᴅ ', callback_data='gold'),
+            InlineKeyboardButton('• ᴘʟᴀᴛɪɴᴜᴍ ', callback_data='platinum')
+        ],[
+            InlineKeyboardButton('• ᴅɪᴀᴍᴏɴᴅ ', callback_data='diamond'),
+            InlineKeyboardButton('• ᴏᴛʜᴇʀ ', callback_data='other')
+        ],[
+            InlineKeyboardButton('• ꜰʀᴇᴇ ᴛʀɪᴀʟ ', callback_data='free')
+        ],[            
+            InlineKeyboardButton('⇋ ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ ⇋', callback_data='start')
+    ]])
+
+PREMIUM_TXT.format(first=message.from_user.first_name,
+last=message.from_user.last_name,
+username=None if not message.from_user.username else '@' + message.from_user.username,
+mention=message.from_user.mention,
+id=message.from_user.id)
+
+	PREMIUM_TXT = "<b>👋 ʜᴇʏ {mention}
+
+🎁 ᴘʀᴇᴍɪᴜᴍ ғᴇᴀᴛᴜʀᴇ ʙᴇɴɪꜰɪᴛꜱ:</blockquote>
+
+›› ɴᴏ ɴᴇᴇᴅ ᴛᴏ ᴏᴘᴇɴ ʟɪɴᴋꜱ
+❏ ɢᴇᴛ ᴅɪʀᴇᴄᴛ ғɪʟᴇs   
+›› ᴀᴅ-ғʀᴇᴇ ᴇxᴘᴇʀɪᴇɴᴄᴇ 
+❏ ʜɪɢʜ-sᴘᴇᴇᴅ ᴅᴏᴡɴʟᴏᴀᴅ ʟɪɴᴋ                         
+›› ᴍᴜʟᴛɪ-ᴘʟᴀʏᴇʀ sᴛʀᴇᴀᴍɪɴɢ ʟɪɴᴋs                           
+❏ ᴜɴʟɪᴍɪᴛᴇᴅ ᴍᴏᴠɪᴇs ᴀɴᴅ sᴇʀɪᴇs                                                                        
+›› ꜰᴜʟʟ ᴀᴅᴍɪɴ sᴜᴘᴘᴏʀᴛ                              
+❏ ʀᴇǫᴜᴇsᴛ ᴡɪʟʟ ʙᴇ ᴄᴏᴍᴘʟᴇᴛᴇᴅ ɪɴ 𝟷ʜ [ ɪꜰ ᴀᴠᴀɪʟᴀʙʟᴇ ]
+
+›› ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴀᴄᴛɪᴠᴇ ᴘʟᴀɴ: /myplan
+</b>"
+	await message.reply_photo(
+		photo="https://envs.sh/Wdj.jpg", 
+		caption=PREMIUM_TXT,
+		reply_markup=keyboard)
         #==================================================================================
 
 @Client.on_message(filters.private & filters.command("restart") & filters.private & admin)
