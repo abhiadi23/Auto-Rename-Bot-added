@@ -272,16 +272,16 @@ async def premium_user(client, message):
             time_left_str = f"{days} days, {hours} hours, {minutes} minutes"	 
             new += f"{user_count}. {(await client.get_users(user['id'])).mention}\n• ᴜꜱᴇʀ ɪᴅ : {user['id']}\n⏳ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}\n⏰ ᴛɪᴍᴇ ʟᴇꜰᴛ : {time_left_str}\n"
             user_count += 1
-			if not found_premium_users:
-				await aa.edit_text("Nᴏ ᴜsᴇʀ ғᴏᴜɴᴅ ɪɴ ᴛʜᴇ ᴅᴀᴛᴀʙᴀsᴇ")
-			else:
-				try:
-					await aa.edit_text(new)
-					except MessageTooLong:
-						with open('usersplan.txt', 'w+') as outfile:
-							outfile.write(new)
-							await message.reply_document('usersplan.txt', caption="Paid Users:")
-							
+    if not found_premium_users:
+        await aa.edit_text("Nᴏ ᴜsᴇʀ ғᴏᴜɴᴅ ɪɴ ᴛʜᴇ ᴅᴀᴛᴀʙᴀsᴇ")
+    else:
+        try:
+            await aa.edit_text(new)
+        except MessageTooLong:
+            with open('usersplan.txt', 'w+') as outfile:
+                outfile.write(new)
+            await message.reply_document('usersplan.txt', caption="Paid Users:")
+            
 @Client.on_message(filters.command("plan"))
 async def plan(client, message):
     user_id = message.from_user.id 
