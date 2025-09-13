@@ -257,21 +257,22 @@ async def premium_user(client, message):
     new = f" ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀꜱ ʟɪꜱᴛ :\n\n"
     user_count = 1
     users = await codeflixbots.get_all_users()
-	found_premium_users = false
+    found_premium_users = False  # Fixed indentation and boolean value
     async for user in users:
         data = await codeflixbots.get_user(user['id'])
         if data and data.get("expiry_time"):
-            expiry = data.get("expiry_time") 
+            expiry = data.get("expiry_time")
             expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
-            expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")            
+            expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")
             current_time = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
             time_left = expiry_ist - current_time
             days = time_left.days
             hours, remainder = divmod(time_left.seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
-            time_left_str = f"{days} days, {hours} hours, {minutes} minutes"	 
+            time_left_str = f"{days} days, {hours} hours, {minutes} minutes"
             new += f"{user_count}. {(await client.get_users(user['id'])).mention}\n• ᴜꜱᴇʀ ɪᴅ : {user['id']}\n⏳ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}\n⏰ ᴛɪᴍᴇ ʟᴇꜰᴛ : {time_left_str}\n"
             user_count += 1
+            found_premium_users = True # Set to True if any premium user is found
     if not found_premium_users:
         await aa.edit_text("Nᴏ ᴜsᴇʀ ғᴏᴜɴᴅ ɪɴ ᴛʜᴇ ᴅᴀᴛᴀʙᴀsᴇ")
     else:
@@ -281,7 +282,7 @@ async def premium_user(client, message):
             with open('usersplan.txt', 'w+') as outfile:
                 outfile.write(new)
             await message.reply_document('usersplan.txt', caption="Paid Users:")
-            
+
 @Client.on_message(filters.command("plan"))
 async def plan(client, message):
     user_id = message.from_user.id 
