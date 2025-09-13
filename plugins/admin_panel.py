@@ -198,7 +198,7 @@ async def myplan(client, message):
 async def get_premium(client, message):
     if len(message.command) == 2:
         user_id = int(message.command[1])
-        user = await client.get_user(user_id)
+        user = await client.get_users(user_id)
         data = await codeflixbots.get_user(user_id)  # Convert the user_id to integer
         if data and data.get("expiry_time"):
             #expiry_time = datetime.datetime.now() + datetime.timedelta(seconds=data)
@@ -257,7 +257,7 @@ async def premium_user(client, message):
     user_count = 1
     users = await codeflixbots.get_all_users()
     async for user in users:
-        data = await codeflixbots.get_user(user['id])
+        data = await codeflixbots.get_user(user['id'])
         if data and data.get("expiry_time"):
             expiry = data.get("expiry_time") 
             expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
@@ -271,7 +271,7 @@ async def premium_user(client, message):
             new += f"{user_count}. {(await client.get_users(user['id'])).mention}\n• ᴜꜱᴇʀ ɪᴅ : {user['id']}\n⏳ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}\n⏰ ᴛɪᴍᴇ ʟᴇꜰᴛ : {time_left_str}\n"
             user_count += 1
         else:
-            pass
+			await message.reply_text("Nᴏ ᴜsᴇʀ ғᴏᴜɴᴅ ɪɴ ᴛʜᴇ ᴅᴀᴛᴀʙᴀsᴇ")
     try:    
         await aa.edit_text(new)
     except MessageTooLong:
