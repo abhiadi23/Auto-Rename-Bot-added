@@ -22,6 +22,7 @@ class Database:
         self.rqst_fsub_data = self.database['request_forcesub']
         self.rqst_fsub_Channel_data = self.database['request_forcesub_channel']
         self.collection = self.database['counts']
+        self.verification_data = self.database['verification']
         self.verification_settings = self.database['verification_settings']  # New collection for global settings
         self.timezone = pytz.timezone(Config.TIMEZONE)
 
@@ -52,6 +53,20 @@ class Database:
                 'verified_time': None
             }
         )
+
+    # Get current mode of a verification 
+    async def get_verification_mode(self, channel_id: int):
+        data = await self.verification_data.find_one({'_id': channel_id})
+        return data.get("mode", "off") if data else "off"
+
+    # Set mode of verification 
+    async def set_verification_mode(self, channel_id: int, mode: str):
+        await self.verification_data.update_one(
+            {'_id': channel_id},
+            {'$set': {'mode': mode}},
+            upsert=True
+        )
+        
 
     # Functions to manage user's verification status
     async def db_verify_status(self, user_id):
