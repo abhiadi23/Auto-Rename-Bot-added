@@ -1,19 +1,18 @@
-import motor.motor_asyncio, datetime, pytz
-from config import Config
-import logging
-from .utils import send_log
+import motor.motor_asyncio
+import datetime
 import pytz
-
+import logging
+from config import Config
 
 class Database:
     def __init__(self, uri, database_name):
         try:
             self._client = motor.motor_asyncio.AsyncIOMotorClient(uri)
-            self._client.server_info()  # This will raise an exception if the connection fails
+            self._client.server_info()
             logging.info("Successfully connected to MongoDB")
         except Exception as e:
             logging.error(f"Failed to connect to MongoDB: {e}")
-            raise e  # Re-raise the exception after logging it
+            raise e
         self.database = self._client[database_name]
         self.col = self.database['user']
         self.channel_data = self.database['channels']
@@ -23,13 +22,12 @@ class Database:
         self.rqst_fsub_data = self.database['request_forcesub']
         self.rqst_fsub_Channel_data = self.database['request_forcesub_channel']
         self.collection = self.database['counts']
-        self.timezone = pytz.timezone(timezone)
+        self.verification_settings = self.database['verification_settings']  # New collection for global settings
+        self.timezone = pytz.timezone(Config.TIMEZONE)
 
     default_verify = {
-    'is_verified': False,
-    'verified_time': 0,
-    'verify_token': "",
-    'link': ""
+        'is_verified': False,
+        'verified_time': None
     }
 
     def new_user(self, id, username=None):
@@ -48,14 +46,42 @@ class Database:
                 ban_duration=0,
                 banned_on=datetime.date.max.isoformat(),
                 ban_reason='',
-                '_id': id,
-        'verify_status': {
-            'is_verified': False,
-            'verified_time': "",
-            'verify_token': "",
-            'link': ""
-        }     
-            )
+            ),
+            verify_status={
+                'is_verified': False,
+                'verified_time': None
+            }
+        )
+
+    # Functions to manage user's verification status
+    async def db_verify_status(self, user_id):
+        user = await self.col.find_one({'_id': user_id})
+        return user.get('verify_status', self.default_verify) if user else self.default_verify
+
+    async def db_update_verify_status(self, user_id, verify_status):
+        await self.col.update_one(
+            {'_id': user_id},
+            {'$set': {'verify_status': verify_status}}
+        )
+
+    async def update_verify_status(self, user_id, is_verified=False, verified_time=None):
+        current = await self.db_verify_status(user_id)
+        current['is_verified'] = is_verified
+        current['verified_time'] = verified_time
+        await self.db_update_verify_status(user_id, current)
+
+    # Function to manage global verification settings (links and APIs)
+    async def get_verification_settings(self):
+        """Retrieves the single document with global verification settings."""
+        settings = await self.verification_settings.find_one({'_id': 'global_settings'})
+        return settings if settings else {}
+
+    async def set_all_verification_settings(self, links: list, apis: list):
+        """Sets or updates all global verification settings (links and APIs)."""
+        await self.verification_settings.update_one(
+            {'_id': 'global_settings'},
+            {'$set': {'links': links, 'apis': apis}},
+        upsert=True
         )
 
     async def add_user(self, b, m):
@@ -434,12 +460,14 @@ async def db_verify_status(self, user_id):
         verify = await self.db_verify_status(user_id)
         return verify
 
-    async def update_verify_status(self, user_id, verify_token="", is_verified=False, verified_time=0, link=""):
-        current = await self.db_verify_status(user_id)
-        current['verify_token'] = verify_token
-        current['is_verified'] = is_verified
-        current['verified_time'] = verified_time
-        current['link'] = link
-        await self.db_update_verify_status(user_id, current)
+    async def update_verify_status(self, user_id, is_verified=False, verified_time=None):
+    current = await self.db_verify_status(user_id)
+    current['is_verified'] = is_verified
+    current['verified_time'] = verified_time
+    await self.db_update_verify_status(user_id, current)
 
+async def delete_verification_settings(self):
+    """Deletes all verification settings, effectively disabling the feature."""
+    await self.verification_settings.delete_one({'_id': 'global_settings'})
+    
 codeflixbots = Database(Config.DB_URL, Config.DB_NAME)
