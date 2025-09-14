@@ -332,7 +332,7 @@ async def tutorial(bot, message):
         text=Config.FILE_NAME_TXT.format(format_template=format_template),
         disable_web_page_preview=True,
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("• Sᴜᴘᴘᴏʀᴛ •", url="https://t.me/BOTSKINGDOMSGROUP"), InlineKeyboardButton("• ⚡Main hub •", url="https://t.me/botskingdoms")]
+            [InlineKeyboardButton("• Sᴜᴘᴘᴏʀᴛ •", url="https://t.me/BOTSKINGDOMSGROUP"), InlineKeyboardButton("•⚡Mᴀɪɴ ʜᴜʙ •", url="https://t.me/botskingdoms")]
         ])
     )
 
