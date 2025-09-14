@@ -54,6 +54,69 @@ class Database:
             }
         )
 
+async def save_verification(self, user_id):
+        now = datetime.now(self.timezone)
+        year = now.year  
+        verification = {"user_id": user_id, "verified_at": now, "year": year}
+        self.collection.insert_one(verification)
+
+    def get_start_end_dates(self, time_period, year=None):
+        now = datetime.now(self.timezone)
+        
+        if time_period == 'today':
+            start_datetime = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = now
+        elif time_period == 'yesterday':
+            start_datetime = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = start_datetime + timedelta(days=1)
+        elif time_period == 'this_week':
+            start_datetime = now - timedelta(days=now.weekday())
+            start_datetime = start_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = now            
+        elif time_period == 'this_month':
+            start_datetime = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = now
+        elif time_period == 'last_month':
+            first_day_of_current_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            last_month_end_datetime = first_day_of_current_month - timedelta(microseconds=1)
+            start_datetime = last_month_end_datetime.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = last_month_end_datetime
+        elif time_period == 'year' and year:
+            start_datetime = datetime(year, 1, 1, tzinfo=self.timezone)  # Start of the year
+            end_datetime = datetime(year + 1, 1, 1, tzinfo=self.timezone) - timedelta(microseconds=1)  # End of the year
+        else:
+            raise ValueError("Invalid time period")
+        
+        return start_datetime, end_datetime
+
+    async def get_vr_count(self, time_period, year=None):
+        start_datetime, end_datetime = self.get_start_end_dates(time_period, year)
+        count = self.collection.count_documents({'verified_at': {'$gt': start_datetime, '$lt': end_datetime}})
+        return count
+
+async def db_verify_status(self, user_id):
+        user = await self.user_data.find_one({'_id': user_id})
+        if user:
+            return user.get('verify_status', default_verify)
+        return default_verify
+
+    async def db_update_verify_status(self, user_id, verify):
+        await self.user_data.update_one({'_id': user_id}, {'$set': {'verify_status': verify}})
+
+    async def get_verify_status(self, user_id):
+        verify = await self.db_verify_status(user_id)
+        return verify
+
+    async def update_verify_status(self, user_id, is_verified=False, verified_time=None):
+    current = await self.db_verify_status(user_id)
+    current['is_verified'] = is_verified
+    current['verified_time'] = verified_time
+    await self.db_update_verify_status(user_id, current)
+
+async def delete_verification_settings(self):
+    """Deletes all verification settings, effectively disabling the feature."""
+    await self.verification_settings.delete_one({'_id': 'global_settings'})
+    
     # Get current mode of a verification 
     async def get_verification_mode(self, channel_id: int):
         data = await self.verification_data.find_one({'_id': channel_id})
@@ -67,24 +130,6 @@ class Database:
             upsert=True
         )
         
-
-    # Functions to manage user's verification status
-    async def db_verify_status(self, user_id):
-        user = await self.col.find_one({'_id': user_id})
-        return user.get('verify_status', self.default_verify) if user else self.default_verify
-
-    async def db_update_verify_status(self, user_id, verify_status):
-        await self.col.update_one(
-            {'_id': user_id},
-            {'$set': {'verify_status': verify_status}}
-        )
-
-    async def update_verify_status(self, user_id, is_verified=False, verified_time=None):
-        current = await self.db_verify_status(user_id)
-        current['is_verified'] = is_verified
-        current['verified_time'] = verified_time
-        await self.db_update_verify_status(user_id, current)
-
     # Function to manage global verification settings (links and APIs)
     async def get_verification_settings(self):
         """Retrieves the single document with global verification settings."""
@@ -422,67 +467,4 @@ class Database:
         })
         return count
 
-async def save_verification(self, user_id):
-        now = datetime.now(self.timezone)
-        year = now.year  
-        verification = {"user_id": user_id, "verified_at": now, "year": year}
-        self.collection.insert_one(verification)
-
-    def get_start_end_dates(self, time_period, year=None):
-        now = datetime.now(self.timezone)
-        
-        if time_period == 'today':
-            start_datetime = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            end_datetime = now
-        elif time_period == 'yesterday':
-            start_datetime = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-            end_datetime = start_datetime + timedelta(days=1)
-        elif time_period == 'this_week':
-            start_datetime = now - timedelta(days=now.weekday())
-            start_datetime = start_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
-            end_datetime = now            
-        elif time_period == 'this_month':
-            start_datetime = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            end_datetime = now
-        elif time_period == 'last_month':
-            first_day_of_current_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            last_month_end_datetime = first_day_of_current_month - timedelta(microseconds=1)
-            start_datetime = last_month_end_datetime.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            end_datetime = last_month_end_datetime
-        elif time_period == 'year' and year:
-            start_datetime = datetime(year, 1, 1, tzinfo=self.timezone)  # Start of the year
-            end_datetime = datetime(year + 1, 1, 1, tzinfo=self.timezone) - timedelta(microseconds=1)  # End of the year
-        else:
-            raise ValueError("Invalid time period")
-        
-        return start_datetime, end_datetime
-
-    async def get_vr_count(self, time_period, year=None):
-        start_datetime, end_datetime = self.get_start_end_dates(time_period, year)
-        count = self.collection.count_documents({'verified_at': {'$gt': start_datetime, '$lt': end_datetime}})
-        return count
-
-async def db_verify_status(self, user_id):
-        user = await self.user_data.find_one({'_id': user_id})
-        if user:
-            return user.get('verify_status', default_verify)
-        return default_verify
-
-    async def db_update_verify_status(self, user_id, verify):
-        await self.user_data.update_one({'_id': user_id}, {'$set': {'verify_status': verify}})
-
-    async def get_verify_status(self, user_id):
-        verify = await self.db_verify_status(user_id)
-        return verify
-
-    async def update_verify_status(self, user_id, is_verified=False, verified_time=None):
-    current = await self.db_verify_status(user_id)
-    current['is_verified'] = is_verified
-    current['verified_time'] = verified_time
-    await self.db_update_verify_status(user_id, current)
-
-async def delete_verification_settings(self):
-    """Deletes all verification settings, effectively disabling the feature."""
-    await self.verification_settings.delete_one({'_id': 'global_settings'})
-    
 codeflixbots = Database(Config.DB_URL, Config.DB_NAME)
