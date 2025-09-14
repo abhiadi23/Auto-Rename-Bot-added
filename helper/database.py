@@ -2,6 +2,7 @@ import motor.motor_asyncio, datetime, pytz
 from config import Config
 import logging
 from .utils import send_log
+import pytz
 
 
 class Database:
@@ -21,6 +22,15 @@ class Database:
         self.fsub_data = self.database['fsub']
         self.rqst_fsub_data = self.database['request_forcesub']
         self.rqst_fsub_Channel_data = self.database['request_forcesub_channel']
+        self.collection = self.database['counts']
+        self.timezone = pytz.timezone(timezone)
+
+    default_verify = {
+    'is_verified': False,
+    'verified_time': 0,
+    'verify_token': "",
+    'link': ""
+    }
 
     def new_user(self, id, username=None):
         return dict(
@@ -37,7 +47,14 @@ class Database:
                 is_banned=False,
                 ban_duration=0,
                 banned_on=datetime.date.max.isoformat(),
-                ban_reason=''
+                ban_reason='',
+                '_id': id,
+        'verify_status': {
+            'is_verified': False,
+            'verified_time': "",
+            'verify_token': "",
+            'link': ""
+        }     
             )
         )
 
@@ -363,5 +380,66 @@ class Database:
         "expiry_time": {"$gt": datetime.datetime.now()}
         })
         return count
+
+async def save_verification(self, user_id):
+        now = datetime.now(self.timezone)
+        year = now.year  
+        verification = {"user_id": user_id, "verified_at": now, "year": year}
+        self.collection.insert_one(verification)
+
+    def get_start_end_dates(self, time_period, year=None):
+        now = datetime.now(self.timezone)
+        
+        if time_period == 'today':
+            start_datetime = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = now
+        elif time_period == 'yesterday':
+            start_datetime = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = start_datetime + timedelta(days=1)
+        elif time_period == 'this_week':
+            start_datetime = now - timedelta(days=now.weekday())
+            start_datetime = start_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = now            
+        elif time_period == 'this_month':
+            start_datetime = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = now
+        elif time_period == 'last_month':
+            first_day_of_current_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            last_month_end_datetime = first_day_of_current_month - timedelta(microseconds=1)
+            start_datetime = last_month_end_datetime.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = last_month_end_datetime
+        elif time_period == 'year' and year:
+            start_datetime = datetime(year, 1, 1, tzinfo=self.timezone)  # Start of the year
+            end_datetime = datetime(year + 1, 1, 1, tzinfo=self.timezone) - timedelta(microseconds=1)  # End of the year
+        else:
+            raise ValueError("Invalid time period")
+        
+        return start_datetime, end_datetime
+
+    async def get_vr_count(self, time_period, year=None):
+        start_datetime, end_datetime = self.get_start_end_dates(time_period, year)
+        count = self.collection.count_documents({'verified_at': {'$gt': start_datetime, '$lt': end_datetime}})
+        return count
+
+async def db_verify_status(self, user_id):
+        user = await self.user_data.find_one({'_id': user_id})
+        if user:
+            return user.get('verify_status', default_verify)
+        return default_verify
+
+    async def db_update_verify_status(self, user_id, verify):
+        await self.user_data.update_one({'_id': user_id}, {'$set': {'verify_status': verify}})
+
+    async def get_verify_status(self, user_id):
+        verify = await self.db_verify_status(user_id)
+        return verify
+
+    async def update_verify_status(self, user_id, verify_token="", is_verified=False, verified_time=0, link=""):
+        current = await self.db_verify_status(user_id)
+        current['verify_token'] = verify_token
+        current['is_verified'] = is_verified
+        current['verified_time'] = verified_time
+        current['link'] = link
+        await self.db_update_verify_status(user_id, current)
 
 codeflixbots = Database(Config.DB_URL, Config.DB_NAME)
