@@ -44,12 +44,7 @@ class Database:
                 ban_duration=0,
                 banned_on=datetime.date.max.isoformat(),
                 ban_reason='',
-            ),
-            verify_status={
-                'is_verified': False,
-                'verified_time': 0
-            }
-        )
+            )
 
     async def save_verification(self, user_id):
         now = datetime.now(self.timezone)
@@ -93,16 +88,20 @@ class Database:
 
     async def db_verify_status(self, user_id):
         default_verify = {
-            'is_verified': False,
-            'verified_time': 0
+            'is_verified_1': False,
+            'verified_time_1': 0,
+            'is_verified_2': False,
+            'verified_time_2': 0,
         }
         user = await self.users.find_one({'_id': user_id})
         if user:
-            return user.get('verify_status', default_verify)
+            return user.get('verify_status_1', default_verify)
+            return user.get('verify_status_2', default_verify)
         return default_verify
 
     async def db_update_verify_status(self, user_id, verify):
-        await self.users.update_one({'_id': user_id}, {'$set': {'verify_status': verify}})
+        await self.users.update_one({'_id': user_id}, {'$set': {'verify_status_1': verify}})
+        await self.users.update_one({'_id': user_id}, {'$set': {'verify_status_2': verify}})
 
     async def get_verify_status(self, user_id):
         verify = await self.db_verify_status(user_id)
@@ -110,8 +109,10 @@ class Database:
 
     async def update_verify_status(self, user_id, is_verified=False, verified_time=None):
         current = await self.db_verify_status(user_id)
-        current['is_verified'] = is_verified
-        current['verified_time'] = verified_time
+        current['is_verified_1'] = is_verified_1
+        current['verified_time_1'] = verified_time_1
+        current['is_verified_2'] = is_verified_2
+        current['verified_time_2'] = verified_time_2
         await self.db_update_verify_status(user_id, current)
 
     async def get_verification_mode(self, channel_id: int):
@@ -130,7 +131,13 @@ class Database:
         if not settings:
             default_settings = {
                 'verify_token_1': "not set",
+                'verify_status_1': "False"
+                'is_verified_1': False,
+                'verified_time_1': 0,
                 'api_link_1': "not set",
+                'verify_status_2': "False"
+                'is_verified_2': False,
+                'verified_time_1': 0,
                 'verify_token_2': "not set",
                 'api_link_2': "not set"
             }
