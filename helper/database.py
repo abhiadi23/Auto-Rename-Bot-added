@@ -26,11 +26,6 @@ class Database:
         self.verification_settings = self.database['verification_settings']  # New collection for global settings
         self.timezone = pytz.timezone(Config.TIMEZONE)
 
-    default_verify = {
-        'is_verified': False,
-        'verified_time': None
-    }
-
     def new_user(self, id, username=None):
         return dict(
             _id=int(id),
@@ -50,7 +45,7 @@ class Database:
             ),
             verify_status={
                 'is_verified': False,
-                'verified_time': None
+                'verified_time': 0
             }
         )
 
@@ -60,7 +55,7 @@ async def save_verification(self, user_id):
         verification = {"user_id": user_id, "verified_at": now, "year": year}
         self.collection.insert_one(verification)
 
-    def get_start_end_dates(self, time_period, year=None):
+    def get_start_end_dates_verification(self, time_period, year=None):
         now = datetime.now(self.timezone)
         
         if time_period == 'today':
@@ -113,10 +108,6 @@ async def db_verify_status(self, user_id):
     current['verified_time'] = verified_time
     await self.db_update_verify_status(user_id, current)
 
-async def delete_verification_settings(self):
-    """Deletes all verification settings, effectively disabling the feature."""
-    await self.verification_settings.delete_one({'_id': 'global_settings'})
-    
     # Get current mode of a verification 
     async def get_verification_mode(self, channel_id: int):
         data = await self.verification_data.find_one({'_id': channel_id})
@@ -134,13 +125,24 @@ async def delete_verification_settings(self):
     async def get_verification_settings(self):
         """Retrieves the single document with global verification settings."""
         settings = await self.verification_settings.find_one({'_id': 'global_settings'})
+        if not settings:
+            default_verify = {
+    'verify_1': False,
+    'verify_2': False,
+    'verify_token_1': "",
+    'api_link_1': "",
+    'verify_token_2': "",
+    'api_link_2': ""
+    'verified_time': 0
+            }
         return settings if settings else {}
 
     async def set_all_verification_settings(self, links: list, apis: list):
         """Sets or updates all global verification settings (links and APIs)."""
         await self.verification_settings.update_one(
             {'_id': 'global_settings'},
-            {'$set': {'links': links, 'apis': apis}},
+            {'$set': {'verify_token_1': verify_token_1, 'api_link_1': api_link_1}},
+            {'$set': {'verify_token_2': verify_token_2, 'api_link_2': api_link_2}},
         upsert=True
         )
 
