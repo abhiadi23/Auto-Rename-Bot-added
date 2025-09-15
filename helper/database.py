@@ -15,7 +15,7 @@ class Database:
             logging.error(f"Failed to connect to MongoDB: {e}")
             raise e
         self.database = self._client[database_name]
-        self.users = self.database['user'] # Changed from `col` for clarity
+        self.users = self.database['user']
         self.channel_data = self.database['channels']
         self.admins_data = self.database['admins']
         self.autho_user_data = self.database['autho_user']
@@ -25,7 +25,7 @@ class Database:
         self.counts = self.database['counts']
         self.verification_data = self.database['verification']
         self.verification_settings = self.database['verification_settings']
-        self.banned_users = self.database['banned_users'] # Added for consistency
+        self.banned_users = self.database['banned_users']
         self.timezone = pytz.timezone(Config.TIMEZONE)
 
     def new_user(self, id, username=None):
@@ -45,11 +45,12 @@ class Database:
                 banned_on=datetime.date.max.isoformat(),
                 ban_reason='',
             )
+        )
 
     async def save_verification(self, user_id):
         now = datetime.now(self.timezone)
         verification = {"user_id": user_id, "verified_at": now}
-        await self.verification_data.insert_one(verification) # Corrected collection name and async call
+        await self.verification_data.insert_one(verification)
 
     def get_start_end_dates_verification(self, time_period, year=None):
         now = datetime.now(self.timezone)
@@ -62,7 +63,7 @@ class Database:
             end_datetime = start_datetime + timedelta(days=1)
         elif time_period == 'this_week':
             start_datetime = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-            end_datetime = now            
+            end_datetime = now
         elif time_period == 'this_month':
             start_datetime = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             end_datetime = now
@@ -80,9 +81,19 @@ class Database:
         return start_datetime, end_datetime
 
     async def get_vr_count(self, time_period, year=None):
-        start_datetime, end_datetime = self.get_start_end_dates_verification(time_period, year) # Corrected method name
-        count = await self.verification_data.count_documents({ # Corrected collection name
-            'verified_at': {'$gte': start_datetime, '$lt': end_datetime} # Corrected operators
+        start_datetime, end_datetime = self.get_start_end_dates_verification(time_period, year)
+        count = await self.verification_data.count_documents({
+            'verified_at': {'$gte': start_datetime, '$lt': end_datetime}
+        })
+        return count
+
+    async def get_vr_count_combined(self, time_period, year=None):
+        start_datetime, end_datetime = self.get_start_end_dates_verification(time_period, year)
+        count = await self.users.count_documents({
+            '$or': [
+                {'verify_status_1.verified_time_1': {'$gte': start_datetime, '$lt': end_datetime}},
+                {'verify_status_2.verified_time_2': {'$gte': start_datetime, '$lt': end_datetime}}
+            ]
         })
         return count
 
@@ -95,25 +106,26 @@ class Database:
         }
         user = await self.users.find_one({'_id': user_id})
         if user:
-            return user.get('verify_status_1', default_verify)
-            return user.get('verify_status_2', default_verify)
-        return default_verify
+            return {
+                'verify_status_1': user.get('verify_status_1', default_verify),
+                'verify_status_2': user.get('verify_status_2', default_verify)
+            }
+        return {'verify_status_1': default_verify, 'verify_status_2': default_verify}
 
-    async def db_update_verify_status(self, user_id, verify):
-        await self.users.update_one({'_id': user_id}, {'$set': {'verify_status_1': verify}})
-        await self.users.update_one({'_id': user_id}, {'$set': {'verify_status_2': verify}})
+    async def db_update_verify_status(self, user_id, verify_data):
+        await self.users.update_one({'_id': user_id}, {'$set': verify_data})
 
     async def get_verify_status(self, user_id):
-        verify = await self.db_verify_status(user_id)
-        return verify
+        return await self.db_verify_status(user_id)
 
-    async def update_verify_status(self, user_id, is_verified=False, verified_time=None):
-        current = await self.db_verify_status(user_id)
-        current['is_verified_1'] = is_verified_1
-        current['verified_time_1'] = verified_time_1
-        current['is_verified_2'] = is_verified_2
-        current['verified_time_2'] = verified_time_2
-        await self.db_update_verify_status(user_id, current)
+    async def update_verify_status(self, user_id, is_verified_1=False, verified_time_1=None, is_verified_2=False, verified_time_2=None):
+        verify_data = {
+            'is_verified_1': is_verified_1,
+            'verified_time_1': verified_time_1,
+            'is_verified_2': is_verified_2,
+            'verified_time_2': verified_time_2
+        }
+        await self.db_update_verify_status(user_id, verify_data)
 
     async def get_verification_mode(self, channel_id: int):
         data = await self.verification_data.find_one({'_id': channel_id})
@@ -130,50 +142,57 @@ class Database:
         settings = await self.verification_settings.find_one({'_id': 'global_settings'})
         if not settings:
             default_settings = {
+                '_id': 'global_settings',
                 'verify_token_1': "not set",
-                'verify_status_1': "False"
-                'is_verified_1': False,
-                'verified_time_1': 0,
+                'verify_status_1': False,
                 'api_link_1': "not set",
-                'verify_status_2': "False"
-                'is_verified_2': False,
-                'verified_time_1': 0,
                 'verify_token_2': "not set",
+                'verify_status_2': False,
                 'api_link_2': "not set"
             }
             await self.verification_settings.insert_one(default_settings)
-            settings = await self.verification_settings.find_one({"_id": "global_settings"})
+            settings = default_settings
         return settings
 
-    
-    async def update_verification_settings(self, verify_token_1: str, api_link_1: str, verify_token_2: str, api_link_2: str): # Corrected signature
-        async def update_settings(self, settings):
-    await self.verification_settings.update_one(
-        {"_id": "global_settings"},
-        {"$set": settings},
-        upsert=True
-    )
+    async def update_verification_settings(self, verify_token_1: str = None, api_link_1: str = None, verify_token_2: str = None, api_link_2: str = None):
+        settings_to_update = {}
+        if verify_token_1 is not None:
+            settings_to_update['verify_token_1'] = verify_token_1
+        if api_link_1 is not None:
+            settings_to_update['api_link_1'] = api_link_1
+        if verify_token_2 is not None:
+            settings_to_update['verify_token_2'] = verify_token_2
+        if api_link_2 is not None:
+            settings_to_update['api_link_2'] = api_link_2
+
+        if settings_to_update:
+            await self.verification_settings.update_one(
+                {"_id": "global_settings"},
+                {"$set": settings_to_update},
+                upsert=True
+            )
 
     async def add_user(self, b, m):
         u = m.from_user
         if not await self.is_user_exist(u.id):
             user = self.new_user(u.id, u.username)
             try:
-                await self.users.insert_one(user) # Corrected collection name
-                await self.send_log(b, u) # Assumed method, check if it exists
+                await self.users.insert_one(user)
+                # Assuming send_log is defined elsewhere
+                await self.send_log(b, u)
             except Exception as e:
                 logging.error(f"Error adding user {u.id}: {e}")
 
     async def get_user(self, user_id):
-        user_data = await self.users.find_one({"_id": user_id}) # Corrected key from 'id' to '_id'
+        user_data = await self.users.find_one({"_id": user_id})
         return user_data
 
     async def update_user(self, user_data):
-        await self.users.update_one({"_id": user_data["_id"]}, {"$set": user_data}, upsert=True) # Corrected key from 'id' to '_id'
+        await self.users.update_one({"_id": user_data["_id"]}, {"$set": user_data}, upsert=True)
 
     async def is_user_exist(self, id):
         try:
-            user = await self.users.find_one({"_id": int(id)}) # Corrected collection name
+            user = await self.users.find_one({"_id": int(id)})
             return bool(user)
         except Exception as e:
             logging.error(f"Error checking if user {id} exists: {e}")
@@ -181,7 +200,7 @@ class Database:
 
     async def total_users_count(self):
         try:
-            count = await self.users.count_documents({}) # Corrected collection name
+            count = await self.users.count_documents({})
             return count
         except Exception as e:
             logging.error(f"Error counting users: {e}")
@@ -189,7 +208,7 @@ class Database:
 
     async def get_all_users(self):
         try:
-            all_users = self.users.find({}) # Corrected collection name
+            all_users = self.users.find({})
             return all_users
         except Exception as e:
             logging.error(f"Error getting all users: {e}")
@@ -197,12 +216,9 @@ class Database:
 
     async def delete_user(self, user_id):
         try:
-            await self.users.delete_many({"_id": int(user_id)}) # Corrected collection name
+            await self.users.delete_many({"_id": int(user_id)})
         except Exception as e:
             logging.error(f"Error deleting user {user_id}: {e}")
-
-    # The remaining methods (`set_thumbnail`, `get_thumbnail`, etc.) have similar fixes, changing `self.col` to `self.users` and `id` to `_id`. I'll omit the full list for brevity, as the pattern is established.
-    # ... (rest of the corrected methods) ...
 
     # ADMIN DATA
     async def admin_exist(self, admin_id: int):
@@ -292,7 +308,7 @@ class Database:
             elif isinstance(expiry_time, datetime) and datetime.now() <= expiry_time:
                 return True
             else:
-                await self.users.update_one({"_id": user_id}, {"$set": {"expiry_time": None}}) # Corrected key
+                await self.users.update_one({"_id": user_id}, {"$set": {"expiry_time": None}})
         return False
 
     async def get_expired(self, current_time):
@@ -302,13 +318,13 @@ class Database:
         return expired_users
 
     async def remove_premium_access(self, user_id):
-        return await self.users.update_one( # Corrected method call
-            {"_id": user_id}, {"$set": {"expiry_time": None}} # Corrected key
+        return await self.users.update_one(
+            {"_id": user_id}, {"$set": {"expiry_time": None}}
         )
 
     async def all_premium_users(self):
         count = await self.users.count_documents({
-        "expiry_time": {"$gt": datetime.now()}
+            "expiry_time": {"$gt": datetime.now()}
         })
         return count
 
