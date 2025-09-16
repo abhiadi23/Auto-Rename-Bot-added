@@ -472,7 +472,8 @@ async def vrfy_1_callback(client, query: CallbackQuery):
         await codeflixbots.set_verification_mode(user_id, "Off")
     elif data == "vrfy_set_1":
         await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ")
-        api_data_1 = await bot.listen(chat_id=cmd.message.chat.id, timeout=300)
+        api_link_1 = api_data_1
+        api_data_1 = await Client.listen(chat_id=cmd.message.chat.id, timeout=300)
         disable_web_page_preview = False
             reply_markup=InlineKeyboardMarkup([
                 [
@@ -482,5 +483,11 @@ async def vrfy_1_callback(client, query: CallbackQuery):
             ])
         )
         
-        api_link_1 = await api_data_1.text.strip()  
+        api_link_1_s = await api_data_1.text.strip()
+        verify_token_1 = verify_data_1
+        verify_data_1 = await bot.listen(chat_id=cmd.message.chat.id, timeout=300)
+        verify_token_1 = await api_data_1.reply(
+                "ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ"
+            )
+        verify_link_1_s = await verify_data_1.text.strip()
         return
