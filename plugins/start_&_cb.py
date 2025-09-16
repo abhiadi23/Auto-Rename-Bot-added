@@ -254,6 +254,22 @@ async def start(client, message: Message):
             reply_markup=buttons,
             disable_web_page_preview=True)
 
+#=============================================================
+@Client.on_message(filters.command("cancel"))
+async def cancel_handler(client, message):
+    user_id = message.from_user.id
+    
+    # Check if the user has an active task
+    if user_id in active_tasks:
+        task = active_tasks[user_id]
+        
+        # Cancel the task
+        task.cancel()
+
+await message.reply_text("Pʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ...!!")
+
+#======================================================================
+
 @Client.on_callback_query()
 async def cb_handler(client, query: CallbackQuery):
     data = query.data
@@ -427,35 +443,36 @@ elif cb_data == "verify_settings":
                 [InlineKeyboardButton("ᴄᴏᴜɴᴛs", callback_data="verify_count")]])
 await query.message.edit_text("ʜᴇʀᴇ ʏᴏᴜ ᴄᴀɴ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ:\n\n ➲ ʏᴏᴜ ᴄᴀɴ ᴅᴏ ᴛᴜʀɴ ᴏɴ/ᴏꜰꜰ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ & Aʟsᴏ ʏᴏᴜ ᴄᴀɴ sᴇᴇ ᴄᴏᴜɴᴛs.")
 
-elif cb_data == "verify1_menu":
+elif cb_data == "verify_1_cbb":
 settings = await get_verification_settings()
 verify_status_1 = settings.get("verify_status_1", False)
 verify_token_1 = settings.get("verify_token_1", "Not set")
-api_link = settings.get("api_link", "Not set")
+api_link_1 = settings.get("api_link_1", "Not set")
 buttons = [
         [
-            InlineKeyboardButton(f"Oɴ{' ✅' if current == 'On' else ''}", callback_data='on_vrfy'),
-            InlineKeyboardButton(f"Oғғ{' ✅' if current == 'Off' else ''}", callback_data='off_vrfy')
+            InlineKeyboardButton(f"Oɴ{' ✅' if current == 'On' else ''}", callback_data='on_vrfy_1'),
+            InlineKeyboardButton(f"Oғғ{' ✅' if current == 'Off' else ''}", callback_data='off_vrfy_1')
         ],
         [
-            InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set")
+            InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_1")
         ]
     ]
     keyboard = InlineKeyboardMarkup(buttons)
 await query.message.edit_text(""<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current}", 
                 reply_markup=keyboard)
                               
-@Client.on_callback_query(filters.regex(r"on_vrfy|off_vrfy|set_vrfy"))
+@Client.on_callback_query(filters.regex(r"on_vrfy_1|off_vrfy_1|set_vrfy_1"))
 async def vrfy_1_callback(client, query: CallbackQuery):
     user_id = query.from_user.id
     data = query.data
 
-    if data == "on_vrfy":
+    if data == "on_vrfy_1":
         await codeflixbots.set_verification_mode(user_id, "On")
-    elif data == "off_vrfy":
+    elif data == "off_vrfy_1":
         await codeflixbots.set_verification_mode(user_id, "Off")
-    elif data == "vrfy_set":
+    elif data == "vrfy_set_1":
         await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ")
+        api_data_1 = await bot.listen(chat_id=cmd.message.chat.id, timeout=300)
         disable_web_page_preview = False
             reply_markup=InlineKeyboardMarkup([
                 [
@@ -464,4 +481,6 @@ async def vrfy_1_callback(client, query: CallbackQuery):
                 ]
             ])
         )
+        
+        api_link_1 = await api_data_1.text.strip()  
         return
