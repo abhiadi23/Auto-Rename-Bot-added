@@ -127,11 +127,22 @@ class Database:
         }
         await self.db_update_verify_status(user_id, verify_data)
 
-    async def get_verification_mode(self, channel_id: int):
+    async def get_verification_mode_2(self, channel_id: int):
         data = await self.verification_data.find_one({'_id': channel_id})
         return data.get("mode", "off") if data else "off"
 
-    async def set_verification_mode(self, channel_id: int, mode: str):
+    async def set_verification_mode_2(self, channel_id: int, mode: str):
+        await self.verification_data.update_one(
+            {'_id': channel_id},
+            {'$set': {'mode': mode}},
+            upsert=True
+        )
+
+    async def get_verification_mode_1(self, channel_id: int):
+        data = await self.verification_data.find_one({'_id': channel_id})
+        return data.get("mode", "off") if data else "off"
+
+    async def set_verification_mode_1(self, channel_id: int, mode: str):
         await self.verification_data.update_one(
             {'_id': channel_id},
             {'$set': {'mode': mode}},
