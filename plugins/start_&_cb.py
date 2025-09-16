@@ -426,3 +426,42 @@ elif cb_data == "verify_settings":
                  InlineKeyboardButton("ᴠᴇʀɪꜰʏ 𝟸", callback_data="verify_2_cbb")],
                 [InlineKeyboardButton("ᴄᴏᴜɴᴛs", callback_data="verify_count")]])
 await query.message.edit_text("ʜᴇʀᴇ ʏᴏᴜ ᴄᴀɴ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ:\n\n ➲ ʏᴏᴜ ᴄᴀɴ ᴅᴏ ᴛᴜʀɴ ᴏɴ/ᴏꜰꜰ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ & Aʟsᴏ ʏᴏᴜ ᴄᴀɴ sᴇᴇ ᴄᴏᴜɴᴛs.")
+
+elif cb_data == "verify1_menu":
+settings = await get_verification_settings()
+verify_status_1 = settings.get("verify_status_1", False)
+verify_token_1 = settings.get("verify_token_1", "Not set")
+api_link = settings.get("api_link", "Not set")
+buttons = [
+        [
+            InlineKeyboardButton(f"Oɴ{' ✅' if current == 'On' else ''}", callback_data='on_vrfy'),
+            InlineKeyboardButton(f"Oғғ{' ✅' if current == 'Off' else ''}", callback_data='off_vrfy')
+        ],
+        [
+            InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set")
+        ]
+    ]
+    keyboard = InlineKeyboardMarkup(buttons)
+await query.message.edit_text(""<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current}", 
+                reply_markup=keyboard)
+                              
+@Client.on_callback_query(filters.regex(r"on_vrfy|off_vrfy|set_vrfy"))
+async def vrfy_1_callback(client, query: CallbackQuery):
+    user_id = query.from_user.id
+    data = query.data
+
+    if data == "on_vrfy":
+        await codeflixbots.set_verification_mode(user_id, "On")
+    elif data == "off_vrfy":
+        await codeflixbots.set_verification_mode(user_id, "Off")
+    elif data == "vrfy_set":
+        await query.message.edit_text("<b><u>ᴍᴀɴᴀɢɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ғᴏʀ ʏᴏᴜʀ ᴠɪᴅᴇᴏs ᴀɴᴅ ғɪʟᴇs</u></b> \n\n<b><u>ᴠᴀʀɪᴏᴜꜱ ᴍᴇᴛᴀᴅᴀᴛᴀ:</u></b> \n\n- <b>ᴛɪᴛʟᴇ</b>: Descriptive title of the media. \n- <b>ᴀᴜᴛʜᴏʀ</b>: The creator or owner of the media. \n- <b>ᴀʀᴛɪꜱᴛ</b>: The artist associated with the media. \n- <b>ᴀᴜᴅɪᴏ</b>: Title or description of audio content. \n- <b>ꜱᴜʙᴛɪᴛʟᴇ</b>: Title of subtitle content. \n- <b>ᴠɪᴅᴇᴏ</b>: Title or description of video content. \n\n<b><u>ᴄᴏᴍᴍᴀɴᴅꜱ ᴛᴏ ᴛᴜʀɴ ᴏɴ ᴏғғ ᴍᴇᴛᴀᴅᴀᴛᴀ:</u></b> \n➜ /metadata: Turn on or off metadata. \n\n<b><u>ᴄᴏᴍᴍᴀɴᴅꜱ ᴛᴏ ꜱᴇᴛ ᴍᴇᴛᴀᴅᴀᴛᴀ:</u></b> \n\n➜ /settitle: Set a custom title of media. \n➜ /setauthor: Set the author. \n➜ /setartist: Set the artist. \n➜ /setaudio: Set audio title. \n➜ /setsubtitle: Set subtitle title. \n➜ /setvideo: Set video title. \n➜ /setencoded_by: Set encoded by title. \n➜ /setcustom_tag: Set custom tag title. \n\n<b><u>ᴇxᴀᴍᴘʟᴇ:</u></b> /settitle Your Title Here \n\n<b>ᴜꜱᴇ ᴛʜᴇꜱᴇ ᴄᴏᴍᴍᴀɴᴅꜱ ᴛᴏ ᴇɴʀɪᴄʜ ʏᴏᴜʀ ᴍᴇᴅɪᴀ ᴡɪᴛʜ ᴀᴅᴅɪᴛɪᴏɴᴀʟ ᴍᴇᴛᴀᴅᴀᴛᴀ ɪɴꜰᴏʀᴍᴀᴛɪᴏɴ!</b>",
+            disable_web_page_preview=True,
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("Hᴏᴍᴇ", callback_data="start"),
+                    InlineKeyboardButton("Bᴀᴄᴋ", callback_data="commands")
+                ]
+            ])
+        )
+        return
