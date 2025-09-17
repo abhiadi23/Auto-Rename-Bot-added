@@ -6,10 +6,10 @@ from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, 
 from pyrogram.enums import ChatAction, ChatMemberStatus
 from pyrogram.errors import UserNotParticipant
 from datetime import datetime, timedelta
+from functools import wraps
 
 from helper.database import codeflixbots
-from config import *
-from functools import wraps
+from config import Config
 
 chat_data_cache = {}
 ADMIN_URL = Config.ADMIN_URL
@@ -17,6 +17,10 @@ FSUB_PIC = Config.FSUB_PIC
 BOT_USERNAME = Config.BOT_USERNAME
 OWNER_ID = Config.OWNER_ID
 FSUB_LINK_EXPIRY = 10
+active_tasks = {}
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 def check_ban(func):
     @wraps(func)
@@ -38,13 +42,12 @@ def check_fsub(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
-        print(f"DEBUG: check_fsub decorator called for user {user_id}")
+        logger.debug(f"check_fsub decorator called for user {user_id}")
 
         async def is_sub(client, user_id, channel_id):
             try:
                 member = await client.get_chat_member(channel_id, user_id)
-                status = member.status
-                return status in {
+                return member.status in {
                     ChatMemberStatus.OWNER,
                     ChatMemberStatus.ADMINISTRATOR,
                     ChatMemberStatus.MEMBER
@@ -56,7 +59,7 @@ def check_fsub(func):
                     return exists
                 return False
             except Exception as e:
-                print(f"[!] Error in is_sub(): {e}")
+                logger.error(f"Error in is_sub(): {e}")
                 return False
 
         async def is_subscribed(client, user_id):
@@ -77,17 +80,17 @@ def check_fsub(func):
         
         try:
             is_sub_status = await is_subscribed(client, user_id)
-            print(f"DEBUG: User {user_id} subscribed status: {is_sub_status}")
+            logger.debug(f"User {user_id} subscribed status: {is_sub_status}")
             
             if not is_sub_status:
-                print(f"DEBUG: User {user_id} is not subscribed, calling not_joined.")
+                logger.debug(f"User {user_id} is not subscribed, calling not_joined.")
                 return await not_joined(client, message)
             
-            print(f"DEBUG: User {user_id} is subscribed, proceeding with function call.")
+            logger.debug(f"User {user_id} is subscribed, proceeding with function call.")
             return await func(client, message, *args, **kwargs)
         
         except Exception as e:
-            print(f"FATAL ERROR in check_fsub: {e}")
+            logger.error(f"FATAL ERROR in check_fsub: {e}")
             await message.reply_text(f"An unexpected error occurred: `{e}`. Please contact the developer.")
             return
 
@@ -98,11 +101,11 @@ async def check_admin(filter, client, update):
         user_id = update.from_user.id
         return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
     except Exception as e:
-        print(f"! Exception in check_admin: {e}")
+        logger.error(f"Exception in check_admin: {e}")
         return False
 
 async def not_joined(client: Client, message: Message):
-    print(f"DEBUG: not_joined function called for user {message.from_user.id}")
+    logger.debug(f"not_joined function called for user {message.from_user.id}")
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>")
 
     user_id = message.from_user.id
@@ -112,10 +115,9 @@ async def not_joined(client: Client, message: Message):
     try:
         all_channels = await codeflixbots.show_channels()
         for chat_id in all_channels:
-            mode = await codeflixbots.get_channel_mode(chat_id)
-
             await message.reply_chat_action(ChatAction.TYPING)
 
+            is_member = False
             try:
                 member = await client.get_chat_member(chat_id, user_id)
                 is_member = member.status in {
@@ -127,7 +129,7 @@ async def not_joined(client: Client, message: Message):
                 is_member = False
             except Exception as e:
                 is_member = False
-                print(f"[!] Error checking member in not_joined: {e}")
+                logger.error(f"Error checking member in not_joined: {e}")
 
             if not is_member:
                 try:
@@ -138,6 +140,7 @@ async def not_joined(client: Client, message: Message):
                         chat_data_cache[chat_id] = data
 
                     name = data.title
+                    mode = await codeflixbots.get_channel_mode(chat_id)
 
                     if mode == "on" and not data.username:
                         invite = await client.create_chat_invite_link(
@@ -161,11 +164,12 @@ async def not_joined(client: Client, message: Message):
                     await temp.edit(f"<b>{'! ' * count}</b>")
 
                 except Exception as e:
-                    print(f"Error with chat {chat_id}: {e}")
-                    return await temp.edit(
+                    logger.error(f"Error with chat {chat_id}: {e}")
+                    await temp.edit(
                         f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
                         f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
                     )
+                    return
 
         try:
             buttons.append([
@@ -180,7 +184,7 @@ async def not_joined(client: Client, message: Message):
         text = "<b>Yᴏᴜ Bᴀᴋᴋᴀᴀ...!! \n\n<blockquote>Jᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴍʏ ᴏᴛʜᴇʀᴡɪsᴇ Yᴏᴜ ᴀʀᴇ ɪɴ ʙɪɢ sʜɪᴛ...!!</blockquote></b>"
         await temp.delete()
         
-        print(f"DEBUG: Sending final reply photo to user {user_id}")
+        logger.debug(f"Sending final reply photo to user {user_id}")
         await message.reply_photo(
             photo=FSUB_PIC,
             caption=text,
@@ -188,21 +192,19 @@ async def not_joined(client: Client, message: Message):
         )
 
     except Exception as e:
-        print(f"Final Error: {e}")
+        logger.error(f"Final Error in not_joined: {e}")
         await temp.edit(
             f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
             f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
         )
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+#=============================================================
 
 @Client.on_message(filters.private & filters.command("start"))
 @check_ban
 @check_fsub
 async def start(client, message: Message):
-    print(f"DEBUG: /start command received from user {message.from_user.id}")
-    user = message.from_user.id
+    logger.debug(f"/start command received from user {message.from_user.id}")
     await codeflixbots.add_user(client, message)
 
     m = await message.reply_text("Wᴇᴡ...Hᴏᴡ ᴀʀᴇ ʏᴏᴜ ᴅᴜᴅᴇ \nᴡᴀɪᴛ ᴀ ᴍᴏᴍᴇɴᴛ. . .")
@@ -233,40 +235,45 @@ async def start(client, message: Message):
         ]
     ])
 
-    if Config.START_PIC:
+    if hasattr(Config, 'START_PIC') and Config.START_PIC:
         await message.reply_photo(
             Config.START_PIC,
-            caption=Config.START_TXT.format(first=message.from_user.first_name,
-                last=message.from_user.last_name,
-                username=None if not message.from_user.username else '@' + message.from_user.username,
+            caption=Config.START_TXT.format(
+                first=message.from_user.first_name,
+                last=message.from_user.last_name or "",
+                username=f"@{message.from_user.username}" if message.from_user.username else "None",
                 mention=message.from_user.mention,
                 id=message.from_user.id
             ),
-            reply_markup=buttons)
+            reply_markup=buttons
+        )
     else:
         await message.reply_text(
-            text=Config.START_TXT.format(first=message.from_user.first_name,
-                last=message.from_user.last_name,
-                username=None if not message.from_user.username else '@' + message.from_user.username,
+            text=Config.START_TXT.format(
+                first=message.from_user.first_name,
+                last=message.from_user.last_name or "",
+                username=f"@{message.from_user.username}" if message.from_user.username else "None",
                 mention=message.from_user.mention,
                 id=message.from_user.id
             ),
             reply_markup=buttons,
-            disable_web_page_preview=True)
+            disable_web_page_preview=True
+        )
 
-#=============================================================
+#======================================================================
 @Client.on_message(filters.command("cancel"))
 async def cancel_handler(client, message):
     user_id = message.from_user.id
     
     # Check if the user has an active task
     if user_id in active_tasks:
-        task = active_tasks[user_id]
+        task = active_tasks.pop(user_id)
         
         # Cancel the task
         task.cancel()
-
-await message.reply_text("Pʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ...!!")
+        await message.reply_text("Pʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ...!!")
+    else:
+        await message.reply_text("Nᴏ ᴀᴄᴛɪᴠᴇ ᴘʀᴏᴄᴇss ᴛᴏ ᴄᴀɴᴄᴇʟ...!!")
 
 #======================================================================
 
@@ -285,12 +292,13 @@ async def cb_handler(client, query: CallbackQuery):
         )
 
     if data == "home":
-        await query.message.reply_text(
-            caption=Config.START_TXT.format(query.from_user.first_name,
-                last=message.from_user.last_name,
-                username=None if not message.from_user.username else '@' + message.from_user.username,
-                mention=message.from_user.mention,
-                id=message.from_user.id
+        await query.message.edit_text(
+            text=Config.START_TXT.format(
+                first=query.from_user.first_name,
+                last=query.from_user.last_name or "",
+                username=f"@{query.from_user.username}" if query.from_user.username else "None",
+                mention=query.from_user.mention,
+                id=query.from_user.id
             ),
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
@@ -322,7 +330,7 @@ async def cb_handler(client, query: CallbackQuery):
     elif data == "sequence":
         try:
             await query.message.edit_text(
-                "<b>Sᴇɴᴅ ᴍᴇ ғɪʟᴇs ᴀɴᴅ I ᴡɪʟʟ ɢɪᴠᴇ ʏᴏᴜ ᴛʜᴀᴛ ғɪʟᴇs ɪɴ ᴀ ᴘᴇʀғᴇᴄᴛ sᴇǫᴜᴇɴᴄᴇ...!! \n\nʜᴇʀᴇ ɪꜱ ʜᴇʟᴘ ᴍᴇɴᴜ ғᴏʀ sᴇǫᴜᴇɴᴄᴇ ᴄᴏᴍᴍᴀɴᴅꜱ: \n\nᴀᴡᴇsᴏᴍᴇ Cᴏᴍᴍᴀɴᴅs🫧 \n\n/start_sequence - Tᴏ sᴛᴀʀᴛ sᴇǫᴜᴇɴᴄᴇ. \n/end_sequence - Tᴏ ᴇɴᴅ sᴇǫᴜᴇɴᴄᴇ.</b>",
+                "<b>Sᴇɴᴅ ᴍᴇ ғɪʟᴇs ᴀɴᴅ I ᴡɪʟʟ ɢɪᴠᴇ ʏᴏᴜ ᴛʜᴀᴛ ғɪʟᴇs ɪɴ ᴀ ᴘᴇʀғᴇᴄᴛ sᴇǫᴜᴇɴᴄᴇ...!! \n\nʜᴇʀᴇ ɪꜱ ʜᴇʟᴘ ᴍᴇɴᴜ ғᴏʀ sᴇǫᴜᴇɴᴄᴇ ᴄᴏᴍᴍᴀɴᴅꜱ: \n\nᴀᴡᴇsᴏᴍᴇ Cᴏᴍᴍᴀɴds🫧 \n\n/start_sequence - Tᴏ sᴛᴀʀᴛ sᴇǫᴜᴇɴᴄᴇ. \n/end_sequence - Tᴏ ᴇɴᴅ sᴇǫᴜᴇɴᴄᴇ.</b>",
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
@@ -330,7 +338,7 @@ async def cb_handler(client, query: CallbackQuery):
                 ]])
             )
         except Exception as e:
-            print(f"Error handling sequence callback: {e}")
+            logger.error(f"Error handling sequence callback: {e}")
             await query.answer(f"An error occurred: {e}", show_alert=True)
     elif data == "meta":
         await query.message.edit_text("<b>--Metadata Settings:--</b> \n\n➜ /metadata: Turn on or off metadata. \n\n<b><u>Description</u></b> <b><i>: Metadata will change MKV video files including all audio, streams, and subtitle titles.</i></b>",
@@ -355,7 +363,7 @@ async def cb_handler(client, query: CallbackQuery):
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
-        )    
+        )     
     elif data == "thumbnail":
         await query.message.edit_text(
             text=Config.THUMBNAIL_TXT,
@@ -363,7 +371,7 @@ async def cb_handler(client, query: CallbackQuery):
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
             ])
-        )    
+        )     
     elif data == "about":
         await query.message.edit_text(
             text=Config.ABOUT_TXT,
@@ -376,7 +384,8 @@ async def cb_handler(client, query: CallbackQuery):
     elif data == "close":
         try:
             await query.message.delete()
-            await query.message.reply_to_message.delete()
+            if query.message.reply_to_message:
+                await query.message.reply_to_message.delete()
         except Exception:
             await query.message.delete()
 
@@ -435,109 +444,119 @@ async def cb_handler(client, query: CallbackQuery):
             "sᴇʟᴇᴄᴛ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ɪᴛs ғᴏʀᴄᴇ-sᴜʙ ᴍᴏᴅᴇ:",
             reply_markup=InlineKeyboardMarkup(buttons)
         )
+    elif data == "verify_settings":
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("ᴠᴇʀɪꜰʏ 𝟷", callback_data="verify_1_cbb"), InlineKeyboardButton("ᴠᴇʀɪꜰʏ 𝟸", callback_data="verify_2_cbb")],
+            [InlineKeyboardButton("ᴄᴏᴜɴᴛs", callback_data="verify_count")]
+        ])
+        await query.message.edit_text("ʜᴇʀᴇ ʏᴏᴜ ᴄᴀɴ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ:\n\n ➲ ʏᴏᴜ ᴄᴀɴ ᴅᴏ ᴛᴜʀɴ ᴏɴ/ᴏꜰꜰ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ & Aʟsᴏ ʏᴏᴜ ᴄᴀɴ sᴇᴇ ᴄᴏᴜɴᴛs.", reply_markup=keyboard)
 
-elif cb_data == "verify_settings":
-            keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("ᴠᴇʀɪꜰʏ 𝟷", callback_data="verify_1_cbb),
-                 InlineKeyboardButton("ᴠᴇʀɪꜰʏ 𝟸", callback_data="verify_2_cbb")],
-                [InlineKeyboardButton("ᴄᴏᴜɴᴛs", callback_data="verify_count")]])
-await query.message.edit_text("ʜᴇʀᴇ ʏᴏᴜ ᴄᴀɴ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ:\n\n ➲ ʏᴏᴜ ᴄᴀɴ ᴅᴏ ᴛᴜʀɴ ᴏɴ/ᴏꜰꜰ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ & Aʟsᴏ ʏᴏᴜ ᴄᴀɴ sᴇᴇ ᴄᴏᴜɴᴛs.")
-
-elif cb_data == "verify_1_cbb":
-settings = await get_verification_settings()
-verify_status_1 = settings.get("verify_status_1", False)
-verify_token_1 = settings.get("verify_token_1", "Not set")
-api_link_1 = settings.get("api_link_1", "Not set")
-buttons = [
-        [
-            InlineKeyboardButton(f"Oɴ{' ✅' if current == 'On' else ''}", callback_data='on_vrfy_1'),
-            InlineKeyboardButton(f"Oғғ{' ✅' if current == 'Off' else ''}", callback_data='off_vrfy_1')
-        ],
-        [
-            InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_1")
+    elif data == "verify_1_cbb":
+        settings = await codeflixbots.get_verification_settings()
+        verify_status_1 = settings.get("verify_status_1", False)
+        verify_token_1 = settings.get("verify_token_1", "Not set")
+        api_link_1 = settings.get("api_link_1", "Not set")
+        current_status = "On" if verify_status_1 else "Off"
+        
+        buttons = [
+            [
+                InlineKeyboardButton(f"Oɴ{' ✅' if current_status == 'On' else ''}", callback_data='on_vrfy_1'),
+                InlineKeyboardButton(f"Oғғ{' ✅' if current_status == 'Off' else ''}", callback_data='off_vrfy_1')
+            ],
+            [
+                InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_1")
+            ]
         ]
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-await query.message.edit_text(""<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_1}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current}", 
-                reply_markup=keyboard)
+        keyboard = InlineKeyboardMarkup(buttons)
+        await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_1}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
 
-elif cb_data == "verify_2_cbb":
-settings = await get_verification_settings()
-verify_status__2 = settings.get("verify_status_2", False)
-verify_token_2 = settings.get("verify_token_2", "Not set")
-api_link_2 = settings.get("api_link_2", "Not set")
-buttons = [
-        [
-            InlineKeyboardButton(f"Oɴ{' ✅' if current == 'On' else ''}", callback_data='on_vrfy_1'),
-            InlineKeyboardButton(f"Oғғ{' ✅' if current == 'Off' else ''}", callback_data='off_vrfy_1')
-        ],
-        [
-            InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_2")
+    elif data == "verify_2_cbb":
+        settings = await codeflixbots.get_verification_settings()
+        verify_status_2 = settings.get("verify_status_2", False)
+        verify_token_2 = settings.get("verify_token_2", "Not set")
+        api_link_2 = settings.get("api_link_2", "Not set")
+        current_status = "On" if verify_status_2 else "Off"
+
+        buttons = [
+            [
+                InlineKeyboardButton(f"Oɴ{' ✅' if current_status == 'On' else ''}", callback_data='on_vrfy_2'),
+                InlineKeyboardButton(f"Oғғ{' ✅' if current_status == 'Off' else ''}", callback_data='off_vrfy_2')
+            ],
+            [
+                InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_2")
+            ]
         ]
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-await query.message.edit_text(""<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_2}\nAPI: {verify_token_2}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current}", 
-                reply_markup=keyboard)
-                              
-@Client.on_callback_query(filters.regex(r"on_vrfy_2|off_vrfy_2|set_vrfy_2"))
+        keyboard = InlineKeyboardMarkup(buttons)
+        await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟸 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_2}\nAPI: {verify_token_2}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
+
+@Client.on_callback_query(filters.regex(r"on_vrfy_2|off_vrfy_2|vrfy_set_2"))
 async def vrfy_2_callback(client, query: CallbackQuery):
     user_id = query.from_user.id
     data = query.data
 
     if data == "on_vrfy_2":
-        await codeflixbots.set_verification_mode(user_id, "On")
+        await codeflixbots.set_verification_mode_2(True)
+        await query.answer("Verification 2 turned ON")
     elif data == "off_vrfy_2":
-        await codeflixbots.set_verification_mode(user_id, "Off")
+        await codeflixbots.set_verification_mode_2(False)
+        await query.answer("Verification 2 turned OFF")
     elif data == "vrfy_set_2":
-        await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ")
-        api_link_2 = api_data_2
-        api_data_2 = await Client.listen(chat_id=cmd.message.chat.id, timeout=300)
-        disable_web_page_preview = False
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("Hᴏᴍᴇ", callback_data="start"),
-                    InlineKeyboardButton("Bᴀᴄᴋ", callback_data="commands")
-                ]
-            ])
-        )
-        
-        api_link_2_s = await api_data_2.text.strip()
-        verify_token_2 = verify_data_2
-        verify_data_2 = await bot.listen(chat_id=cmd.message.chat.id, timeout=300)
-        verify_token_2 = await verify_data_2.reply(
-                "ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ"
+        msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
+        try:
+            api_data = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+            await msg.delete()
+            api_link = api_data.text.strip()
+            
+            msg = await api_data.reply("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
+            verify_data = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+            await msg.delete()
+            verify_token = verify_data.text.strip()
+            
+            await codeflixbots.set_verify_2(api_link, verify_token)
+            await query.message.reply_text(
+                "<b>ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ 2 ꜱᴇᴛᴛɪɴɢꜱ ᴜᴘᴅᴀᴛᴇᴅ!</b>",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("Hᴏᴍᴇ", callback_data="home"), InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
+                ])
             )
-        verify_link_2_s = await verify_data_2.text.strip()
-        return
+        except asyncio.TimeoutError:
+            await query.message.reply_text("Tɪᴍᴇᴏᴜᴛ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ.")
+        except Exception as e:
+            logger.error(f"Error setting verification 2: {e}")
+            await query.message.reply_text(f"An error occurred: {e}")
 
-@Client.on_callback_query(filters.regex(r"on_vrfy_1|off_vrfy_1|set_vrfy_1"))
+@Client.on_callback_query(filters.regex(r"on_vrfy_1|off_vrfy_1|vrfy_set_1"))
 async def vrfy_1_callback(client, query: CallbackQuery):
     user_id = query.from_user.id
     data = query.data
 
     if data == "on_vrfy_1":
-        await codeflixbots.set_verification_mode(user_id, "On")
+        await codeflixbots.set_verification_mode_1(True)
+        await query.answer("Verification 1 turned ON")
     elif data == "off_vrfy_1":
-        await codeflixbots.set_verification_mode(user_id, "Off")
+        await codeflixbots.set_verification_mode_1(False)
+        await query.answer("Verification 1 turned OFF")
     elif data == "vrfy_set_1":
-        await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ")
-        api_link_1 = api_data_1
-        api_data_1 = await Client.listen(chat_id=cmd.message.chat.id, timeout=300)
-        disable_web_page_preview = False
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("Hᴏᴍᴇ", callback_data="start"),
-                    InlineKeyboardButton("Bᴀᴄᴋ", callback_data="commands")
-                ]
-            ])
-        )
-        
-        api_link_1_s = await api_data_1.text.strip()
-        verify_token_1 = verify_data_1
-        verify_data_1 = await Client.listen(chat_id=cmd.message.chat.id, timeout=300)
-        verify_token_1 = await verify_data_1.reply(
-                "ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ"
-            )
-        verify_link_1_s = await verify_data_1.text.strip()
-        return
+        msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
+        try:
+            api_data = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+            await msg.delete()
+            api_link = api_data.text.strip()
 
+            msg = await api_data.reply("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
+            verify_data = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+            await msg.delete()
+            verify_token = verify_data.text.strip()
+
+            await codeflixbots.set_verify_1(api_link, verify_token)
+            await query.message.reply_text(
+                "<b>ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ 1 ꜱᴇᴛᴛɪɴɢꜱ ᴜᴘᴅᴀᴛᴇᴅ!</b>",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("Hᴏᴍᴇ", callback_data="home"), InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
+                ])
+            )
+        except asyncio.TimeoutError:
+            await query.message.reply_text("Tɪᴍᴇᴏᴜᴛ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ.")
+        except Exception as e:
+            logger.error(f"Error setting verification 1: {e}")
+            await query.message.reply_text(f"An error occurred: {e}")
