@@ -458,9 +458,58 @@ buttons = [
         ]
     ]
     keyboard = InlineKeyboardMarkup(buttons)
-await query.message.edit_text(""<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current}", 
+await query.message.edit_text(""<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_1}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current}", 
+                reply_markup=keyboard)
+
+elif cb_data == "verify_2_cbb":
+settings = await get_verification_settings()
+verify_status__2 = settings.get("verify_status_2", False)
+verify_token_2 = settings.get("verify_token_2", "Not set")
+api_link_2 = settings.get("api_link_2", "Not set")
+buttons = [
+        [
+            InlineKeyboardButton(f"Oɴ{' ✅' if current == 'On' else ''}", callback_data='on_vrfy_1'),
+            InlineKeyboardButton(f"Oғғ{' ✅' if current == 'Off' else ''}", callback_data='off_vrfy_1')
+        ],
+        [
+            InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_2")
+        ]
+    ]
+    keyboard = InlineKeyboardMarkup(buttons)
+await query.message.edit_text(""<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_2}\nAPI: {verify_token_2}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current}", 
                 reply_markup=keyboard)
                               
+@Client.on_callback_query(filters.regex(r"on_vrfy_2|off_vrfy_2|set_vrfy_2"))
+async def vrfy_2_callback(client, query: CallbackQuery):
+    user_id = query.from_user.id
+    data = query.data
+
+    if data == "on_vrfy_2":
+        await codeflixbots.set_verification_mode(user_id, "On")
+    elif data == "off_vrfy_2":
+        await codeflixbots.set_verification_mode(user_id, "Off")
+    elif data == "vrfy_set_2":
+        await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ")
+        api_link_2 = api_data_2
+        api_data_2 = await Client.listen(chat_id=cmd.message.chat.id, timeout=300)
+        disable_web_page_preview = False
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("Hᴏᴍᴇ", callback_data="start"),
+                    InlineKeyboardButton("Bᴀᴄᴋ", callback_data="commands")
+                ]
+            ])
+        )
+        
+        api_link_2_s = await api_data_2.text.strip()
+        verify_token_2 = verify_data_2
+        verify_data_2 = await bot.listen(chat_id=cmd.message.chat.id, timeout=300)
+        verify_token_2 = await verify_data_2.reply(
+                "ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ"
+            )
+        verify_link_2_s = await verify_data_2.text.strip()
+        return
+
 @Client.on_callback_query(filters.regex(r"on_vrfy_1|off_vrfy_1|set_vrfy_1"))
 async def vrfy_1_callback(client, query: CallbackQuery):
     user_id = query.from_user.id
@@ -485,9 +534,10 @@ async def vrfy_1_callback(client, query: CallbackQuery):
         
         api_link_1_s = await api_data_1.text.strip()
         verify_token_1 = verify_data_1
-        verify_data_1 = await bot.listen(chat_id=cmd.message.chat.id, timeout=300)
-        verify_token_1 = await api_data_1.reply(
+        verify_data_1 = await Client.listen(chat_id=cmd.message.chat.id, timeout=300)
+        verify_token_1 = await verify_data_1.reply(
                 "ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ"
             )
         verify_link_1_s = await verify_data_1.text.strip()
         return
+
