@@ -503,16 +503,18 @@ async def vrfy_2_callback(client, query: CallbackQuery):
     elif data == "vrfy_set_2":
         msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
         try:
-            api_data = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+            api_link_2 = api_data_2
+            api_data_2 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
             await msg.delete()
-            api_link = api_data.text.strip()
+            api_link_2_s = api_data_2.text.strip()
             
-            msg = await api_data.reply("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
-            verify_data = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+            msg = await api_data_2.reply("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
+            verify_token_2 = verify_data_2
+            verify_data_2 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
             await msg.delete()
-            verify_token = verify_data.text.strip()
+            verify_token_2_s = verify_data_1.text.strip()
             
-            await codeflixbots.set_verify_2(api_link, verify_token)
+            await codeflixbots.set_verify_2(api_link_2_s, verify_token_2_s)
             await query.message.reply_text(
                 "<b>ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ 2 ꜱᴇᴛᴛɪɴɢꜱ ᴜᴘᴅᴀᴛᴇᴅ!</b>",
                 reply_markup=InlineKeyboardMarkup([
@@ -539,16 +541,18 @@ async def vrfy_1_callback(client, query: CallbackQuery):
     elif data == "vrfy_set_1":
         msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
         try:
-            api_data = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+            api_link_1 = api_data_1
+            api_data_1 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
             await msg.delete()
-            api_link = api_data.text.strip()
+            api_link_1_s = api_data_1.text.strip()
 
-            msg = await api_data.reply("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
-            verify_data = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+            msg = await api_data_1.reply("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
+            verify_token_1 = verify_data_1
+            verify_data_1 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
             await msg.delete()
-            verify_token = verify_data.text.strip()
+            verify_token_1_s = verify_data.text.strip()
 
-            await codeflixbots.set_verify_1(api_link, verify_token)
+            await codeflixbots.set_verify_1(api_link_1_s, verify_token_1_s)
             await query.message.reply_text(
                 "<b>ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ 1 ꜱᴇᴛᴛɪɴɢꜱ ᴜᴘᴅᴀᴛᴇᴅ!</b>",
                 reply_markup=InlineKeyboardMarkup([
