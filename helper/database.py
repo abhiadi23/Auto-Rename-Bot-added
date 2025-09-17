@@ -183,6 +183,14 @@ class Database:
                 upsert=True
             )
 
+    async def set_verify_1(self, api_link: str, verify_token: str):
+        """Sets the API link and verification token for verification method 1."""
+        await self.update_verification_settings(api_link_1_s=api_link_1, verify_token_1_s=verify_token_1)
+
+    async def set_verify_2(self, api_link: str, verify_token: str):
+        """Sets the API link and verification token for verification method 2."""
+        await self.update_verification_settings(api_link_2_s=api_link_2, verify_token_2_s=verify_token_2)
+
     async def add_user(self, b, m):
         u = m.from_user
         if not await self.is_user_exist(u.id):
