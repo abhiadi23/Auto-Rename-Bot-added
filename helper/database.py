@@ -26,7 +26,6 @@ class Database:
         self.verification_data = self.database['verification']
         self.verification_settings = self.database['verification_settings']
         self.banned_users = self.database['banned_users']
-        self.timezone = pytz.timezone(Config.TIMEZONE)
 
     def new_user(self, id, username=None):
         return dict(
