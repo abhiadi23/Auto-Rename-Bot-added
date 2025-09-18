@@ -229,7 +229,7 @@ async def give_premium_cmd_handler(client, message):
         time_zone = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
         current_time = time_zone.strftime("%d-%m-%Y\n⏱️ ᴊᴏɪɴɪɴɢ ᴛɪᴍᴇ : %I:%M:%S %p")
         user_id = int(message.command[1])
-        user = await client.get_user(user_id)
+        user = await client.get_users(user_id)
         time = message.command[2]+" "+message.command[3]
         seconds = await get_seconds(time)
         if seconds > 0:
