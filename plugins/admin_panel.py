@@ -228,28 +228,34 @@ async def give_premium_cmd_handler(client, message):
     if len(message.command) == 4:
         time_zone = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
         current_time = time_zone.strftime("%d-%m-%Y\n⏱️ ᴊᴏɪɴɪɴɢ ᴛɪᴍᴇ : %I:%M:%S %p")
-        user_id = int(message.command[1])
-        user = await client.get_users(user_id)
-        time = message.command[2]+" "+message.command[3]
+        try:
+            user_id = int(message.command[1])
+        except (ValueError, IndexError):
+            await message.reply_text("Invalid user ID. Please use a numerical user ID.")
+            return
+
+        time = f"{message.command[2]} {message.command[3]}"
         seconds = await get_seconds(time)
         if seconds > 0:
+            user = await client.get_users(user_id)
             expiry_time = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
             user_data = {"id": user_id, "expiry_time": expiry_time}
             await codeflixbots.update_user(user_data)
-            data = await codeflixbots.get_user(user_id)
+            data = await codeflixbots.get_users(user_id)
             expiry = data.get("expiry_time")
             expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")
+            
             await message.reply_text(f"ᴘʀᴇᴍɪᴜᴍ ᴀᴅᴅᴇᴅ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ✅\n\n• ᴜꜱᴇʀ : {user.mention}\n⚡ ᴜꜱᴇʀ ɪᴅ : <code>{user_id}</code>\n⏰ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇꜱꜱ : <code>{time}</code>\n\n⏳ ᴊᴏɪɴɪɴɢ ᴅᴀᴛᴇ : {current_time}\n\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}", disable_web_page_preview=True)
+            
             await client.send_message(
                 chat_id=user_id,
                 text=f"👋 ʜᴇʏ {user.mention},\nᴛʜᴀɴᴋ ʏᴏᴜ ꜰᴏʀ ᴘᴜʀᴄʜᴀꜱɪɴɢ ᴘʀᴇᴍɪᴜᴍ.\nᴇɴᴊᴏʏ !! ✨🎉\n\n⏰ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇꜱꜱ : <code>{time}</code>\n⏳ ᴊᴏɪɴɪɴɢ ᴅᴀᴛᴇ : {current_time}\n\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}", disable_web_page_preview=True
             )
-            await client.send_message(PREMIUM_LOGS, text=f"#Added_Premium\n\n• ᴜꜱᴇʀ : {user.mention}\n⚡ ᴜꜱᴇʀ ɪᴅ : <code>{user_id}</code>\n⏰ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇꜱꜱ : <code>{time}</code>\n\n⏳ ᴊᴏɪɴɪɴɢ ᴅᴀᴛᴇ : {current_time}\n\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}", disable_web_page_preview=True)
-
+            await client.send_message(Config.PREMIUM_LOGS, text=f"#Added_Premium\n\n• ᴜꜱᴇʀ : {user.mention}\n⚡ ᴜꜱᴇʀ ɪᴅ : <code>{user_id}</code>\n⏰ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇꜱꜱ : <code>{time}</code>\n\n⏳ ᴊᴏɪɴɪɴɢ ᴅᴀᴛᴇ : {current_time}\n\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}", disable_web_page_preview=True)
         else:
             await message.reply_text("Iɴᴠᴀʟɪᴅ ᴛɪᴍᴇ ғᴏʀᴍᴀᴛ. Pʟᴇᴀsᴇ ᴜsᴇ '1 ᴅᴀʏ ғᴏʀ ᴅᴀʏs', '1 ʜᴏᴜʀ ғᴏʀ ʜᴏᴜʀs', ᴏʀ '1 ᴍɪɴ ғᴏʀ ᴍɪɴᴜᴛᴇs', ᴏʀ '1 ᴍᴏɴᴛʜ ғᴏʀ ᴍᴏɴᴛʜs' ᴏʀ '1 ʏᴇᴀʀ ғᴏʀ ʏᴇᴀʀ'.")
     else:
-        await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /add_premium <ᴜsᴇʀ_ɪᴅ> <ᴛɪᴍᴇ>")
+        await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs: `/add_premium <ᴜsᴇʀ_ɪᴅ> <ᴛɪᴍᴇ_ᴠᴀʟᴜᴇ> <ᴛɪᴍᴇ_ᴜɴɪᴛ>`.\n\nExample: `/add_premium 1234567890 30 days`")
 
 @Client.on_message(filters.command("premium_users") & admin)
 async def premium_user(client, message):
