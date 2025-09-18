@@ -174,7 +174,7 @@ async def remove_premium(client, message):
 async def myplan(client, message):
     user = message.from_user.mention
     user_id = message.from_user.id
-    data = await codeflixbots.get_users(message.from_user.id)
+    data = await codeflixbots.get_user(message.from_user.id)
     if data and data.get("expiry_time"):
         expiry = data.get("expiry_time")
         expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
@@ -200,7 +200,7 @@ async def get_premium(client, message):
     if len(message.command) == 2:
         user_id = int(message.command[1])
         user = await client.get_users(user_id)
-        data = await codeflixbots.get_user(user_id)  # Convert the user_id to integer
+        data = await codeflixbots.get_user(user_id)
         if data and data.get("expiry_time"):
             #expiry_time = datetime.datetime.now() + datetime.timedelta(seconds=data)
             expiry = data.get("expiry_time")
@@ -221,7 +221,7 @@ async def get_premium(client, message):
         else:
             await message.reply_text("ɴᴏ ᴀɴʏ ᴘʀᴇᴍɪᴜᴍ ᴅᴀᴛᴀ ᴏꜰ ᴛʜᴇ ᴡᴀꜱ ꜰᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀꜱᴇ !")
     else:
-        await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /get_premium <ᴜsᴇʀ_ɪᴅ>")
+        await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /premium_info <ᴜsᴇʀ_ɪᴅ>")
 
 @Client.on_message(filters.command("add_premium") & admin)
 async def give_premium_cmd_handler(client, message):
@@ -229,7 +229,7 @@ async def give_premium_cmd_handler(client, message):
         time_zone = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
         current_time = time_zone.strftime("%d-%m-%Y\n⏱️ ᴊᴏɪɴɪɴɢ ᴛɪᴍᴇ : %I:%M:%S %p")
         user_id = int(message.command[1])
-        user = await client.get_users(user_id)
+        user = await client.get_user(user_id)
         time = message.command[2]+" "+message.command[3]
         seconds = await get_seconds(time)
         if seconds > 0:
@@ -287,8 +287,6 @@ async def premium_user(client, message):
 async def plan(client, message):
     user_id = message.from_user.id
     mention = message.from_user.mention
-    msg = await message.reply_text("<b>👋 ʜᴇʏ {mention}\n\n🎁 ᴘʀᴇᴍɪᴜᴍ ғᴇᴀᴛᴜʀᴇ ʙᴇɴɪꜰɪᴛꜱ:</blockquote>\n\n›› ɴᴏ ɴᴇᴇᴅ ᴛᴏ ᴏᴘᴇɴ ʟɪɴᴋꜱ\n❏ Gᴇᴛ ᴅɪʀᴇᴄᴛ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ ғᴇᴀᴛᴜʀᴇ ɴᴏ ɴᴇᴇᴅ ғᴏʀ ᴠᴇʀɪғʏ\n›› ᴀᴅ-ғʀᴇᴇ ᴇxᴘᴇʀɪᴇɴᴄᴇ\n❏ Uɴʟɪᴍɪᴛᴇᴅ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ\n\n›› ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴀᴄᴛɪᴠᴇ ᴘʟᴀɴ: /myplan\n</b>"
-    )
     keyboard = InlineKeyboardMarkup([[
         InlineKeyboardButton('• Rᴇғᴇʀ •', callback_data='reffff')
     ],[
@@ -306,7 +304,9 @@ async def plan(client, message):
         InlineKeyboardButton('⇋ ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ ⇋', callback_data='start')
     ]])
 
-    await msg.reply_photo(
+    PREMIUM_TXT = await message.reply_text("<b>👋 ʜᴇʏ {mention}\n\n🎁 ᴘʀᴇᴍɪᴜᴍ ғᴇᴀᴛᴜʀᴇ ʙᴇɴɪꜰɪᴛꜱ:</blockquote>\n\n›› ɴᴏ ɴᴇᴇᴅ ᴛᴏ ᴏᴘᴇɴ ʟɪɴᴋꜱ\n❏ Gᴇᴛ ᴅɪʀᴇᴄᴛ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ ғᴇᴀᴛᴜʀᴇ ɴᴏ ɴᴇᴇᴅ ғᴏʀ ᴠᴇʀɪғʏ\n›› ᴀᴅ-ғʀᴇᴇ ᴇxᴘᴇʀɪᴇɴᴄᴇ\n❏ Uɴʟɪᴍɪᴛᴇᴅ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ\n\n›› ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴀᴄᴛɪᴠᴇ ᴘʟᴀɴ: /myplan\n</b>")
+
+    await message.reply_photo(
         photo="https://envs.sh/Wdj.jpg",
         caption=PREMIUM_TXT,
         reply_markup=keyboard)
