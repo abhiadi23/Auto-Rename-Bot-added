@@ -240,8 +240,8 @@ async def give_premium_cmd_handler(client, message):
             user = await client.get_users(user_id)
             expiry_time = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
             user_data = {"id": user_id, "expiry_time": expiry_time}
-            await codeflixbots.update_user(user_data)
-            data = await codeflixbots.get_users(user_id)
+            await codeflixbots.update_premium_user(user_data)
+            data = await codeflixbots.get_user(user_id)
             expiry = data.get("expiry_time")
             expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")
             
