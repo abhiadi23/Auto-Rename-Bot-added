@@ -317,6 +317,9 @@ class Database:
         channel_ids = await self.show_channels()
         return channel_id in channel_ids
 
+    async def update_premium_user(self, user_data):
+        await self.users.update_one({"_id": user_data["_id"]}, {"$set": premium_data}, upsert=True)
+
     async def has_premium_access(self, user_id):
         user_data = await self.get_user(user_id)
         if user_data:
