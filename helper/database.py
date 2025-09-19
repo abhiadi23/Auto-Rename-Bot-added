@@ -27,6 +27,7 @@ class Database:
         self.premium_users = self.database['premium_users']
         self.verification_settings = self.database['verification_settings']
         self.banned_users = self.database['banned_users']
+        self.col = self.Botskingdom.user
 
     def new_user(self, id, username=None):
         return dict(
@@ -89,7 +90,7 @@ class Database:
 
     async def get_vr_count_combined(self, time_period, year=None):
         start_datetime, end_datetime = self.get_start_end_dates_verification(time_period, year)
-        count = await self.users.count_documents({
+        count = await self.col.count_documents({
             '$or': [
                 {'verify_status_1.verified_time_1': {'$gte': start_datetime, '$lt': end_datetime}},
                 {'verify_status_2.verified_time_2': {'$gte': start_datetime, '$lt': end_datetime}}
@@ -104,7 +105,7 @@ class Database:
             'is_verified_2': False,
             'verified_time_2': 0,
         }
-        user = await self.users.find_one({'_id': user_id})
+        user = await self.col.find_one({'_id': user_id})
         if user:
             return {
                 'verify_status_1': user.get('verify_status_1', default_verify),
@@ -113,7 +114,7 @@ class Database:
         return {'verify_status_1': default_verify, 'verify_status_2': default_verify}
 
     async def db_update_verify_status(self, user_id, verify_data):
-        await self.users.update_one({'_id': user_id}, {'$set': verify_data})
+        await self.col.update_one({'_id': user_id}, {'$set': verify_data})
 
     async def get_verify_status(self, user_id):
         return await self.db_verify_status(user_id)
@@ -196,22 +197,21 @@ class Database:
         if not await self.is_user_exist(u.id):
             user = self.new_user(u.id, u.username)
             try:
-                await self.users.insert_one(user)
-                # Assuming send_log is defined elsewhere
-                await self.send_log(b, u)
+                await self.col.insert_one(user)
+                await send_log(b, u)
             except Exception as e:
                 logging.error(f"Error adding user {u.id}: {e}")
-
+                
     async def get_user(self, user_id):
-        user_data = await self.users.find_one({"_id": user_id})
+        user_data = await self.col.find_one({"_id": user_id})
         return user_data
 
     async def update_user(self, user_data):
-        await self.users.update_one({"_id": user_data["_id"]}, {"$set": user_data}, upsert=True)
+        await self.col.update_one({"_id": user_data["_id"]}, {"$set": user_data}, upsert=True)
 
     async def is_user_exist(self, id):
         try:
-            user = await self.users.find_one({"_id": int(id)})
+            user = await self.col.find_one({"_id": int(id)})
             return bool(user)
         except Exception as e:
             logging.error(f"Error checking if user {id} exists: {e}")
@@ -219,7 +219,7 @@ class Database:
 
     async def total_users_count(self):
         try:
-            count = await self.users.count_documents({})
+            count = await self.col.count_documents({})
             return count
         except Exception as e:
             logging.error(f"Error counting users: {e}")
@@ -227,7 +227,7 @@ class Database:
 
     async def get_all_users(self):
         try:
-            all_users = self.users.find({})
+            all_users = self.col.find({})
             return all_users
         except Exception as e:
             logging.error(f"Error getting all users: {e}")
@@ -235,7 +235,7 @@ class Database:
 
     async def delete_user(self, user_id):
         try:
-            await self.users.delete_many({"_id": int(user_id)})
+            await self.col.delete_many({"_id": int(user_id)})
         except Exception as e:
             logging.error(f"Error deleting user {user_id}: {e}")
 
