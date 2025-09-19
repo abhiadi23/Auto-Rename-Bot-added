@@ -564,3 +564,17 @@ async def vrfy_1_callback(client, query: CallbackQuery):
         except Exception as e:
             logger.error(f"Error setting verification 1: {e}")
             await query.message.reply_text(f"An error occurred: {e}")
+
+#============================================================================================================================================
+@Client.on_message(filters.command("verify_settings"))
+async def verify_settings(client, message):
+    user_id = message.from_user.id
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("ᴠᴇʀɪꜰʏ 𝟷", callback_data="verify_1_cbb"), InlineKeyboardButton("ᴠᴇʀɪꜰʏ 𝟸", callback_data="verify_2_cbb")],
+        [InlineKeyboardButton("ᴄᴏᴜɴᴛs", callback_data="verify_count")]
+    ])
+    await message.reply_text(
+        "ʜᴇʀᴇ ʏᴏᴜ ᴄᴀɴ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ:\n\n ➲ ʏᴏᴜ ᴄᴀɴ ᴅᴏ ᴛᴜʀɴ ᴏɴ/ᴏꜰꜰ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ & Aʟsᴏ ʏᴏᴜ ᴄᴀɴ sᴇᴇ ᴄᴏᴜɴᴛs.",
+        reply_markup=keyboard,
+        disable_web_page_preview=True
+    )
