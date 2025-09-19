@@ -320,13 +320,14 @@ class Database:
 
     # Premium Management 
     
-    premium_data = {
+    async def add_premium(user_id):
+        premium_data = {
         "user_id": user_id,
         "expiration_timestamp": expiration_time.isoformat(),
         }
 
-    async def update_premium_user(self, user_data):
-        await self.premium_users({"_id": user_data["_id"]}, {"$set": premium_data}, upsert=True)
+    async def update_premium_user(self, user_id):
+        await self.premium_users({"user_id": user_id}, {"$set": premium_data}, upsert=True)
 
     async def has_premium_access(self, user_id):
         user_data = await self.get_user(user_id)
