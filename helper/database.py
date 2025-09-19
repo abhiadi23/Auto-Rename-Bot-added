@@ -24,6 +24,7 @@ class Database:
         self.rqst_fsub_Channel_data = self.database['request_forcesub_channel']
         self.counts = self.database['counts']
         self.verification_data = self.database['verification']
+        self.premium_users = self.database['premium_users']
         self.verification_settings = self.database['verification_settings']
         self.banned_users = self.database['banned_users']
 
@@ -317,8 +318,15 @@ class Database:
         channel_ids = await self.show_channels()
         return channel_id in channel_ids
 
+    # Premium Management 
+    
+    premium_data = {
+        "user_id": user_id,
+        "expiration_timestamp": expiration_time.isoformat(),
+        }
+
     async def update_premium_user(self, user_data):
-        await self.users.update_one({"_id": user_data["_id"]}, {"$set": premium_data}, upsert=True)
+        await self.premium_users({"_id": user_data["_id"]}, {"$set": premium_data}, upsert=True)
 
     async def has_premium_access(self, user_id):
         user_data = await self.get_user(user_id)
