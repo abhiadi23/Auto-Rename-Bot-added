@@ -469,6 +469,9 @@ async def cb_handler(client, query: CallbackQuery):
         ]
         keyboard = InlineKeyboardMarkup(buttons)
         await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_1}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
+        except Exception as e:
+            logger.error(f"Error handling Verify 1 callback: {e}")
+            await query.answer(f"An error occurred: {e}", show_alert=True)
 
     elif data == "verify_2_cbb":
         settings = await codeflixbots.get_verification_settings()
@@ -488,6 +491,9 @@ async def cb_handler(client, query: CallbackQuery):
         ]
         keyboard = InlineKeyboardMarkup(buttons)
         await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟸 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_2}\nAPI: {verify_token_2}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
+        except Exception as e:
+            logger.error(f"Error handling Verify 2 callback: {e}")
+            await query.answer(f"An error occurred: {e}", show_alert=True)
 
 @Client.on_callback_query(filters.regex(r"on_vrfy_2|off_vrfy_2|vrfy_set_2"))
 async def vrfy_2_callback(client, query: CallbackQuery):
