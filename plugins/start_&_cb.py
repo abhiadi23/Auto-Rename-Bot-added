@@ -504,9 +504,9 @@ elif data == "off_vrfy_2":
         except Exception as e:
             logger.error(f"Error handling callback query: {e}")
             await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
-            
+
 elif data == "vrfy_set_2":
-    msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
+        msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
         try:
             api_data_2 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
             await msg.delete()
@@ -527,10 +527,9 @@ elif data == "vrfy_set_2":
         except asyncio.TimeoutError:
             await query.message.reply_text("Tɪᴍᴇᴏᴜᴛ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ.")
         except Exception as e:
-            logger.error(f"Error setting verification 1: {e}")
+            logger.error(f"Error setting verification 2: {e}")
             await query.message.reply_text(f"An error occurred: {e}")
 
-    
 @Client.on_callback_query(filters.regex(r"on_vrfy_1|off_vrfy_1|vrfy_set_1"))
 async def vrfy_1_callback(client, query: CallbackQuery):
     user_id = query.from_user.id
