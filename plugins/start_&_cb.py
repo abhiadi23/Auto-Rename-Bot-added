@@ -235,30 +235,41 @@ async def start(client, message: Message):
         ]
     ])
 
-    if hasattr(Config, 'START_PIC') and Config.START_PIC:
+    if Config.START_PIC:
         await message.reply_photo(
             Config.START_PIC,
-            caption=Config.START_TXT.format(
-                first=message.from_user.first_name,
-                last=message.from_user.last_name or "",
-                username=f"@{message.from_user.username}" if message.from_user.username else "None",
+            caption=Config.START_TXT.format(first=message.from_user.first_name,
+                last=message.from_user.last_name,
+                username=None if not message.from_user.username else '@' + message.from_user.username,
                 mention=message.from_user.mention,
                 id=message.from_user.id
             ),
-            reply_markup=buttons
-        )
+            reply_markup=buttons)
     else:
         await message.reply_text(
-            text=Config.START_TXT.format(
-                first=message.from_user.first_name,
-                last=message.from_user.last_name or "",
-                username=f"@{message.from_user.username}" if message.from_user.username else "None",
+            text=Config.START_TXT.format(first=message.from_user.first_name,
+                last=message.from_user.last_name,
+                username=None if not message.from_user.username else '@' + message.from_user.username,
                 mention=message.from_user.mention,
                 id=message.from_user.id
             ),
             reply_markup=buttons,
-            disable_web_page_preview=True
-        )
+            disable_web_page_preview=True)
+        #=====================================================================================================
+@Client.on_message(filters.command("cancel"))
+async def cancel_handler(client, message):
+    user_id = message.from_user.id
+    
+    # Check if the user has an active task
+    if user_id in active_tasks:
+        task = active_tasks.pop(user_id)
+        
+        # Cancel the task
+        task.cancel()
+        await message.reply_text("Pʀᴏᴄᴇss ᴄᴀɴᴄᴇʟʟᴇᴅ...!!")
+    else:
+        await message.reply_text("Nᴏ ᴀᴄᴛɪᴠᴇ ᴘʀᴏᴄᴇss ᴛᴏ ᴄᴀɴᴄᴇʟ...!!")
+#======================================================================================
 
 @Client.on_callback_query()
 async def cb_handler(client, query: CallbackQuery):
