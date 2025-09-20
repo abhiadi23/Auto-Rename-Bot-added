@@ -27,7 +27,7 @@ class Database:
         self.premium_users = self.database['premium_users']
         self.verification_settings = self.database['verification_settings']
         self.banned_users = self.database['banned_users']
-        self.col = self.codeflixbots.user
+        self.col = self.database.users
 
     def new_user(self, id, username=None):
         return dict(
