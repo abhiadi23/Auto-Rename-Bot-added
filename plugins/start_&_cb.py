@@ -1,4 +1,4 @@
-import random
+ import random
 import asyncio
 import logging
 from pyrogram import Client, filters
@@ -517,13 +517,13 @@ async def vrfy_2_callback(client, query: CallbackQuery):
         except asyncio.TimeoutError:
             await query.message.reply_text("Tɪᴍᴇᴏᴜᴛ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ.")
         except Exception as e:
-            logger.error(f"Error setting verification 2: {e}")
+            logger.error(f"Error setting verification 1: {e}")
             await query.message.reply_text(f"An error occurred: {e}")
 
-            except Exception as e:
+except Exception as e:
         logger.error(f"Error handling callback query: {e}")
-        await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
-
+        await query.answer(f"An unexpected error occurred: {e}", show_alert=True)        
+            
 @Client.on_callback_query(filters.regex(r"on_vrfy_1|off_vrfy_1|vrfy_set_1"))
 async def vrfy_1_callback(client, query: CallbackQuery):
     user_id = query.from_user.id
