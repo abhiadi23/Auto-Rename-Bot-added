@@ -492,9 +492,19 @@ async def vrfy_2_callback(client, query: CallbackQuery):
     if data == "on_vrfy_2":
         await codeflixbots.set_verification_mode_2(True)
         await query.answer("Verification 2 turned ON")
+
+    except Exception as e:
+        logger.error(f"Error handling callback query: {e}")
+        await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
+
     elif data == "off_vrfy_2":
         await codeflixbots.set_verification_mode_2(False)
         await query.answer("Verification 2 turned OFF")
+
+except Exception as e:
+        logger.error(f"Error handling callback query: {e}")
+        await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
+
     elif data == "vrfy_set_2":
         msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
         try:
@@ -528,9 +538,19 @@ async def vrfy_1_callback(client, query: CallbackQuery):
     if data == "on_vrfy_1":
         await codeflixbots.set_verification_mode_1(True)
         await query.answer("Verification 1 turned ON")
+
+    except Exception as e:
+        logger.error(f"Error handling callback query: {e}")
+        await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
+
     elif data == "off_vrfy_1":
         await codeflixbots.set_verification_mode_1(False)
         await query.answer("Verification 1 turned OFF")
+
+except Exception as e:
+        logger.error(f"Error handling callback query: {e}")
+        await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
+
     elif data == "vrfy_set_1":
         msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
         try:
