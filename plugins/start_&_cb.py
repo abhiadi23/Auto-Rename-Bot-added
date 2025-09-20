@@ -494,7 +494,7 @@ async def vrfy_2_callback(client, query: CallbackQuery):
         await query.answer("Verification 2 turned ON")
     elif data == "off_vrfy_2":
         await codeflixbots.set_verification_mode_2(False)
-        await query.answer("Verification 2 turned OFF"
+        await query.answer("Verification 2 turned OFF")
     elif data == "vrfy_set_2":
         msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
         try:
