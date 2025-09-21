@@ -354,7 +354,7 @@ async def cb_handler(client, query: CallbackQuery):
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
                 ])
-            )      
+            )    
         elif data == "thumbnail":
             await query.message.edit_text(
                 text=Config.THUMBNAIL_TXT,
@@ -362,7 +362,7 @@ async def cb_handler(client, query: CallbackQuery):
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close"), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
                 ])
-            )      
+            )    
         elif data == "about":
             await query.message.edit_text(
                 text=Config.ABOUT_TXT,
@@ -489,7 +489,7 @@ async def vrfy_2_callback(client, query: CallbackQuery):
     user_id = query.from_user.id
     data = query.data
 
-if data == "on_vrfy_2":
+    if data == "on_vrfy_2":
         try:
             await codeflixbots.set_verification_mode_2(True)
             await query.answer("Verification 2 turned ON")
@@ -497,7 +497,7 @@ if data == "on_vrfy_2":
             logger.error(f"Error handling callback query: {e}")
             await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
 
-elif data == "off_vrfy_2":
+    elif data == "off_vrfy_2":
         try:
             await codeflixbots.set_verification_mode_2(False)
             await query.answer("Verification 2 turned OFF")
@@ -505,7 +505,7 @@ elif data == "off_vrfy_2":
             logger.error(f"Error handling callback query: {e}")
             await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
 
-elif data == "vrfy_set_2":
+    elif data == "vrfy_set_2":
         msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
         try:
             api_data_2 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
@@ -575,10 +575,6 @@ async def vrfy_1_callback(client, query: CallbackQuery):
         except Exception as e:
             logger.error(f"Error setting verification 1: {e}")
             await query.message.reply_text(f"An error occurred: {e}")
-
-except Exception as e:
-        logger.error(f"Error handling callback query: {e}")
-        await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
 
 #============================================================================================================================================
 @Client.on_message(filters.command("verify_settings"))
