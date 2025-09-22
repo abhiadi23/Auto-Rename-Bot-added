@@ -201,10 +201,26 @@ class Database:
             user = self.new_user(u.id, u.username)
             try:
                 await self.col.insert_one(user)
+                logging.info(f"New user added: {u.id}")
                 # Fixed: send_log function call - you need to import this or define it
                 # await send_log(b, u)
             except Exception as e:
                 logging.error(f"Error adding user {u.id}: {e}")
+        else:
+            logging.info(f"User {u.id} already exists")
+
+    async def ensure_user_exists(self, user_id, username=None):
+        """Ensure user exists in database before operations"""
+        if not await self.is_user_exist(user_id):
+            user = self.new_user(user_id, username)
+            try:
+                await self.col.insert_one(user)
+                logging.info(f"User {user_id} created in database")
+                return True
+            except Exception as e:
+                logging.error(f"Error creating user {user_id}: {e}")
+                return False
+        return True
                 
     async def get_user(self, user_id):
         user_data = await self.col.find_one({"_id": user_id})
@@ -399,18 +415,27 @@ class Database:
 
     async def set_format_template(self, id, format_template):
         try:
-            await self.col.update_one(
-                {"_id": int(id)}, {"$set": {"format_template": format_template}},
-                upsert=True
+            result = await self.col.update_one(
+                {"_id": int(id)}, 
+                {"$set": {"format_template": format_template}},
+                upsert=True  # This will create the user if they don't exist
             )
-            except Exception as e:
-                logging.error(f"Error in setting format template for user {id}: {e}")
-            
+            logging.info(f"Format template set for user {id}: {format_template}, Modified: {result.modified_count}, Upserted: {result.upserted_id}")
+            return True
+        except Exception as e:
+            logging.error(f"Error setting format template for user {id}: {e}")
+            return False
 
     async def get_format_template(self, id):
         try:
             user = await self.col.find_one({"_id": int(id)})
-            return user.get("format_template", None) if user else None
+            if user:
+                template = user.get("format_template", None)
+                logging.info(f"Retrieved format template for user {id}: {template}")
+                return template
+            else:
+                logging.warning(f"User {id} not found in database")
+                return None
         except Exception as e:
             logging.error(f"Error getting format template for user {id}: {e}")
             return None
