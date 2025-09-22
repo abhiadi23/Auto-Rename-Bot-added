@@ -14,7 +14,6 @@ class Database:
             logging.error(f"Failed to connect to MongoDB: {e}")
             raise e
         self.database = self._client[database_name]
-        self.users = self.database['user']
         self.channel_data = self.database['channels']
         self.admins_data = self.database['admins']
         self.autho_user_data = self.database['autho_user']
