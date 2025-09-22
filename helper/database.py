@@ -400,10 +400,12 @@ class Database:
     async def set_format_template(self, id, format_template):
         try:
             await self.col.update_one(
-                {"_id": int(id)}, {"$set": {"format_template": format_template}}
+                {"_id": int(id)}, {"$set": {"format_template": format_template}},
+                upsert=True
             )
-        except Exception as e:
-            logging.error(f"Error setting format template for user {id}: {e}")
+            except Exception as e:
+                logging.error(f"Error in setting format template for user {id}: {e}")
+            
 
     async def get_format_template(self, id):
         try:
