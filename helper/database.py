@@ -131,22 +131,28 @@ class Database:
         }
         await self.db_update_verify_status(user_id, verify_data)
 
-    async def get_verification_mode_2(self):  # Fixed: removed unused parameter
+    async def get_verification_mode_2(self, user_id):
+        user = await self.col.find_one({'_id': int(user_id)})
+        return user.get('verification_mode_2', "Off")
         settings = await self.get_verification_settings()
         return settings.get('verify_status_2', False)
 
-    async def set_verification_mode_2(self, status: bool):  # Fixed: proper parameter
+    async def set_verification_mode_2(self, user_id, status: bool):
+        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_2': verification_mode_2}})
         await self.verification_settings.update_one(
             {'_id': 'global_settings'},
             {'$set': {'verify_status_2': status}},
             upsert=True
         )
 
-    async def get_verification_mode_1(self):  # Fixed: removed unused parameter
+    async def get_verification_mode_1(self, user_id):
+        user = await self.col.find_one({'_id': int(user_id)})
+        return user.get('verification_mode_1', "Off")
         settings = await self.get_verification_settings()
         return settings.get('verify_status_1', False)
 
-    async def set_verification_mode_1(self, status: bool):  # Fixed: proper parameter
+    async def set_verification_mode_1(self, user_id, status: bool):
+        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_1': verification_mode_1}})
         await self.verification_settings.update_one(
             {'_id': 'global_settings'},
             {'$set': {'verify_status_1': status}},
