@@ -10,7 +10,7 @@ from functools import wraps
 
 from helper.database import codeflixbots
 from config import Config
-from callbacks import cb_handler  # Import the callback handler
+from .callbacks import cb_handler  # Import the callback handler
 
 chat_data_cache = {}
 ADMIN_URL = Config.ADMIN_URL
