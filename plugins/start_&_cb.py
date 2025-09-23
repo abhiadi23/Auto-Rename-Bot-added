@@ -483,12 +483,8 @@ async def cb_handler(client, query: CallbackQuery):
     except Exception:
         await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
 
-@Client.on_callback_query(filters.regex(r"on_vrfy_2|off_vrfy_2|vrfy_set_2"))
-async def vrfy_2_callback(client, query: CallbackQuery):
-    user_id = query.from_user.id
-    data = query.data
 
-    if data == "on_vrfy_2":
+    elif data == "on_vrfy_2":
         try:
             await codeflixbots.set_verification_mode_2(True)
             await query.answer("Verification 2 turned ON", show_alert=True)
@@ -527,12 +523,8 @@ async def vrfy_2_callback(client, query: CallbackQuery):
             logger.error(f"Error setting verification 2: {e}")
             await query.message.reply_text(f"An error occurred: {e}")
 
-@Client.on_callback_query(filters.regex(r"on_vrfy_1|off_vrfy_1|vrfy_set_1"))
-async def vrfy_1_callback(client, query: CallbackQuery):
-    user_id = query.from_user.id
-    data = query.data
 
-    if data == "on_vrfy_1":
+    elif data == "on_vrfy_1":
         try:
             await codeflixbots.set_verification_mode_1(True)
             await query.answer("Verification 1 turned ON", show_alert=True)
