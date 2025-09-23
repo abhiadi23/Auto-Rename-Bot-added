@@ -224,8 +224,8 @@ async def get_premium(client, message):
         await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /premium_info <ᴜsᴇʀ_ɪᴅ>")
 
 @Client.on_message(filters.command("add_premium") & admin)
-async def give_premium_cmd_handler(client, message):
-    if len(message.command) == 4:
+async def give_premium_cmd_handler(client, user_id, message):
+    if len(message.command) == 2:
         time_zone = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
         current_time = time_zone.strftime("%d-%m-%Y\n⏱️ ᴊᴏɪɴɪɴɢ ᴛɪᴍᴇ : %I:%M:%S %p")
         try:
@@ -400,7 +400,7 @@ async def send_msg(user_id, message):
 
 # --- Ban User Command ---
 @Client.on_message(filters.command("ban") & filters.private & admin)
-async def ban_user(bot, message):
+async def ban_user(bot, user_id, message):
     try:
         parts = message.text.split(maxsplit=2)
         user_id = int(parts[1])
@@ -410,7 +410,7 @@ async def ban_user(bot, message):
             {"$set": {
                 "ban_status.is_banned": True,
                 "ban_status.ban_reason": reason,
-                "ban_status.banned_on": datetime.date.today().isoformat() # Corrected to datetime.date.today()
+                "ban_status.banned_on": datetime.date.today().isoformat()
             }},
             upsert=True
         )
