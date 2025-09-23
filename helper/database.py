@@ -35,6 +35,8 @@ class Database:
             join_date=date.today().isoformat(),  # Fixed: use date.today() instead of datetime.date.today()
             file_id=None,
             caption=None,
+            verification_mode_1=True,
+            verification_mode_2=True,
             metadata=True,
             metadata_code="Telegram : @codeflixbots",
             format_template=None,
@@ -532,7 +534,7 @@ class Database:
         
     async def get_custom_tag(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('customtag', "Botskingdom")
+        return user.get('custom_tag', "Botskingdom")
 
     async def set_custom_tag(self, user_id, custom_tag):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'custom_tag': custom_tag}})
