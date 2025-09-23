@@ -480,8 +480,7 @@ async def cb_handler(client, query: CallbackQuery):
             keyboard = InlineKeyboardMarkup(buttons)
             await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟸 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_2}\nAPI: {verify_token_2}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
 
-    except Exception as e:
-        logger.error(f"Error handling callback query: {e}")
+    except Exception:
         await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
 
 @Client.on_callback_query(filters.regex(r"on_vrfy_2|off_vrfy_2|vrfy_set_2"))
@@ -492,17 +491,15 @@ async def vrfy_2_callback(client, query: CallbackQuery):
     if data == "on_vrfy_2":
         try:
             await codeflixbots.set_verification_mode_2(True)
-            await query.answer("Verification 2 turned ON")
-        except Exception as e:
-            logger.error(f"Error handling callback query: {e}")
+            await query.answer("Verification 2 turned ON", show_alert=True)
+        except Exception:
             await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
 
     elif data == "off_vrfy_2":
         try:
             await codeflixbots.set_verification_mode_2(False)
-            await query.answer("Verification 2 turned OFF")
-        except Exception as e:
-            logger.error(f"Error handling callback query: {e}")
+            await query.answer("Verification 2 turned OFF", show_alert=True)
+        except Exception:
             await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
 
     elif data == "vrfy_set_2":
@@ -538,17 +535,15 @@ async def vrfy_1_callback(client, query: CallbackQuery):
     if data == "on_vrfy_1":
         try:
             await codeflixbots.set_verification_mode_1(True)
-            await query.answer("Verification 1 turned ON")
-        except Exception as e:
-            logger.error(f"Error handling callback query: {e}")
+            await query.answer("Verification 1 turned ON", show_alert=True)
+        except Exception:
             await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
 
     elif data == "off_vrfy_1":
         try:
             await codeflixbots.set_verification_mode_1(False)
-            await query.answer("Verification 1 turned OFF")
-        except Exception as e:
-            logger.error(f"Error handling callback query: {e}")
+            await query.answer("Verification 1 turned OFF", show_alert=True)
+        except Exception:
             await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
             
     elif data == "vrfy_set_1":
