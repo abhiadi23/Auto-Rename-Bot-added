@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from pyrogram import Client
+from pyrogram import Client, filters  # Add filters to imports
 from pyrogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from helper.database import codeflixbots
 from config import Config
@@ -233,12 +233,12 @@ async def cb_handler(client, query: CallbackQuery):
         elif data == "vrfy_set_2":
             msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
             try:
-                api_data_2 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+                api_data_2 = await client.wait_for_message(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
                 await msg.delete()
                 api_link_2_s = api_data_2.text.strip()
                 
                 msg = await api_data_2.reply("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
-                verify_data_2 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+                verify_data_2 = await client.wait_for_message(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
                 await msg.delete()
                 verify_token_2_s = verify_data_2.text.strip()
                 
@@ -272,12 +272,12 @@ async def cb_handler(client, query: CallbackQuery):
         elif data == "vrfy_set_1":
             msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
             try:
-                api_data_1 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+                api_data_1 = await client.wait_for_message(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
                 await msg.delete()
                 api_link_1_s = api_data_1.text.strip()
 
                 msg = await api_data_1.reply("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
-                verify_data_1 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+                verify_data_1 = await client.wait_for_message(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
                 await msg.delete()
                 verify_token_1_s = verify_data_1.text.strip()
 
