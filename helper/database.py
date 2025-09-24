@@ -26,7 +26,7 @@ class Database:
         self.verification_settings = self.database['verification_settings']
         self.banned_users = self.database['banned_users']
         self.col = self.database.users
-        self.timezone = timezone.utc  # Define timezone
+        self.timezone = timezone.utc
 
     def new_user(self, id, username=None):
         return dict(
@@ -136,30 +136,16 @@ class Database:
     async def get_verification_mode_2(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
         return user.get('verification_mode_2', "Off")
-        settings = await self.get_verification_settings()
-        return settings.get('verify_status_2', False)
-
+        
     async def set_verification_mode_2(self, user_id, status: bool):
-        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_2': verification_mode_2}})
-        await self.verification_settings.update_one(
-            {'_id': 'global_settings'},
-            {'$set': {'verify_status_2': status}},
-            upsert=True
-        )
+        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_2': verification_status_2}}))
 
     async def get_verification_mode_1(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
         return user.get('verification_mode_1', "Off")
-        settings = await self.get_verification_settings()
-        return settings.get('verify_status_1', False)
-
+        
     async def set_verification_mode_1(self, user_id, status: bool):
-        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_1': verification_mode_1}})
-        await self.verification_settings.update_one(
-            {'_id': 'global_settings'},
-            {'$set': {'verify_status_1': status}},
-            upsert=True
-        )
+        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_1': verification_status_1}}))
 
     async def get_verification_settings(self):
         settings = await self.verification_settings.find_one({'_id': 'global_settings'})
@@ -426,7 +412,7 @@ class Database:
             result = await self.col.update_one(
                 {"_id": int(id)}, 
                 {"$set": {"format_template": format_template}},
-                upsert=True  # This will create the user if they don't exist
+                upsert=True
             )
             logging.info(f"Format template set for user {id}: {format_template}, Modified: {result.modified_count}, Upserted: {result.upserted_id}")
             return True
