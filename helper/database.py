@@ -138,14 +138,14 @@ class Database:
         return user.get('verification_mode_2', "Off")
         
     async def set_verification_mode_2(self, user_id, status: bool):
-        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_2': verify_status_2}}))
+        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_2': status}}))
 
     async def get_verification_mode_1(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
         return user.get('verification_mode_1', "Off")
         
     async def set_verification_mode_1(self, user_id, status: bool):
-        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_1': verify_status_1}}))
+        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_1': status}}))
 
     async def get_verification_settings(self):
         settings = await self.verification_settings.find_one({'_id': 'global_settings'})
@@ -450,17 +450,30 @@ class Database:
             logging.error(f"Error getting media preference for user {id}: {e}")
             return None
 
-    async def ban_user(user_id):
-        await self.banned_users.update_one({"_id": user_id}, {"$set": {"_id": user_id}}, upsert=True)
+    async def ban_user(self, user_id):
+        await self.banned_users.update_one({"_id": user_id},
+            {"$set": {
+                "ban_status.is_banned": True,
+                "ban_status.ban_reason": reason,
+                "ban_status.banned_on": datetime.date.today().isoformat()
+            }},
+            upsert=True
+        )
  
-    async def unban_user(user_id):
-        await self.banned_users.delete_one({"_id": user_id})
+    async def unban_user(self, user_id):
+        await self.banned_users.delete_one({"_id": user_id},
+            {"$set": {
+                "ban_status.is_banned": False,
+                "ban_status.ban_reason": "",
+                "ban_status.banned_on": None
+            }}
+        )
 
-    async def is_banned(user_id):
-        return await self.banned_users.find_one({"_id": user_id}) is not None
+    async def is_banned(self, user_id):
+        return await self.banned_users.find_one({'_id': int(user_id)}
 
-    async def get_banned_users():
-        return self.banned_users.find()
+    async def get_banned_users(self, user_id):
+        return self.banned_users.find({"ban_status.is_banned": True})
 
     async def get_metadata(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
