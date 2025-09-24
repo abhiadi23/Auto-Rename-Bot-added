@@ -200,21 +200,20 @@ async def get_premium(client, message):
     if len(message.command) == 2:
         user_id = int(message.command[1])
         user = await client.get_users(user_id)
-        data = await codeflixbots.get_user(user_id)
+        data = await db.get_user(user_id)  # Convert the user_id to integer
         if data and data.get("expiry_time"):
             #expiry_time = datetime.datetime.now() + datetime.timedelta(seconds=data)
-            expiry = data.get("expiry_time")
+            expiry = data.get("expiry_time") 
             expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
-            expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")
+            expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")            
             # Calculate time difference
             current_time = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
             time_left = expiry_ist - current_time
-
+            
             # Calculate days, hours, and minutes
             days = time_left.days
             hours, remainder = divmod(time_left.seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
-
             # Format time left as a string
             time_left_str = f"{days} days, {hours} hours, {minutes} minutes"
             await message.reply_text(f"• ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀ ᴅᴀᴛᴀ :\n\n• ᴜꜱᴇʀ : {user.mention}\n⚡ ᴜꜱᴇʀ ɪᴅ : <code>{user_id}</code>\n⏰ ᴛɪᴍᴇ ʟᴇꜰᴛ : {time_left_str}\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}")
@@ -224,25 +223,20 @@ async def get_premium(client, message):
         await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /premium_info <ᴜsᴇʀ_ɪᴅ>")
 
 @Client.on_message(filters.command("add_premium") & admin)
-async def give_premium_cmd_handler(client, user_id, message):
-    if len(message.command) == 2:
+async def give_premium_cmd_handler(client, message):
+    if len(message.command) == 4:
         time_zone = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
-        current_time = time_zone.strftime("%d-%m-%Y\n⏱️ ᴊᴏɪɴɪɴɢ ᴛɪᴍᴇ : %I:%M:%S %p")
-        try:
-            user_id = int(message.command[1])
-        except (ValueError, IndexError):
-            await message.reply_text("Invalid user ID. Please use a numerical user ID.")
-            return
-
-        time = f"{message.command[2]} {message.command[3]}"
+        current_time = time_zone.strftime("%d-%m-%Y\n⏱️ ᴊᴏɪɴɪɴɢ ᴛɪᴍᴇ : %I:%M:%S %p") 
+        user_id = int(message.command[1])  
+        user = await client.get_users(user_id)
+        time = message.command[2]+" "+message.command[3]
         seconds = await get_seconds(time)
         if seconds > 0:
-            user = await client.get_users(user_id)
             expiry_time = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
-            user_data = {"id": user_id, "expiry_time": expiry_time}
-            await codeflixbots.update_premium_user(user_data)
-            data = await codeflixbots.get_user(user_id)
-            expiry = data.get("expiry_time")
+            user_data = {"id": user_id, "expiry_time": expiry_time}  
+            await db.update_user(user_data) 
+            data = await db.get_user(user_id)
+            expiry = data.get("expiry_time")   
             expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")
             
             await message.reply_text(f"ᴘʀᴇᴍɪᴜᴍ ᴀᴅᴅᴇᴅ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ✅\n\n• ᴜꜱᴇʀ : {user.mention}\n⚡ ᴜꜱᴇʀ ɪᴅ : <code>{user_id}</code>\n⏰ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇꜱꜱ : <code>{time}</code>\n\n⏳ ᴊᴏɪɴɪɴɢ ᴅᴀᴛᴇ : {current_time}\n\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}", disable_web_page_preview=True)
@@ -400,9 +394,9 @@ async def send_msg(user_id, message):
 
 # --- Ban User Command ---
 @Client.on_message(filters.command("ban") & filters.private & admin)
-async def ban_user(bot, user_id, message):
+async def ban_user(bot, message):
     try:
-        parts = message.text.split(maxsplit=2)
+        parts = message.text.split()[2:]
         user_id = int(parts[1])
         reason = parts[2] if len(parts) > 2 else "No reason provided"
         await codeflixbots.col.update_one(
