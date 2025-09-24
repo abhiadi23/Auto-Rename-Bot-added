@@ -1,8 +1,7 @@
 import asyncio
 import logging
 from pyromod import listen
-from bot import Bot
-from pyrogram import Client, filters  # Add filters to imports
+from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from helper.database import codeflixbots
 from config import Config
