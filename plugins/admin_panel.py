@@ -396,9 +396,20 @@ async def send_msg(user_id, message):
 @Client.on_message(filters.command("ban") & filters.private & admin)
 async def ban_user(bot, message):
     try:
-        parts = message.text.split()[2:]
-        user_id = int(parts[1])
-        reason = parts[2] if len(parts) > 2 else "No reason provided"
+        command_parts = message.text.split(maxsplit=2)
+        if len(command_parts) < 2:
+            await message.reply_text("Dude, you need to provide a user ID! Use it like this: `/ban <user_id> [reason]`")
+            return
+
+        user_id_str = command_parts[1]
+        reason = command_parts[2] if len(command_parts) > 2 else "No reason provided"
+
+        if not user_id_str.isdigit():
+            await message.reply_text("Dude, the user ID must be a number! Use it like this: `/ban <user_id> [reason]`")
+            return
+            
+        user_id = int(user_id_str)
+        
         await codeflixbots.col.update_one(
             {"_id": user_id},
             {"$set": {
