@@ -405,7 +405,7 @@ async def ban_user(bot, message):
         reason = command_parts[2] if len(command_parts) > 2 else "No reason provided"
 
         if not user_id_str.isdigit():
-            await message.reply_text("Dude, the user ID must be a number! Use it like this: `/ban <user_id> [reason]`")
+            await message.reply_text("await message.reply_text(f"Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /ban <ᴜsᴇʀ_ɪᴅ> ʀᴇᴀsᴏɴ")
             return
             
         user_id = int(user_id_str)
@@ -420,8 +420,9 @@ async def ban_user(bot, message):
             upsert=True
         )
         await message.reply_text(f"**Usᴇʀ - `{user_id}` Is sᴜᴄᴄᴇssғᴜʟʟʏ ʙᴀɴɴᴇᴅ.\nRᴇᴀsᴏɴ:- {reason}**")
-    except Exception as e:
-        await message.reply_text(f"Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /ban <ᴜsᴇʀ_ɪᴅ> ʀᴇᴀsᴏɴ")
+        except Exception as e:
+        await message.reply_text(f"An unexpected error occurred: `{e}`")
+
 
 # --- Unban User Command ---
 @Client.on_message(filters.command("unban") & filters.private & admin)
