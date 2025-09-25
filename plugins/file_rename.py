@@ -20,6 +20,7 @@ from config import Config
 from functools import wraps
 from os import makedirs
 
+Semaphore = 3
 chat_data_cache = {}
 ADMIN_URL = Config.ADMIN_URL
 FSUB_PIC = Config.FSUB_PIC
