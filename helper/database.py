@@ -114,9 +114,6 @@ class Database:
             }
         return {'verify_status_1': default_verify, 'verify_status_2': default_verify}
 
-    async def db_update_verify_status(self, user_id, verify_data):
-        await self.col.update_one({'_id': user_id}, {'$set': verify_data})
-
     async def get_verify_status(self, user_id):
         return await self.db_verify_status(user_id)
 
@@ -133,19 +130,22 @@ class Database:
         }
         await self.db_update_verify_status(user_id, verify_data)
 
+    async def db_update_verify_status(self, user_id, verify_data):
+        await self.col.update_one({'_id': user_id}, {'$set': verify_data})
+
     async def get_verification_mode_2(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
         return user.get('verification_mode_2', "Off")
         
     async def set_verification_mode_2(self, user_id, status: bool):
-        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_2': verification_mode_2}})
+        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_2': verify_status_2}})
 
     async def get_verification_mode_1(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
         return user.get('verification_mode_1', "Off")
         
     async def set_verification_mode_1(self, user_id, status: bool):
-        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_1': verification_mode_1}})
+        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_1': verify_status_1}})
 
     async def get_verification_settings(self):
         settings = await self.verification_settings.find_one({'_id': 'global_settings'})
