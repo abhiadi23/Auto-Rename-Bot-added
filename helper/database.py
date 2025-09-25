@@ -470,7 +470,7 @@ class Database:
         )
 
     async def is_banned(self, user_id):
-        return await self.banned_users.find_one({'_id': int(user_id)}
+        return await self.banned_users.find_one({'_id': int(user_id)})
 
     async def get_banned_users(self, user_id):
         return self.banned_users.find({"ban_status.is_banned": True})
