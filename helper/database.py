@@ -196,12 +196,11 @@ class Database:
             try:
                 await self.col.insert_one(user)
                 logging.info(f"New user added: {u.id}")
-                # Want this bro
-                 await send_log(b, u)
+                await send_log(b, u)
             except Exception as e:
                 logging.error(f"Error adding user {u.id}: {e}")
-        else:
-            logging.info(f"User {u.id} already exists")
+            else:
+                logging.info(f"User {u.id} already exists") 
 
     async def ensure_user_exists(self, user_id, username=None):
         """Ensure user exists in database before operations"""
