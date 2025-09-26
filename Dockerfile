@@ -3,7 +3,7 @@ FROM python:3.10-slim
 WORKDIR /app
 COPY . /app/
 
-# system packages install karo jo C extensions build ke liye chahiye
+# 
 RUN apt-get update && apt-get install -y \
     gcc \
     libffi-dev \
