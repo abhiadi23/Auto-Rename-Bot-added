@@ -135,14 +135,14 @@ class Database:
 
     async def get_verification_mode_2(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('verification_mode_2', "Off")
+        return user.get('verification_mode_2', "Off", upsert=True)
         
     async def set_verification_mode_2(self, user_id, status: bool):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_2': verify_status_2}})
 
     async def get_verification_mode_1(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('verification_mode_1', "Off")
+        return user.get('verification_mode_1', "Off", upsert=True)
         
     async def set_verification_mode_1(self, user_id, status: bool):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_1': verify_status_1}})
@@ -196,8 +196,8 @@ class Database:
             try:
                 await self.col.insert_one(user)
                 logging.info(f"New user added: {u.id}")
-                # Fixed: send_log function call - you need to import this or define it
-                # await send_log(b, u)
+                # Want this bro
+                 await send_log(b, u)
             except Exception as e:
                 logging.error(f"Error adding user {u.id}: {e}")
         else:
