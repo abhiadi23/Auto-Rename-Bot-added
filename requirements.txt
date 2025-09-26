@@ -1,4 +1,4 @@
-pyrogram==2.0.80
+pyrofork==2.3.61
 pyromod==3.1.6
 TgCrypto
 motor
