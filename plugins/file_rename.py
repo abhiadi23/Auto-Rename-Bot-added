@@ -27,6 +27,7 @@ FSUB_PIC = Config.FSUB_PIC
 BOT_USERNAME = Config.BOT_USERNAME
 OWNER_ID = Config.OWNER_ID
 FSUB_LINK_EXPIRY = 10
+thread_pool = ThreadPoolExecutor(max_workers=4)
 
 # ========== Decorators ==========
 
@@ -469,9 +470,11 @@ async def start_sequence(client, message: Message):
 @check_fsub
 async def auto_rename_files(client, message):
     """Main handler for auto-renaming files"""
-    user_id = message.from_user.id
-    format_template = await codeflixbots.get_format_template(user_id)
-    media_preference = await codeflixbots.get_media_preference(user_id)
+async with Semaphore:
+    try:
+        user_id = message.from_user.id
+        format_template = await codeflixbots.get_format_template(user_id)
+        media_preference = await codeflixbots.get_media_preference(user_id)
     
     if not format_template:
         await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
@@ -615,26 +618,25 @@ async def auto_rename_files(client, message):
 
     msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
     await message.reply_chat_action(ChatAction.PLAYING)
-
-    try:
-        file_path = await client.download_media(
+    async with Semaphore:
+        try:
+            file_path = await client.download_media(
             message,
             file_name=download_path,
             progress=progress_for_pyrogram,
-            progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
-        )
+            progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time()))
         
         if file_extension.lower() in ['.mp4', '.m4v']:
             await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
             await message.reply_chat_action(ChatAction.PLAYING)
-
-            try:
-                await convert_to_mkv(file_path, metadata_path, user_id)
-            except Exception as e:
-                await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
-                return
-            else:
-                pass 
+            async with Semaphore:
+                try:
+                    await convert_to_mkv(file_path, metadata_path, user_id)
+                except Exception as e:
+                    await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
+                    return
+                else:
+                    pass 
         
         # Detect duration for video or audio files
         duration = 0
@@ -649,22 +651,23 @@ async def auto_rename_files(client, message):
         
         await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
         await message.reply_chat_action(ChatAction.PLAYING)
-        await add_metadata(file_path, metadata_path, user_id)
-        file_path = metadata_path
+        async with Semaphore:
+            try:
+                await add_metadata(file_path, metadata_path, user_id)
+                file_path = metadata_path
 
         await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
         await message.reply_chat_action(ChatAction.PLAYING)
-        await codeflixbots.col.update_one(
-            {"_id": user_id},
-            {
-                "$inc": {"rename_count": 1},
-                "$set": {
-                    "first_name": message.from_user.first_name,
-                    "username": message.from_user.username,
-                    "last_activity_timestamp": datetime.now()
-                }
-            }
-        )
+        async with Semaphore:
+            try:
+                await codeflixbots.col.update_one(
+                    {"_id": user_id},
+                    {
+                        "$inc": {"rename_count": 1},
+                        "$set": {
+                            "first_name": message.from_user.first_name,
+                            "username": message.from_user.username,
+                            "last_activity_timestamp": datetime.now()}})
 
         c_caption = await codeflixbots.get_caption(message.chat.id)
         
