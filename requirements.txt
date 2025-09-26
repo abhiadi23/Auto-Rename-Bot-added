@@ -1,5 +1,5 @@
 pyrofork==2.3.61
-pyromod==3.1.6
+pyromod==3.1.0
 TgCrypto
 motor
 dnspython
