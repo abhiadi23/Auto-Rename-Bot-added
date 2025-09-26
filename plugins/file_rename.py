@@ -13,6 +13,7 @@ from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.enums import ChatAction, ChatMemberStatus
 from pyrogram.errors import UserNotParticipant
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor  # Added missing import
 from plugins.antinsfw import check_anti_nsfw
 from helper.utils import progress_for_pyrogram, humanbytes, convert
 from helper.database import codeflixbots
@@ -20,7 +21,7 @@ from config import Config
 from functools import wraps
 from os import makedirs
 
-Semaphore = 3
+Semaphore = asyncio.Semaphore(3)  # Fixed: Should be asyncio.Semaphore
 chat_data_cache = {}
 ADMIN_URL = Config.ADMIN_URL
 FSUB_PIC = Config.FSUB_PIC
@@ -470,272 +471,276 @@ async def start_sequence(client, message: Message):
 @check_fsub
 async def auto_rename_files(client, message):
     """Main handler for auto-renaming files"""
-async with Semaphore:
-    try:
-        user_id = message.from_user.id
-        format_template = await codeflixbots.get_format_template(user_id)
-        media_preference = await codeflixbots.get_media_preference(user_id)
-    
-    if not format_template:
-        await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
-        return
-    
-    # Correctly identify file properties and initial media type
-    if message.document:
-        file_id = message.document.file_id
-        file_name = message.document.file_name
-        file_size = message.document.file_size
-        media_type = "document"
-    elif message.video:
-        file_id = message.video.file_id
-        file_name = message.video.file_name or "video"
-        file_size = message.video.file_size
-        media_type = "video"
-    elif message.audio:
-        file_id = message.audio.file_id
-        file_name = message.audio.file_name or "audio"
-        file_size = message.audio.file_size
-        media_type = "audio"
-    else:
-        return await message.reply_text("Unsupported file type")
-        
-    if not file_name:
-        await message.reply_text("Could not determine file name.")
-        return
-
-    if file_id in renaming_operations:
-        if (datetime.now() - renaming_operations[file_id]).seconds < 10:
-            return
-    renaming_operations[file_id] = datetime.now()
-            
-    file_info = {
-        "file_id": file_id,
-        "file_name": file_name,
-        "message": message,
-        "episode_num": extract_episode_number(file_name)
-    }
-
-    if user_id in active_sequences:
-        active_sequences[user_id].append(file_info)
-        reply_msg = await message.reply_text("Wᴇᴡ...ғɪʟᴇs ʀᴇᴄᴇɪᴠᴇᴅ ɴᴏᴡ ᴜsᴇ /end_sequence ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs...!!")
-        message_ids[user_id].append(reply_msg.id)
-        return
-
-    if media_preference:
-        media_type = media_preference
-    else:
-        # Fallback to intelligent guessing if no preference is set
-        if file_name.endswith((".mp4", ".mkv", ".avi", ".webm")):
-            media_type = "document"
-        elif file_name.endswith((".mp3", ".flac", ".wav", ".ogg")):
-            media_type = "audio"
-        else:
-            media_type = "video"
-
-    if await check_anti_nsfw(file_name, message):
-        await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟᴇ ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
-        return
-
-    episode_number = extract_episode_number(file_name)
-    season_number = extract_season_number(file_name)
-    audio_info_extracted = extract_audio_info(file_name)
-    quality_extracted = extract_quality(file_name)
-
-    print(f"DEBUG: Final extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
-
-    season_value_formatted = str(season_number).zfill(2) if season_number is not None else "01"
-    episode_value_formatted = str(episode_number).zfill(2) if episode_number is not None else "01"
-
-    template = re.sub(r'S(?:Season|season|SEASON)(\d+)', f'S{season_value_formatted}', format_template, flags=re.IGNORECASE)
-
-    season_replacements = [
-        (re.compile(r'\{season\}', re.IGNORECASE), season_value_formatted),
-        (re.compile(r'\{Season\}', re.IGNORECASE), season_value_formatted),
-        (re.compile(r'\{SEASON\}', re.IGNORECASE), season_value_formatted),
-        (re.compile(r'\bseason\b', re.IGNORECASE), season_value_formatted),
-        (re.compile(r'\bSeason\b', re.IGNORECASE), season_value_formatted),
-        (re.compile(r'\bSEASON\b', re.IGNORECASE), season_value_formatted),
-        (re.compile(r'Season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
-        (re.compile(r'season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
-        (re.compile(r'SEASON[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
-    ]
-
-    for pattern, replacement in season_replacements:
-        template = pattern.sub(replacement, template)
-            
-    template = re.sub(r'EP(?:Episode|episode|EPISODE)', f'EP{episode_value_formatted}', template, flags=re.IGNORECASE)
-
-    episode_patterns = [
-        re.compile(r'\{episode\}', re.IGNORECASE),
-        re.compile(r'\bEpisode\b', re.IGNORECASE),
-        re.compile(r'\bEP\b', re.IGNORECASE)
-    ]
-
-    for pattern in episode_patterns:
-        template = pattern.sub(episode_value_formatted, template)
-
-    audio_replacement = audio_info_extracted if audio_info_extracted else ""
-    audio_patterns = [
-        re.compile(r'\{audio\}', re.IGNORECASE),
-        re.compile(r'\bAudio\b', re.IGNORECASE),
-    ]
-
-    for pattern in audio_patterns:
-        template = pattern.sub(audio_replacement, template)
-
-    quality_replacement = quality_extracted if quality_extracted else ""
-    quality_patterns = [
-        re.compile(r'\{quality\}', re.IGNORECASE),
-        re.compile(r'\bQuality\b', re.IGNORECASE),
-    ]
-
-    for pattern in quality_patterns:
-        template = pattern.sub(quality_replacement, template)
-
-    template = re.sub(r'\[\s*\]', '', template)
-    template = re.sub(r'\(\s*\)', '', template)
-    template = re.sub(r'\{\s*\}', '', template)
-
-    _, file_extension = os.path.splitext(file_name)
-
-# Force MP4 files to be converted to MKV to ensure subtitle compatibility
-    if file_extension.lower() in ['.mp4', '.m4v']:
-        final_extension = ".mkv"
-    else:
-        final_extension = file_extension
-
-    if not final_extension.startswith('.'):
-        final_extension = '.' + final_extension if file_extension else ''
-
-    new_file_name = f"{template}{final_extension}"
-    download_path = f"downloads/{new_file_name}"
-    metadata_path = f"metadata/{new_file_name}"
-    output_path = f"processed/{os.path.splitext(new_file_name)[0]}{final_extension}"
-
-    makedirs(os.path.dirname(download_path), exist_ok=True)
-    makedirs(os.path.dirname(metadata_path), exist_ok=True)
-    makedirs(os.path.dirname(output_path), exist_ok=True)
-
-    msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-    await message.reply_chat_action(ChatAction.PLAYING)
-    async with Semaphore:
+    async with Semaphore:  # Fixed indentation
         try:
-            file_path = await client.download_media(
-            message,
-            file_name=download_path,
-            progress=progress_for_pyrogram,
-            progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time()))
+            user_id = message.from_user.id
+            format_template = await codeflixbots.get_format_template(user_id)
+            media_preference = await codeflixbots.get_media_preference(user_id)
         
-        if file_extension.lower() in ['.mp4', '.m4v']:
-            await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
-            await message.reply_chat_action(ChatAction.PLAYING)
-            async with Semaphore:
-                try:
-                    await convert_to_mkv(file_path, metadata_path, user_id)
-                except Exception as e:
-                    await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
+            if not format_template:
+                await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
+                return
+        
+            # Correctly identify file properties and initial media type
+            if message.document:
+                file_id = message.document.file_id
+                file_name = message.document.file_name
+                file_size = message.document.file_size
+                media_type = "document"
+            elif message.video:
+                file_id = message.video.file_id
+                file_name = message.video.file_name or "video"
+                file_size = message.video.file_size
+                media_type = "video"
+            elif message.audio:
+                file_id = message.audio.file_id
+                file_name = message.audio.file_name or "audio"
+                file_size = message.audio.file_size
+                media_type = "audio"
+            else:
+                return await message.reply_text("Unsupported file type")
+                
+            if not file_name:
+                await message.reply_text("Could not determine file name.")
+                return
+
+            if file_id in renaming_operations:
+                if (datetime.now() - renaming_operations[file_id]).seconds < 10:
                     return
+            renaming_operations[file_id] = datetime.now()
+                    
+            file_info = {
+                "file_id": file_id,
+                "file_name": file_name,
+                "message": message,
+                "episode_num": extract_episode_number(file_name)
+            }
+
+            if user_id in active_sequences:
+                active_sequences[user_id].append(file_info)
+                reply_msg = await message.reply_text("Wᴇᴡ...ғɪʟᴇs ʀᴇᴄᴇɪᴠᴇᴅ ɴᴏᴡ ᴜsᴇ /end_sequence ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs...!!")
+                message_ids[user_id].append(reply_msg.id)
+                return
+
+            if media_preference:
+                media_type = media_preference
+            else:
+                # Fallback to intelligent guessing if no preference is set
+                if file_name.endswith((".mp4", ".mkv", ".avi", ".webm")):
+                    media_type = "document"
+                elif file_name.endswith((".mp3", ".flac", ".wav", ".ogg")):
+                    media_type = "audio"
                 else:
-                    pass 
-        
-        # Detect duration for video or audio files
-        duration = 0
-        if media_type in ["video", "audio"] or file_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".mp3", ".flac", ".wav", ".ogg")):
+                    media_type = "video"
+
+            if await check_anti_nsfw(file_name, message):
+                await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟᴇ ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
+                return
+
+            episode_number = extract_episode_number(file_name)
+            season_number = extract_season_number(file_name)
+            audio_info_extracted = extract_audio_info(file_name)
+            quality_extracted = extract_quality(file_name)
+
+            print(f"DEBUG: Final extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
+
+            season_value_formatted = str(season_number).zfill(2) if season_number is not None else "01"
+            episode_value_formatted = str(episode_number).zfill(2) if episode_number is not None else "01"
+
+            template = re.sub(r'S(?:Season|season|SEASON)(\d+)', f'S{season_value_formatted}', format_template, flags=re.IGNORECASE)
+
+            season_replacements = [
+                (re.compile(r'\{season\}', re.IGNORECASE), season_value_formatted),
+                (re.compile(r'\{Season\}', re.IGNORECASE), season_value_formatted),
+                (re.compile(r'\{SEASON\}', re.IGNORECASE), season_value_formatted),
+                (re.compile(r'\bseason\b', re.IGNORECASE), season_value_formatted),
+                (re.compile(r'\bSeason\b', re.IGNORECASE), season_value_formatted),
+                (re.compile(r'\bSEASON\b', re.IGNORECASE), season_value_formatted),
+                (re.compile(r'Season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
+                (re.compile(r'season[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
+                (re.compile(r'SEASON[\s._-]*\d*', re.IGNORECASE), season_value_formatted),
+            ]
+
+            for pattern, replacement in season_replacements:
+                template = pattern.sub(replacement, template)
+                    
+            template = re.sub(r'EP(?:Episode|episode|EPISODE)', f'EP{episode_value_formatted}', template, flags=re.IGNORECASE)
+
+            episode_patterns = [
+                re.compile(r'\{episode\}', re.IGNORECASE),
+                re.compile(r'\bEpisode\b', re.IGNORECASE),
+                re.compile(r'\bEP\b', re.IGNORECASE)
+            ]
+
+            for pattern in episode_patterns:
+                template = pattern.sub(episode_value_formatted, template)
+
+            audio_replacement = audio_info_extracted if audio_info_extracted else ""
+            audio_patterns = [
+                re.compile(r'\{audio\}', re.IGNORECASE),
+                re.compile(r'\bAudio\b', re.IGNORECASE),
+            ]
+
+            for pattern in audio_patterns:
+                template = pattern.sub(audio_replacement, template)
+
+            quality_replacement = quality_extracted if quality_extracted else ""
+            quality_patterns = [
+                re.compile(r'\{quality\}', re.IGNORECASE),
+                re.compile(r'\bQuality\b', re.IGNORECASE),
+            ]
+
+            for pattern in quality_patterns:
+                template = pattern.sub(quality_replacement, template)
+
+            template = re.sub(r'\[\s*\]', '', template)
+            template = re.sub(r'\(\s*\)', '', template)
+            template = re.sub(r'\{\s*\}', '', template)
+
+            _, file_extension = os.path.splitext(file_name)
+
+            # Force MP4 files to be converted to MKV to ensure subtitle compatibility
+            if file_extension.lower() in ['.mp4', '.m4v']:
+                final_extension = ".mkv"
+            else:
+                final_extension = file_extension
+
+            if not final_extension.startswith('.'):
+                final_extension = '.' + final_extension if file_extension else ''
+
+            new_file_name = f"{template}{final_extension}"
+            download_path = f"downloads/{new_file_name}"
+            metadata_path = f"metadata/{new_file_name}"
+            output_path = f"processed/{os.path.splitext(new_file_name)[0]}{final_extension}"
+
+            makedirs(os.path.dirname(download_path), exist_ok=True)
+            makedirs(os.path.dirname(metadata_path), exist_ok=True)
+            makedirs(os.path.dirname(output_path), exist_ok=True)
+
+            msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+            await message.reply_chat_action(ChatAction.PLAYING)
+            
             try:
-                duration = await detect_duration(file_path)
-            except Exception as e:
-                logger.error(f"Failed to detect duration: {e}")
+                file_path = await client.download_media(
+                    message,
+                    file_name=download_path,
+                    progress=progress_for_pyrogram,
+                    progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
+                )
+            
+                if file_extension.lower() in ['.mp4', '.m4v']:
+                    await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
+                    await message.reply_chat_action(ChatAction.PLAYING)
+                    try:
+                        await convert_to_mkv(file_path, metadata_path, user_id)
+                    except Exception as e:
+                        await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
+                        return
+            
+                # Detect duration for video or audio files
                 duration = 0
+                if media_type in ["video", "audio"] or file_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".mp3", ".flac", ".wav", ".ogg")):
+                    try:
+                        duration = await detect_duration(file_path)
+                    except Exception as e:
+                        logger.error(f"Failed to detect duration: {e}")
+                        duration = 0
 
-        human_readable_duration = convert(duration) if duration > 0 else "N/A"
-        
-        await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
-        await message.reply_chat_action(ChatAction.PLAYING)
-        async with Semaphore:
-            try:
-                await add_metadata(file_path, metadata_path, user_id)
-                file_path = metadata_path
+                human_readable_duration = convert(duration) if duration > 0 else "N/A"
+                
+                await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+                await message.reply_chat_action(ChatAction.PLAYING)
+                try:
+                    await add_metadata(file_path, metadata_path, user_id)
+                    file_path = metadata_path
+                except Exception as e:
+                    logger.error(f"Failed to add metadata: {e}")
 
-        await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-        await message.reply_chat_action(ChatAction.PLAYING)
-        async with Semaphore:
-            try:
-                await codeflixbots.col.update_one(
-                    {"_id": user_id},
-                    {
-                        "$inc": {"rename_count": 1},
-                        "$set": {
-                            "first_name": message.from_user.first_name,
-                            "username": message.from_user.username,
-                            "last_activity_timestamp": datetime.now()}})
+                await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+                await message.reply_chat_action(ChatAction.PLAYING)
+                
+                try:
+                    await codeflixbots.col.update_one(
+                        {"_id": user_id},
+                        {
+                            "$inc": {"rename_count": 1},
+                            "$set": {
+                                "first_name": message.from_user.first_name,
+                                "username": message.from_user.username,
+                                "last_activity_timestamp": datetime.now()
+                            }
+                        }
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to update database: {e}")
 
-        c_caption = await codeflixbots.get_caption(message.chat.id)
-        
-        if c_caption:
-            caption = c_caption.format(
-                filename=new_file_name,
-                filesize=humanbytes(file_size),
-                duration=human_readable_duration
-            )
-        else:
-            caption = f"**{new_file_name}**"
-            
-        c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
+                c_caption = await codeflixbots.get_caption(message.chat.id)
+                
+                if c_caption:
+                    caption = c_caption.format(
+                        filename=new_file_name,
+                        filesize=humanbytes(file_size),
+                        duration=human_readable_duration
+                    )
+                else:
+                    caption = f"**{new_file_name}**"
+                    
+                c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
 
-        ph_path = None
-        if c_thumb:
-            ph_path = await client.download_media(c_thumb)
-        elif media_type == "video" and message.video and message.video.thumbs:
-            try:
-                ph_path = await client.download_media(message.video.thumbs[0].file_id)
-            except IndexError:
                 ph_path = None
+                if c_thumb:
+                    ph_path = await client.download_media(c_thumb)
+                elif media_type == "video" and message.video and message.video.thumbs:
+                    try:
+                        ph_path = await client.download_media(message.video.thumbs[0].file_id)
+                    except IndexError:
+                        ph_path = None
 
-        if ph_path:
-            try:
-                img = Image.open(ph_path).convert("RGB")
-                img.save(ph_path, "JPEG")
+                if ph_path:
+                    try:
+                        img = Image.open(ph_path).convert("RGB")
+                        img.save(ph_path, "JPEG")
+                    except Exception as e:
+                        logger.error(f"Failed to process video thumbnail: {e}")
+                        ph_path = None
+
+                # Define common upload parameters
+                common_upload_params = {
+                    'chat_id': message.chat.id,
+                    'caption': caption,
+                    'thumb': ph_path,
+                    'progress': progress_for_pyrogram,
+                    'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
+                }
+
+                if media_type == "document":
+                    await client.send_document(document=file_path, **common_upload_params)
+                elif media_type == "video":
+                    if duration > 0:
+                        common_upload_params['duration'] = int(duration)
+                    await client.send_video(video=file_path, **common_upload_params)
+                elif media_type == "audio":
+                    if duration > 0:
+                        common_upload_params['duration'] = int(duration)
+                    await client.send_audio(audio=file_path, **common_upload_params)
+                        
+                await msg.delete()
+
             except Exception as e:
-                logger.error(f"Failed to process video thumbnail: {e}")
-                ph_path = None
+                await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
+                raise
+            finally:
+                # Clean up files
+                for path in [download_path, metadata_path]:
+                    if os.path.exists(path):
+                        try:
+                            os.remove(path)
+                        except Exception as e:
+                            print(f"Error removing file {path}: {e}")
 
-        # Define common upload parameters
-        common_upload_params = {
-            'chat_id': message.chat.id,
-            'caption': caption,
-            'thumb': ph_path,
-            'progress': progress_for_pyrogram,
-            'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
-        }
-
-        if media_type == "document":
-            await client.send_document(document=file_path, **common_upload_params)
-        elif media_type == "video":
-            if duration > 0:
-                common_upload_params['duration'] = int(duration)
-            await client.send_video(video=file_path, **common_upload_params)
-        elif media_type == "audio":
-            if duration > 0:
-                common_upload_params['duration'] = int(duration)
-            await client.send_audio(audio=file_path, **common_upload_params)
-            
-        await msg.delete()
-
-    except Exception as e:
-        await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
-        raise
-    finally:
-        if os.path.exists(download_path):
-            try:
-                os.remove(download_path)
-            except Exception as e:
-                print(f"Error removing download file: {e}")
-
-        if os.path.exists(metadata_path):
-            try:
-                os.remove(metadata_path)
-            except Exception as e:
-                print(f"Error removing metadata file: {e}")
+        except Exception as e:
+            logger.error(f"Error in auto_rename_files: {e}")
+            await message.reply_text(f"❌ An error occurred: {str(e)}")
 
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
@@ -788,7 +793,7 @@ async def end_sequence(client, message: Message):
             await client.delete_messages(chat_id=message.chat.id, message_ids=delete_messages)
         except Exception as e:
             print(f"Error deleting messages: {e}")
-        
+
 async def add_metadata(input_path, output_path, user_id):
     ffmpeg_cmd = shutil.which('ffmpeg')
     if not ffmpeg_cmd:
@@ -821,7 +826,7 @@ async def add_metadata(input_path, output_path, user_id):
 
     if process.returncode != 0:
         raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
-        
+
 async def convert_to_mkv(input_path, output_path, user_id):
     """Convert video file to MKV format"""
     ffmpeg_cmd = shutil.which('ffmpeg')
