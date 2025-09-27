@@ -627,7 +627,22 @@ async def auto_rename_files(client, message):
                     progress=progress_for_pyrogram,
                     progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
                 )
-            
+            except Exception as e:
+                await msg.edit(f"Dᴏᴡɴʟᴏᴀᴅ ғᴀɪʟᴇᴅ: {e}")
+                raise
+
+if file_path.endswith(".temp"):
+    final_file_path = file_path.replace(".temp", "")
+    try:
+        if os.path.exists(file_path):
+            await asyncio.sleep(0.1)
+            os.rename(file_path, final_file_path)
+            file_path = final_file_path
+
+if not os.path.exists(file_path):
+    await msg.edit("❌ Download failed, file not found after completion.")
+    return
+                
                 if file_extension.lower() in ['.mp4', '.m4v']:
                     await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
                     await message.reply_chat_action(ChatAction.PLAYING)
