@@ -631,38 +631,43 @@ async def auto_rename_files(client, message):
                 await msg.edit(f"Dᴏᴡɴʟᴏᴀᴅ ғᴀɪʟᴇᴅ: {e}")
                 raise
 
-if file_path.endswith(".temp"):
-    final_file_path = file_path.replace(".temp", "")
-    try:
-        if os.path.exists(file_path):
-            await asyncio.sleep(0.1)
-            os.rename(file_path, final_file_path)
-            file_path = final_file_path
+            if file_path.endswith(".temp"):
+                final_file_path = file_path.replace(".temp", "")
+                try:
+                    if os.path.exists(file_path):
+                        await asyncio.sleep(0.1)
+                        os.rename(file_path, final_file_path)
+                        file_path = final_file_path
+                except Exception as e:
+                    pass
 
-if not os.path.exists(file_path):
-    await msg.edit("❌ Download failed, file not found after completion.")
-    return
+            if not os.path.exists(file_path):
+                await msg.edit("❌ Download failed, file not found after completion.")
+                return
                 
-                if file_extension.lower() in ['.mp4', '.m4v']:
-                    await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
-                    await message.reply_chat_action(ChatAction.PLAYING)
-                    try:
-                        await convert_to_mkv(file_path, metadata_path, user_id)
-                    except Exception as e:
-                        await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
-                        return
+            if file_extension.lower() in ['.mp4', '.m4v']:
+                await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
+                await message.reply_chat_action(ChatAction.PLAYING)
+                try:
+                    await convert_to_mkv(file_path, metadata_path, user_id)
+                    file_path = metadata_path
+                except Exception as e:
+                    await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
+                    return
+        
+            # Detect duration for video or audio files
+            duration = 0
+            if media_type in ["video", "audio"] or file_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".mp3", ".flac", ".wav", ".ogg")):
+                try:
+                    duration = await detect_duration(file_path)
+                except Exception as e:
+                    logger.error(f"Failed to detect duration: {e}")
+                    duration = 0
+
+            human_readable_duration = convert(duration) if duration > 0 else "N/A"
             
-                # Detect duration for video or audio files
-                duration = 0
-                if media_type in ["video", "audio"] or file_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".mp3", ".flac", ".wav", ".ogg")):
-                    try:
-                        duration = await detect_duration(file_path)
-                    except Exception as e:
-                        logger.error(f"Failed to detect duration: {e}")
-                        duration = 0
-
-                human_readable_duration = convert(duration) if duration > 0 else "N/A"
-                
+            # Only add metadata if not already converted (to avoid double processing)
+            if not file_extension.lower() in ['.mp4', '.m4v']:
                 await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
                 await message.reply_chat_action(ChatAction.PLAYING)
                 try:
@@ -671,91 +676,87 @@ if not os.path.exists(file_path):
                 except Exception as e:
                     logger.error(f"Failed to add metadata: {e}")
 
-                await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-                await message.reply_chat_action(ChatAction.PLAYING)
-                
-                try:
-                    await codeflixbots.col.update_one(
-                        {"_id": user_id},
-                        {
-                            "$inc": {"rename_count": 1},
-                            "$set": {
-                                "first_name": message.from_user.first_name,
-                                "username": message.from_user.username,
-                                "last_activity_timestamp": datetime.now()
-                            }
+            await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+            await message.reply_chat_action(ChatAction.PLAYING)
+            
+            try:
+                await codeflixbots.col.update_one(
+                    {"_id": user_id},
+                    {
+                        "$inc": {"rename_count": 1},
+                        "$set": {
+                            "first_name": message.from_user.first_name,
+                            "username": message.from_user.username,
+                            "last_activity_timestamp": datetime.now()
                         }
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to update database: {e}")
-
-                c_caption = await codeflixbots.get_caption(message.chat.id)
-                
-                if c_caption:
-                    caption = c_caption.format(
-                        filename=new_file_name,
-                        filesize=humanbytes(file_size),
-                        duration=human_readable_duration
-                    )
-                else:
-                    caption = f"**{new_file_name}**"
-                    
-                c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
-
-                ph_path = None
-                if c_thumb:
-                    ph_path = await client.download_media(c_thumb)
-                elif media_type == "video" and message.video and message.video.thumbs:
-                    try:
-                        ph_path = await client.download_media(message.video.thumbs[0].file_id)
-                    except IndexError:
-                        ph_path = None
-
-                if ph_path:
-                    try:
-                        img = Image.open(ph_path).convert("RGB")
-                        img.save(ph_path, "JPEG")
-                    except Exception as e:
-                        logger.error(f"Failed to process video thumbnail: {e}")
-                        ph_path = None
-
-                # Define common upload parameters
-                common_upload_params = {
-                    'chat_id': message.chat.id,
-                    'caption': caption,
-                    'thumb': ph_path,
-                    'progress': progress_for_pyrogram,
-                    'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
-                }
-
-                if media_type == "document":
-                    await client.send_document(document=file_path, **common_upload_params)
-                elif media_type == "video":
-                    if duration > 0:
-                        common_upload_params['duration'] = int(duration)
-                    await client.send_video(video=file_path, **common_upload_params)
-                elif media_type == "audio":
-                    if duration > 0:
-                        common_upload_params['duration'] = int(duration)
-                    await client.send_audio(audio=file_path, **common_upload_params)
-                        
-                await msg.delete()
-
+                    }
+                )
             except Exception as e:
-                await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
-                raise
-            finally:
-                # Clean up files
-                for path in [download_path, metadata_path]:
-                    if os.path.exists(path):
-                        try:
-                            os.remove(path)
-                        except Exception as e:
-                            print(f"Error removing file {path}: {e}")
+                logger.error(f"Failed to update database: {e}")
+
+            c_caption = await codeflixbots.get_caption(message.chat.id)
+            
+            if c_caption:
+                caption = c_caption.format(
+                    filename=new_file_name,
+                    filesize=humanbytes(file_size),
+                    duration=human_readable_duration
+                )
+            else:
+                caption = f"**{new_file_name}**"
+                
+            c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
+
+            ph_path = None
+            if c_thumb:
+                ph_path = await client.download_media(c_thumb)
+            elif media_type == "video" and message.video and message.video.thumbs:
+                try:
+                    ph_path = await client.download_media(message.video.thumbs[0].file_id)
+                except IndexError:
+                    ph_path = None
+
+            if ph_path:
+                try:
+                    img = Image.open(ph_path).convert("RGB")
+                    img.save(ph_path, "JPEG")
+                except Exception as e:
+                    logger.error(f"Failed to process video thumbnail: {e}")
+                    ph_path = None
+
+            # Define common upload parameters
+            common_upload_params = {
+                'chat_id': message.chat.id,
+                'caption': caption,
+                'thumb': ph_path,
+                'progress': progress_for_pyrogram,
+                'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
+            }
+
+            if media_type == "document":
+                await client.send_document(document=file_path, **common_upload_params)
+            elif media_type == "video":
+                if duration > 0:
+                    common_upload_params['duration'] = int(duration)
+                await client.send_video(video=file_path, **common_upload_params)
+            elif media_type == "audio":
+                if duration > 0:
+                    common_upload_params['duration'] = int(duration)
+                await client.send_audio(audio=file_path, **common_upload_params)
+                    
+            await msg.delete()
 
         except Exception as e:
-            logger.error(f"Error in auto_rename_files: {e}")
-            await message.reply_text(f"❌ An error occurred: {str(e)}")
+            await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
+            raise
+        finally:
+            # Clean up files
+            for path in [download_path, metadata_path]:
+                if os.path.exists(path):
+                    try:
+                        os.remove(path)
+                    except Exception as e:
+                        print(f"Error removing file {path}: {e}")
 
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
