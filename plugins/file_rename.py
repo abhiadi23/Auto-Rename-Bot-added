@@ -472,6 +472,10 @@ async def start_sequence(client, message: Message):
 async def auto_rename_files(client, message):
     """Main handler for auto-renaming files"""
     async with Semaphore:  # Fixed indentation
+        # Initialize variables at the start to avoid UnboundLocalError
+        download_path = None
+        metadata_path = None
+        
         try:
             user_id = message.from_user.id
             format_template = await codeflixbots.get_format_template(user_id)
