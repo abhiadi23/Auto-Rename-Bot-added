@@ -535,6 +535,7 @@ async def auto_rename_files(client, message):
 
             if await check_anti_nsfw(file_name, message):
                 await message.reply_text("NSFW ᴄᴏɴᴛᴇɴᴛ ᴅᴇᴛᴇᴄᴛᴇᴅ. Fɪʟᴇ ᴜᴘʟᴏᴀᴅ ʀᴇᴊᴇᴄᴛᴇᴅ.")
+                return
 
             episode_number = extract_episode_number(file_name)
             season_number = extract_season_number(file_name)
@@ -742,6 +743,51 @@ async def auto_rename_files(client, message):
                 if duration > 0:
                     common_upload_params['duration'] = int(duration)
                 await client.send_audio(audio=file_path, **common_upload_params)
+
+            if Config.DUMP:
+                        try:
+                            ist = pytz.timezone('Asia/Kolkata')
+                            current_time = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S IST")
+                            
+                            first_name = user.first_name
+                            if user.last_name:
+                                full_name += f" {user.last_name}"
+                            username = f"@{user.username}" if user.username else "N/A"
+                            premium_status = '🗸' if is_premium else '✘'
+                            
+                            dump_caption = (
+                                f"» Usᴇʀ Dᴇᴛᴀɪʟs «\n"
+                                f"ID: {user_id}\n"
+                                f"Nᴀᴍᴇ: {first_name}\n"
+                                f"Usᴇʀɴᴀᴍᴇ: {username}\n"
+                                f"Pʀᴇᴍɪᴜᴍ: {premium_status}\n"
+                                f"Tɪᴍᴇ: {current_time}\n"
+                                f"Oʀɪɢɪɴᴀʟ Fɪʟᴇɴᴀᴍᴇ: {file_name}\n"
+                                f"Rᴇɴᴀᴍᴇᴅ Fɪʟᴇɴᴀᴍᴇ: {new_filename}"
+                            )
+                            
+                            dump_channel = Config.DUMP_CHANNEL
+                            await asyncio.sleep(2)
+                            if media_type == "document":
+                                await client.send_document(
+                                    chat_id=dump_channel,
+                                    document=file_path,
+                                    caption=dump_caption
+                                )
+                            elif media_type == "video":
+                                await client.send_video(
+                                    chat_id=dump_channel,
+                                    video=file_path,
+                                    caption=dump_caption
+                                )
+                            elif media_type == "audio":
+                                await client.send_audio(
+                                    chat_id=dump_channel,
+                                    audio=file_path,
+                                    caption=dump_caption
+                                )
+                        except Exception as e:
+                            logger.error(f"Error sending to dump channel: {e}")
                     
             await msg.delete()
 
