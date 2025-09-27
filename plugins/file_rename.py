@@ -757,6 +757,38 @@ async def auto_rename_files(client, message):
                     except Exception as e:
                         print(f"Error removing file {path}: {e}")
 
+@Client.on_message(filters.command("showformat") & filters.private)
+@check_ban
+@check_fsub
+async def show_format_cmd(client, message: Message):
+    """Shows the user their currently set auto-rename format."""
+    user_id = message.from_user.id
+    
+    # 1. Fetch the format template from the database
+    # This calls the same function used in your auto_rename_files handler
+    try:
+        format_template = await codeflixbots.get_format_template(user_id)
+    except Exception as e:
+        # Handle potential database errors (optional but recommended)
+        await message.reply_text(f"❌ Eʀʀᴏʀ ғᴇᴛᴄʜɪɴɢ ғᴏʀᴍᴀᴛ: {e}")
+        return
+
+    # 2. Check if a format was found
+    if format_template:
+        response_text = (
+            f"✨ Yᴏᴜʀ ᴄᴜʀʀᴇɴᴛ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ ɪs:\n\n"
+            f"`{format_template}`\n\n"
+            "Uꜱᴇ /autorename ᴛᴏ ᴄʜᴀɴɢᴇ ɪᴛ."
+        )
+    else:
+        response_text = (
+            "⚠️ Yᴏᴜ ʜᴀᴠᴇ ɴᴏᴛ ꜱᴇᴛ ᴀɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ ʏᴇᴛ.\n"
+            "Pʟᴇᴀꜱᴇ ꜱᴇᴛ ᴏɴᴇ ᴜꜱɪɴɢ /autorename."
+        )
+
+    # 3. Send the response
+    await message.reply_text(response_text)
+
 @Client.on_message(filters.command("end_sequence") & filters.private)
 @check_ban
 @check_fsub
