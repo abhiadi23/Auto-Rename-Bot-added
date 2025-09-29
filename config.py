@@ -14,6 +14,8 @@ class Config(object):
  
     # other configs
     ADMIN_URL = "https://t.me/adityaabhinav"
+    DUMP_CHANNEL = os.environ.get("DUMP_CHANNEL", "-1002257657458")
+    DUMP = True
     BOT_UPTIME  = time.time()
     START_PIC   = os.environ.get("START_PIC", "https://graph.org/file/4b306f4b15c23a8f22e58.jpg")
     LEADERBOARD_PIC = os.environ.get("LEADERBOARD_PIC", "https://graph.org/file/4b306f4b15c23a8f22e58.jpg")
