@@ -611,16 +611,19 @@ async def auto_rename_files(client, message):
 
             if not final_extension.startswith('.'):
                 final_extension = '.' + final_extension if file_extension else ''
-
+                
             new_file_name = f"{template}{final_extension}"
-            download_path = f"downloads/{new_file_name}"
-            metadata_path = f"metadata/{new_file_name}"
-            output_path = f"processed/{os.path.splitext(new_file_name)[0]}{final_extension}"
+            user_folder = str(user_id)
 
-            makedirs(os.path.dirname(download_path), exist_ok=True)
-            makedirs(os.path.dirname(metadata_path), exist_ok=True)
-            makedirs(os.path.dirname(output_path), exist_ok=True)
+download_path = os.path.join("downloads", user_folder, new_file_name)
+metadata_path = os.path.join("metadata", user_folder, new_file_name)
+output_path = os.path.join("processed", user_folder, new_file_name)
 
+# Create user-specific directories
+os.makedirs(os.path.dirname(download_path), exist_ok=True)
+os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            
             msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
             await message.reply_chat_action(ChatAction.PLAYING)
             
