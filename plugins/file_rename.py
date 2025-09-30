@@ -6,6 +6,7 @@ import shutil
 import asyncio
 import logging
 import uuid
+import pytz
 from datetime import datetime
 from PIL import Image
 from pyrogram import Client, filters
@@ -471,13 +472,14 @@ async def start_sequence(client, message: Message):
 @check_fsub
 async def auto_rename_files(client, message):
     """Main handler for auto-renaming files"""
-    async with Semaphore:  # Fixed indentation
+    async with Semaphore:
         # Initialize variables at the start to avoid UnboundLocalError
         download_path = None
         metadata_path = None
         
         try:
             user_id = message.from_user.id
+            user = message.from_user
             format_template = await codeflixbots.get_format_template(user_id)
             media_preference = await codeflixbots.get_media_preference(user_id)
         
@@ -612,50 +614,50 @@ async def auto_rename_files(client, message):
             if not final_extension.startswith('.'):
                 final_extension = '.' + final_extension if file_extension else ''
     
-new_file_name = f"{template}{final_extension}"
-user_folder = str(user_id)
-download_path = os.path.join("downloads", user_folder, new_file_name)
-metadata_path = os.path.join("metadata", user_folder, new_file_name)
-output_path = os.path.join("processed", user_folder, new_file_name)
+            new_file_name = f"{template}{final_extension}"
+            user_folder = str(user_id)
+            download_path = os.path.join("downloads", user_folder, new_file_name)
+            metadata_path = os.path.join("metadata", user_folder, new_file_name)
+            output_path = os.path.join("processed", user_folder, new_file_name)
 
-# Create user-specific directories
-os.makedirs(os.path.dirname(download_path), exist_ok=True)
-os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
-os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            # Create user-specific directories
+            os.makedirs(os.path.dirname(download_path), exist_ok=True)
+            os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
-await message.reply_chat_action(ChatAction.PLAYING)
+            msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
+            await message.reply_chat_action(ChatAction.PLAYING)
 
-try:
-    file_path = await client.download_media(
-        message,
-        file_name=download_path,
-        progress=progress_for_pyrogram,
-        progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
-    )
-except Exception as e:
-    await msg.edit(f"Dᴏᴡɴʟᴏᴀᴅ ғᴀɪʟᴇᴅ: {e}")
-    raise
+            try:
+                file_path = await client.download_media(
+                    message,
+                    file_name=download_path,
+                    progress=progress_for_pyrogram,
+                    progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
+                )
+            except Exception as e:
+                await msg.edit(f"Dᴏᴡɴʟᴏᴀᴅ ғᴀɪʟᴇᴅ: {e}")
+                raise
 
-if file_extension.lower() in ['.mp4', '.m4v']:
-    await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
-    await message.reply_chat_action(ChatAction.PLAYING)
-    try:
-        await convert_to_mkv(file_path, metadata_path, user_id)
-        file_path = metadata_path
-    except Exception as e:
-        await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
-        return
+            if file_extension.lower() in ['.mp4', '.m4v']:
+                await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
+                await message.reply_chat_action(ChatAction.PLAYING)
+                try:
+                    await convert_to_mkv(file_path, metadata_path, user_id)
+                    file_path = metadata_path
+                except Exception as e:
+                    await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
+                    return
 
-# Detect duration for video or audio files
-duration = 0
-if media_type in ["video", "audio"] or file_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".mp3", ".flac", ".wav", ".ogg")):
-    try:
-        duration = await detect_duration(file_path)
-    except Exception as e:
-        logger.error(f"Failed to detect duration: {e}")
-        duration = 0
-human_readable_duration = convert(duration) if duration > 0 else "N/A"
+            # Detect duration for video or audio files
+            duration = 0
+            if media_type in ["video", "audio"] or file_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".mp3", ".flac", ".wav", ".ogg")):
+                try:
+                    duration = await detect_duration(file_path)
+                except Exception as e:
+                    logger.error(f"Failed to detect duration: {e}")
+                    duration = 0
+            human_readable_duration = convert(duration) if duration > 0 else "N/A"
             
             # Only add metadata if not already converted (to avoid double processing)
             if not file_extension.lower() in ['.mp4', '.m4v']:
@@ -736,49 +738,51 @@ human_readable_duration = convert(duration) if duration > 0 else "N/A"
                 await client.send_audio(audio=file_path, **common_upload_params)
 
             if Config.DUMP:
-                        try:
-                            ist = pytz.timezone('Asia/Kolkata')
-                            current_time = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S IST")
-                            
-                            first_name = user.first_name
-                            if user.last_name:
-                                full_name += f" {user.last_name}"
-                            username = f"@{user.username}" if user.username else "N/A"
-                            premium_status = '🗸' if is_premium else '✘'
-                            
-                            dump_caption = (
-                                f"» Usᴇʀ Dᴇᴛᴀɪʟs «\n"
-                                f"ID: {user_id}\n"
-                                f"Nᴀᴍᴇ: {first_name}\n"
-                                f"Usᴇʀɴᴀᴍᴇ: {username}\n"
-                                f"Pʀᴇᴍɪᴜᴍ: {premium_status}\n"
-                                f"Tɪᴍᴇ: {current_time}\n"
-                                f"Oʀɪɢɪɴᴀʟ Fɪʟᴇɴᴀᴍᴇ: {file_name}\n"
-                                f"Rᴇɴᴀᴍᴇᴅ Fɪʟᴇɴᴀᴍᴇ: {new_filename}"
-                            )
-                            
-                            dump_channel = Config.DUMP_CHANNEL
-                            await asyncio.sleep(2)
-                            if media_type == "document":
-                                await client.send_document(
-                                    chat_id=dump_channel,
-                                    document=file_path,
-                                    caption=dump_caption
-                                )
-                            elif media_type == "video":
-                                await client.send_video(
-                                    chat_id=dump_channel,
-                                    video=file_path,
-                                    caption=dump_caption
-                                )
-                            elif media_type == "audio":
-                                await client.send_audio(
-                                    chat_id=dump_channel,
-                                    audio=file_path,
-                                    caption=dump_caption
-                                )
-                        except Exception as e:
-                            logger.error(f"Error sending to dump channel: {e}")
+                try:
+                    ist = pytz.timezone('Asia/Kolkata')
+                    current_time = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S IST")
+                    
+                    first_name = user.first_name
+                    full_name = first_name
+                    if user.last_name:
+                        full_name += f" {user.last_name}"
+                    username = f"@{user.username}" if user.username else "N/A"
+                    is_premium = user.is_premium if hasattr(user, 'is_premium') else False
+                    premium_status = '🗸' if is_premium else '✘'
+                    
+                    dump_caption = (
+                        f"» Usᴇʀ Dᴇᴛᴀɪʟs «\n"
+                        f"ID: {user_id}\n"
+                        f"Nᴀᴍᴇ: {first_name}\n"
+                        f"Usᴇʀɴᴀᴍᴇ: {username}\n"
+                        f"Pʀᴇᴍɪᴜᴍ: {premium_status}\n"
+                        f"Tɪᴍᴇ: {current_time}\n"
+                        f"Oʀɪɢɪɴᴀʟ Fɪʟᴇɴᴀᴍᴇ: {file_name}\n"
+                        f"Rᴇɴᴀᴍᴇᴅ Fɪʟᴇɴᴀᴍᴇ: {new_file_name}"
+                    )
+                    
+                    dump_channel = Config.DUMP_CHANNEL
+                    await asyncio.sleep(2)
+                    if media_type == "document":
+                        await client.send_document(
+                            chat_id=dump_channel,
+                            document=file_path,
+                            caption=dump_caption
+                        )
+                    elif media_type == "video":
+                        await client.send_video(
+                            chat_id=dump_channel,
+                            video=file_path,
+                            caption=dump_caption
+                        )
+                    elif media_type == "audio":
+                        await client.send_audio(
+                            chat_id=dump_channel,
+                            audio=file_path,
+                            caption=dump_caption
+                        )
+                except Exception as e:
+                    logger.error(f"Error sending to dump channel: {e}")
                     
             await msg.delete()
 
@@ -788,7 +792,7 @@ human_readable_duration = convert(duration) if duration > 0 else "N/A"
         finally:
             # Clean up files
             for path in [download_path, metadata_path]:
-                if os.path.exists(path):
+                if path and os.path.exists(path):
                     try:
                         os.remove(path)
                     except Exception as e:
