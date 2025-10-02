@@ -474,6 +474,7 @@ async def auto_rename_files(client, message):
     """Main handler for auto-renaming files"""
     async with Semaphore:
         # Initialize variables at the start to avoid UnboundLocalError
+        msg = None 
         download_path = None
         metadata_path = None
         
