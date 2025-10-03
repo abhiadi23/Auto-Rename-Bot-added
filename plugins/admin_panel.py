@@ -6,7 +6,7 @@ from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, Peer
 import os, sys, time, asyncio, logging
 from helper.utils import get_seconds
 import datetime
-from datetime import timedelta
+from datetime import timedelta, date
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from functools import wraps
 from plugins.helper_func import *
@@ -398,14 +398,14 @@ async def ban_user(bot, message):
     try:
         command_parts = message.text.split(maxsplit=2)
         if len(command_parts) < 2:
-            await message.reply_text("Dude, you need to provide a user ID! Use it like this: `/ban <user_id> [reason]`")
+            await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs `/ban <ᴜsᴇʀ_ɪᴅ> [ʀᴇᴀsᴏɴ]`"")
             return
 
         user_id_str = command_parts[1]
         reason = command_parts[2] if len(command_parts) > 2 else "No reason provided"
 
         if not user_id_str.isdigit():
-            await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs `/ban <ᴜsᴇʀ_ɪᴅ> [ʀᴇᴀsᴏɴ]`") # Corrected syntax error
+            await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs `/ban <ᴜsᴇʀ_ɪᴅ> [ʀᴇᴀsᴏɴ]`")
             return
             
         user_id = int(user_id_str)
@@ -415,7 +415,7 @@ async def ban_user(bot, message):
             {"$set": {
                 "ban_status.is_banned": True,
                 "ban_status.ban_reason": reason,
-                "ban_status.banned_on": datetime.date.today().isoformat()
+                "ban_status.banned_on": date.today().isoformat()
             }},
             upsert=True
         )
@@ -469,7 +469,7 @@ async def leaderboard_handler(bot: Client, message: Message):
 
         async def generate_leaderboard(filter_type):
             pipeline = []
-            current_time = datetime.datetime.now()
+            current_time = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
 
             if filter_type == "today":
                 start_time = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
