@@ -104,7 +104,6 @@ def get_readable_time(seconds: int) -> str:
 
 async def get_seconds(time_string):
     def extract_value_and_unit(ts):
-        # ... (no changes needed here, it works for separating number and text)
         value = ""
         unit = ""
 
@@ -113,28 +112,32 @@ async def get_seconds(time_string):
             value += ts[index]
             index += 1
 
-        unit = ts[index:].lstrip().lower().rstrip('s') # <-- MODIFIED: .lower() and .rstrip('s')
+        # FIX: Lowercase and strip trailing 's' to handle plurals (days -> day)
+        unit = ts[index:].lstrip().lower().rstrip('s') 
 
         if value:
             value = int(value)
+        else:
+            return 0, "" # Return 0 if no value found
 
         return value, unit
 
-    # MODIFIED: Call extract_value_and_unit with the new logic
-    value, unit = extract_value_and_unit(time_string) 
+    value, unit = extract_value_and_unit(time_string)
 
-    # All unit checks are now for the singular form
-    if unit == 's' or unit == 'sec' or unit == 'second':
-        return value
-    elif unit == 'min' or unit == 'minute':
-        return value * 60
-    elif unit == 'hour' or unit == 'h':
-        return value * 3600
-    elif unit == 'day' or unit == 'd':
-        return value * 86400
-    elif unit == 'month' or unit == 'mon': # Added month support based on your code's /add_premium message
-        return value * 86400 * 30
-    elif unit == 'year' or unit == 'y': # Added year support based on your code's /add_premium message
-        return value * 86400 * 365
+    # Use a dictionary for cleaner mapping of units to seconds
+    unit_to_seconds = {
+        's': 1, 'sec': 1, 'second': 1,
+        'min': 60, 'minute': 60,
+        'h': 3600, 'hour': 3600,
+        'd': 86400, 'day': 86400,
+        'mon': 86400 * 30, 'month': 86400 * 30,
+        'y': 86400 * 365, 'year': 86400 * 365
+    }
+
+    seconds_per_unit = unit_to_seconds.get(unit, 0)
+
+    if seconds_per_unit > 0:
+        return value * seconds_per_unit
     else:
+        # Returns 0 if the unit is invalid
         return 0
