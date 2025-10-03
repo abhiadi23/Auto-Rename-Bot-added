@@ -137,14 +137,14 @@ class Database:
         user = await self.col.find_one({'_id': int(user_id)})
         return user.get('verification_mode_2', "Off", upsert=True)
         
-    async def set_verification_mode_2(self, user_id, status: bool):
+    async def set_verification_mode_2(self, user_id):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_2': verify_status_2}})
 
     async def get_verification_mode_1(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
         return user.get('verification_mode_1', "Off", upsert=True)
         
-    async def set_verification_mode_1(self, user_id, status: bool):
+    async def set_verification_mode_1(self, user_id):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_1': verify_status_1}})
 
     async def get_verification_settings(self):
