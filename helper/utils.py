@@ -104,6 +104,7 @@ def get_readable_time(seconds: int) -> str:
 
 async def get_seconds(time_string):
     def extract_value_and_unit(ts):
+        # ... (no changes needed here, it works for separating number and text)
         value = ""
         unit = ""
 
@@ -112,35 +113,28 @@ async def get_seconds(time_string):
             value += ts[index]
             index += 1
 
-        unit = ts[index:].lstrip()
+        unit = ts[index:].lstrip().lower().rstrip('s') # <-- MODIFIED: .lower() and .rstrip('s')
 
         if value:
             value = int(value)
 
         return value, unit
 
-    value, unit = extract_value_and_unit(time_string)
+    # MODIFIED: Call extract_value_and_unit with the new logic
+    value, unit = extract_value_and_unit(time_string) 
 
-    if unit == 's':
+    # All unit checks are now for the singular form
+    if unit == 's' or unit == 'sec' or unit == 'second':
         return value
-    elif unit == 'min':
+    elif unit == 'min' or unit == 'minute':
         return value * 60
-    elif unit == 'hour':
+    elif unit == 'hour' or unit == 'h':
         return value * 3600
-    elif unit == 'day':
+    elif unit == 'day' or unit == 'd':
         return value * 86400
-    elif unit == 'month':
+    elif unit == 'month' or unit == 'mon': # Added month support based on your code's /add_premium message
         return value * 86400 * 30
-    elif unit == 'year':
+    elif unit == 'year' or unit == 'y': # Added year support based on your code's /add_premium message
         return value * 86400 * 365
     else:
         return 0
-
-def get_time(seconds):
-    periods = [(' ᴅᴀʏs', 86400), (' ʜᴏᴜʀ', 3600), (' ᴍɪɴᴜᴛᴇ', 60), (' sᴇᴄᴏɴᴅ', 1)]
-    result = ''
-    for period_name, period_seconds in periods:
-        if seconds >= period_seconds:
-            period_value, seconds = divmod(seconds, period_seconds)
-            result += f'{int(period_value)}{period_name}'
-    return result
