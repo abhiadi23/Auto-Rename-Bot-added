@@ -477,6 +477,8 @@ async def auto_rename_files(client, message):
         msg = None 
         download_path = None
         metadata_path = None
+        output_path = None
+        input_path = None
         
         try:
             user_id = message.from_user.id
