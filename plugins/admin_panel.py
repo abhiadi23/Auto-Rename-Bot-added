@@ -5,8 +5,7 @@ from pyrogram import Client, filters
 from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, PeerIdInvalid, MessageTooLong
 import os, sys, time, asyncio, logging
 from helper.utils import get_seconds
-import datetime
-from datetime import timedelta, date
+from datetime import datetime, timedelta, date
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from functools import wraps
 from plugins.helper_func import *
@@ -226,14 +225,14 @@ async def get_premium(client, message):
 async def give_premium_cmd_handler(client, message):
     try:
         if len(message.command) == 4:
-            time_zone = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
+            time_zone = datetime.now(pytz.timezone("Asia/Kolkata"))
             current_time = time_zone.strftime("%d-%m-%Y\n⏱️ ᴊᴏɪɴɪɴɢ ᴛɪᴍᴇ : %I:%M:%S %p") 
             user_id = int(message.command[1])  
             user = await client.get_users(user_id)
             time = message.command[2]+" "+message.command[3]
             seconds = await get_seconds(time)
             if seconds > 0:
-                expiry_time = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
+                expiry_time = datetime.now() + timedelta(seconds=seconds)
                 user_data = {"id": user_id, "expiry_time": expiry_time}  
                 await codeflixbots.update_user(user_data)
                 data = await codeflixbots.get_user(user_id)
@@ -246,19 +245,20 @@ async def give_premium_cmd_handler(client, message):
                     chat_id=user_id,
                     text=f"👋 ʜᴇʏ {user.mention},\nᴛʜᴀɴᴋ ʏᴏᴜ ꜰᴏʀ ᴘᴜʀᴄʜᴀꜱɪɴɢ ᴘʀᴇᴍɪᴜᴍ.\nᴇɴᴊᴏʏ !! ✨🎉\n\n⏰ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇꜱꜱ : <code>{time}</code>\n⏳ ᴊᴏɪɴɪɴɢ ᴅᴀᴛᴇ : {current_time}\n\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}", disable_web_page_preview=True
                 )
-                # Fixed: Missing chat_id in the last send_message
+                
+                # Add LOG_CHANNEL at top of your file or replace with actual channel ID
                 await client.send_message(
-                    chat_id=LOG_CHANNEL,  # You need to define LOG_CHANNEL
+                    chat_id=LOG_CHANNEL,  # Define this: LOG_CHANNEL = -1001234567890
                     text=f"#Added_Premium\n\n• ᴜꜱᴇʀ : {user.mention}\n⚡ ᴜꜱᴇʀ ɪᴅ : <code>{user_id}</code>\n⏰ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇꜱꜱ : <code>{time}</code>\n\n⏳ ᴊᴏɪɴɪɴɢ ᴅᴀᴛᴇ : {current_time}\n\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}", 
                     disable_web_page_preview=True
                 )
             else:
                 await message.reply_text("Iɴᴠᴀʟɪᴅ ᴛɪᴍᴇ ғᴏʀᴍᴀᴛ. Pʟᴇᴀsᴇ ᴜsᴇ '1 ᴅᴀʏ ғᴏʀ ᴅᴀʏs', '1 ʜᴏᴜʀ ғᴏʀ ʜᴏᴜʀs', ᴏʀ '1 ᴍɪɴ ғᴏʀ ᴍɪɴᴜᴛᴇs', ᴏʀ '1 ᴍᴏɴᴛʜ ғᴏʀ ᴍᴏɴᴛʜs' ᴏʀ '1 ʏᴇᴀʀ ғᴏʀ ʏᴇᴀʀ'.")
-        else:
-            await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs: `/add_premium <ᴜsᴇʀ_ɪᴅ> <ᴛɪᴍᴇ_ᴠᴀʟᴜᴇ> <ᴛɪᴍᴇ_ᴜɴɪᴛ>`.\n\nExample: `/add_premium 1234567890 30 days`")
     except Exception as e:
         await message.reply_text(f"❌ Error occurred: {str(e)}")
         print(f"Error in add_premium: {e}")
+    else:
+        await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs: `/add_premium <ᴜsᴇʀ_ɪᴅ> <ᴛɪᴍᴇ_ᴠᴀʟᴜᴇ> <ᴛɪᴍᴇ_ᴜɴɪᴛ>`.\n\nExample: `/add_premium 1234567890 30 days`")
         
 @Client.on_message(filters.command("premium_users") & admin)
 async def premium_user(client, message):
