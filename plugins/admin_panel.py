@@ -3,7 +3,7 @@ from helper.database import codeflixbots
 from pyrogram.types import Message
 from pyrogram import Client, filters
 from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, PeerIdInvalid, MessageTooLong
-import os, sys, time, asyncio, logging
+import os, re, sys, time, asyncio, logging
 from helper.utils import get_seconds
 from datetime import datetime, timedelta, date
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
@@ -292,8 +292,7 @@ async def premium_user(client, message):
                 outfile.write(new)
             await message.reply_document('usersplan.txt', caption="<u>Pʀᴇᴍɪᴜᴍ ᴜsᴇʀs</u>:\n\n")
             await aa.delete()
-                import os
-                os.remove('usersplan.txt')
+            os.remove('usersplan.txt')
 
 @Client.on_message(filters.command("plan"))
 async def plan(client, message):
