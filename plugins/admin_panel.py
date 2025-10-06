@@ -398,7 +398,7 @@ async def ban_user(bot, message):
     try:
         command_parts = message.text.split(maxsplit=2)
         if len(command_parts) < 2:
-            await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs `/ban <ᴜsᴇʀ_ɪᴅ> [ʀᴇᴀsᴏɴ]`"")
+            await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs `/ban <ᴜsᴇʀ_ɪᴅ> [ʀᴇᴀsᴏɴ]`")
             return
 
         user_id_str = command_parts[1]
@@ -422,7 +422,6 @@ async def ban_user(bot, message):
         await message.reply_text(f"**Usᴇʀ - `{user_id}` Is sᴜᴄᴄᴇssғᴜʟʟʏ ʙᴀɴɴᴇᴅ.\nRᴇᴀsᴏɴ:- {reason}**")
     except Exception as e:
         await message.reply_text(f"An unexpected error occurred: `{e}`")
-
 
 # --- Unban User Command ---
 @Client.on_message(filters.command("unban") & filters.private & admin)
