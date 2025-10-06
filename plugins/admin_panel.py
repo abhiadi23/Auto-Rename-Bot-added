@@ -284,7 +284,7 @@ async def premium_user(client, message):
             await message.reply_document('usersplan.txt', caption="Paid Users:")
 
 @Client.on_message(filters.command("plan"))
-async def plan(client, message):
+async def plan(user_id, client, message):
     user_id = message.from_user.id
     mention = message.from_user.mention
     keyboard = InlineKeyboardMarkup([[
