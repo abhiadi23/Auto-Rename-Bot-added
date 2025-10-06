@@ -290,7 +290,10 @@ async def premium_user(client, message):
         except MessageTooLong:
             with open('usersplan.txt', 'w+') as outfile:
                 outfile.write(new)
-            await message.reply_document('usersplan.txt', caption="Paid Users:")
+            await message.reply_document('usersplan.txt', caption="<u>Pʀᴇᴍɪᴜᴍ ᴜsᴇʀs</u>:\n\n")
+            await aa.delete()
+                import os
+                os.remove('usersplan.txt')
 
 @Client.on_message(filters.command("plan"))
 async def plan(client, message):
