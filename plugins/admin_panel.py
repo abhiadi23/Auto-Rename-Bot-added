@@ -220,6 +220,8 @@ async def get_premium(client, message):
             await message.reply_text("ɴᴏ ᴀɴʏ ᴘʀᴇᴍɪᴜᴍ ᴅᴀᴛᴀ ᴏꜰ ᴛʜᴇ ᴡᴀꜱ ꜰᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀꜱᴇ !")
     else:
         await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /premium_info <ᴜsᴇʀ_ɪᴅ>")
+    except Exception as e:
+        await message.reply_text(f"❌ Error occurred: {str(e)}")
 
 @Client.on_message(filters.command("add_premium") & admin)
 async def give_premium_cmd_handler(client, message):
@@ -248,7 +250,7 @@ async def give_premium_cmd_handler(client, message):
                 
                 # Add LOG_CHANNEL at top of your file or replace with actual channel ID
                 await client.send_message(
-                    chat_id=LOG_CHANNEL,  # Define this: LOG_CHANNEL = -1001234567890
+                    chat_id=Config.LOG_CHANNEL,  # Define this: LOG_CHANNEL = -1001234567890
                     text=f"#Added_Premium\n\n• ᴜꜱᴇʀ : {user.mention}\n⚡ ᴜꜱᴇʀ ɪᴅ : <code>{user_id}</code>\n⏰ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇꜱꜱ : <code>{time}</code>\n\n⏳ ᴊᴏɪɴɪɴɢ ᴅᴀᴛᴇ : {current_time}\n\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}", 
                     disable_web_page_preview=True
                 )
@@ -284,6 +286,8 @@ async def premium_user(client, message):
             found_premium_users = True
     if not found_premium_users:
         await aa.edit_text("Nᴏ ᴜsᴇʀ ғᴏᴜɴᴅ ɪɴ ᴛʜᴇ ᴅᴀᴛᴀʙᴀsᴇ")
+    except Exception as e:
+        await aa.reply_text(f"❌ Error occurred: {str(e)}")
     else:
         try:
             await aa.edit_text(new)
@@ -293,6 +297,7 @@ async def premium_user(client, message):
             await message.reply_document('usersplan.txt', caption="<u>Pʀᴇᴍɪᴜᴍ ᴜsᴇʀs</u>:\n\n")
             await aa.delete()
             os.remove('usersplan.txt')
+            
 
 @Client.on_message(filters.command("plan"))
 async def plan(client, message):
