@@ -784,7 +784,7 @@ async def auto_rename_files(client, message):
                         await client.send_audio(
                             chat_id=dump_channel,
                             audio=file_path,
-                            thumb=ph_path
+                            thumb=ph_path,
                             caption=dump_caption
                         )
                 except Exception as e:
