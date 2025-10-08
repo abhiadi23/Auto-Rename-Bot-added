@@ -469,7 +469,7 @@ async def leaderboard_handler(bot: Client, message: Message):
 
         async def generate_leaderboard(filter_type):
             pipeline = []
-            current_time = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
+            current_time = datetime.now(pytz.timezone("Asia/Kolkata"))
 
             if filter_type == "today":
                 start_time = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
