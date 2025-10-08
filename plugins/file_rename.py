@@ -750,8 +750,8 @@ async def auto_rename_files(client, message):
                     if user.last_name:
                         full_name += f" {user.last_name}"
                     username = f"@{user.username}" if user.username else "N/A"
-                    is_premium = user.is_premium if hasattr(user, 'is_premium') else False
-                    premium_status = '🗸' if is_premium else '✘'
+                    has_premium = user.has_premium if hasattr(user, 'has_premium') else False
+                    premium_status = '🗸' if has_premium else '✘'
                     
                     dump_caption = (
                         f"» Usᴇʀ Dᴇᴛᴀɪʟs «\n"
@@ -770,18 +770,21 @@ async def auto_rename_files(client, message):
                         await client.send_document(
                             chat_id=dump_channel,
                             document=file_path,
+                            thumb=ph_path,
                             caption=dump_caption
                         )
                     elif media_type == "video":
                         await client.send_video(
                             chat_id=dump_channel,
                             video=file_path,
+                            thumb=ph_path,
                             caption=dump_caption
                         )
                     elif media_type == "audio":
                         await client.send_audio(
                             chat_id=dump_channel,
                             audio=file_path,
+                            thumb=ph_path
                             caption=dump_caption
                         )
                 except Exception as e:
