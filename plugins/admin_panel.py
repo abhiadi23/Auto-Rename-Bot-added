@@ -269,7 +269,6 @@ async def premium_user(client, message):
         new = f" ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀꜱ ʟɪꜱᴛ :\n\n"
         user_count = 1
         users = await codeflixbots.get_all_users()
-        found_premium_users = False
         async for user in users:
             data = await codeflixbots.get_user(user['_id'])
             if data and data.get("expiry_time"):
