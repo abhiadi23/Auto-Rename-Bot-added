@@ -149,7 +149,6 @@ async def get_admins(client: Client, message: Message):
 
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
     await pro.edit(f"<b>⚡ Current Admin List:</b>\n\n{admin_list}", reply_markup=reply_markup)
-    #======================================================================================================================
 
 #============== Premium commands ====================
 
@@ -179,7 +178,7 @@ async def myplan(client, message):
         expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
         expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")
         # Calculate time difference
-        current_time = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
+        current_time = datetime.now(pytz.timezone("Asia/Kolkata"))
         time_left = expiry_ist - current_time
 
         # Calculate days, hours, and minutes
@@ -191,35 +190,37 @@ async def myplan(client, message):
         time_left_str = f"{days} ᴅᴀʏꜱ, {hours} ʜᴏᴜʀꜱ, {minutes} ᴍɪɴᴜᴛᴇꜱ"
         await message.reply_text(f"• ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀ ᴅᴀᴛᴀ :\n\n• ᴜꜱᴇʀ : {user}\n⚡ ᴜꜱᴇʀ ɪᴅ : <code>{user_id}</code>\n⏰ ᴛɪᴍᴇ ʟᴇꜰᴛ : {time_left_str}\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}")
     else:
-        await message.reply_text(f"<b>ʜᴇʏ {user},\n\n<blockquote>Yᴏᴜ ᴅᴏ ɴᴏᴛ ʜᴀᴠᴇ ᴀɴʏ ᴀᴄᴛɪᴠᴇ ᴘʀᴇᴍɪᴜᴍ ᴘʟᴀɴ, ɪғ ʏᴏᴜ ᴡᴀɴᴛ ᴛʜᴇɴ ᴄʟɪᴄᴋ ᴏɴ ᴛʜᴇ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴ...!!</blockquote><b>",
-    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ᴄʜᴇᴄᴋᴏᴜᴛ ᴘʀᴇᴍɪᴜᴍ ᴘʟᴀɴꜱ •", callback_data='seeplans')]]))
+        await message.reply_text(
+            f"<b>ʜᴇʏ {user},\n\n<blockquote>Yᴏᴜ ᴅᴏ ɴᴏᴛ ʜᴀᴠᴇ ᴀɴʏ ᴀᴄᴛɪᴠᴇ ᴘʀᴇᴍɪᴜᴍ ᴘʟᴀɴ, ɪғ ʏᴏᴜ ᴡᴀɴᴛ ᴛʜᴇɴ ᴄʟɪᴄᴋ ᴏɴ ᴛʜᴇ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴ...!!</blockquote></b>",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("• ᴄʜᴇᴄᴋᴏᴜᴛ ᴘʀᴇᴍɪᴜᴍ ᴘʟᴀɴꜱ •", callback_data='seeplans')]])
+        )
 
 @Client.on_message(filters.command("premium_info") & admin)
 async def get_premium(client, message):
-    if len(message.command) == 2:
-        user_id = int(message.command[1])
-        user = await client.get_users(user_id)
-        data = await codeflixbots.get_user(user_id)  # Corrected from db.get_user to codeflixbots.get_user
-        if data and data.get("expiry_time"):
-            #expiry_time = datetime.datetime.now() + datetime.timedelta(seconds=data)
-            expiry = data.get("expiry_time") 
-            expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
-            expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")        
-            # Calculate time difference
-            current_time = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
-            time_left = expiry_ist - current_time
-            
-            # Calculate days, hours, and minutes
-            days = time_left.days
-            hours, remainder = divmod(time_left.seconds, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            # Format time left as a string
-            time_left_str = f"{days} days, {hours} hours, {minutes} minutes"
-            await message.reply_text(f"• ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀ ᴅᴀᴛᴀ :\n\n• ᴜꜱᴇʀ : {user.mention}\n⚡ ᴜꜱᴇʀ ɪᴅ : <code>{user_id}</code>\n⏰ ᴛɪᴍᴇ ʟᴇꜰᴛ : {time_left_str}\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}")
+    try:
+        if len(message.command) == 2:
+            user_id = int(message.command[1])
+            user = await client.get_users(user_id)
+            data = await codeflixbots.get_user(user_id)
+            if data and data.get("expiry_time"):
+                expiry = data.get("expiry_time") 
+                expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
+                expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")        
+                # Calculate time difference
+                current_time = datetime.now(pytz.timezone("Asia/Kolkata"))
+                time_left = expiry_ist - current_time
+                
+                # Calculate days, hours, and minutes
+                days = time_left.days
+                hours, remainder = divmod(time_left.seconds, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                # Format time left as a string
+                time_left_str = f"{days} days, {hours} hours, {minutes} minutes"
+                await message.reply_text(f"• ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀ ᴅᴀᴛᴀ :\n\n• ᴜꜱᴇʀ : {user.mention}\n⚡ ᴜꜱᴇʀ ɪᴅ : <code>{user_id}</code>\n⏰ ᴛɪᴍᴇ ʟᴇꜰᴛ : {time_left_str}\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}")
+            else:
+                await message.reply_text("ɴᴏ ᴀɴʏ ᴘʀᴇᴍɪᴜᴍ ᴅᴀᴛᴀ ᴏꜰ ᴛʜᴇ ᴡᴀꜱ ꜰᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀꜱᴇ !")
         else:
-            await message.reply_text("ɴᴏ ᴀɴʏ ᴘʀᴇᴍɪᴜᴍ ᴅᴀᴛᴀ ᴏꜰ ᴛʜᴇ ᴡᴀꜱ ꜰᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀꜱᴇ !")
-    else:
-        await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /premium_info <ᴜsᴇʀ_ɪᴅ>")
+            await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /premium_info <ᴜsᴇʀ_ɪᴅ>")
     except Exception as e:
         await message.reply_text(f"❌ Error occurred: {str(e)}")
 
@@ -248,55 +249,56 @@ async def give_premium_cmd_handler(client, message):
                     text=f"👋 ʜᴇʏ {user.mention},\nᴛʜᴀɴᴋ ʏᴏᴜ ꜰᴏʀ ᴘᴜʀᴄʜᴀꜱɪɴɢ ᴘʀᴇᴍɪᴜᴍ.\nᴇɴᴊᴏʏ !! ✨🎉\n\n⏰ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇꜱꜱ : <code>{time}</code>\n⏳ ᴊᴏɪɴɪɴɢ ᴅᴀᴛᴇ : {current_time}\n\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}", disable_web_page_preview=True
                 )
                 
-                # Add LOG_CHANNEL at top of your file or replace with actual channel ID
                 await client.send_message(
-                    chat_id=Config.LOG_CHANNEL,  # Define this: LOG_CHANNEL = -1001234567890
+                    chat_id=Config.LOG_CHANNEL,
                     text=f"#Added_Premium\n\n• ᴜꜱᴇʀ : {user.mention}\n⚡ ᴜꜱᴇʀ ɪᴅ : <code>{user_id}</code>\n⏰ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇꜱꜱ : <code>{time}</code>\n\n⏳ ᴊᴏɪɴɪɴɢ ᴅᴀᴛᴇ : {current_time}\n\n⌛️ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}", 
                     disable_web_page_preview=True
                 )
             else:
                 await message.reply_text("Iɴᴠᴀʟɪᴅ ᴛɪᴍᴇ ғᴏʀᴍᴀᴛ. Pʟᴇᴀsᴇ ᴜsᴇ '1 ᴅᴀʏ ғᴏʀ ᴅᴀʏs', '1 ʜᴏᴜʀ ғᴏʀ ʜᴏᴜʀs', ᴏʀ '1 ᴍɪɴ ғᴏʀ ᴍɪɴᴜᴛᴇs', ᴏʀ '1 ᴍᴏɴᴛʜ ғᴏʀ ᴍᴏɴᴛʜs' ᴏʀ '1 ʏᴇᴀʀ ғᴏʀ ʏᴇᴀʀ'.")
+        else:
+            await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs: `/add_premium <ᴜsᴇʀ_ɪᴅ> <ᴛɪᴍᴇ_ᴠᴀʟᴜᴇ> <ᴛɪᴍᴇ_ᴜɴɪᴛ>`.\n\nExample: `/add_premium 1234567890 30 days`")
     except Exception as e:
         await message.reply_text(f"❌ Error occurred: {str(e)}")
         print(f"Error in add_premium: {e}")
-    else:
-        await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs: `/add_premium <ᴜsᴇʀ_ɪᴅ> <ᴛɪᴍᴇ_ᴠᴀʟᴜᴇ> <ᴛɪᴍᴇ_ᴜɴɪᴛ>`.\n\nExample: `/add_premium 1234567890 30 days`")
         
 @Client.on_message(filters.command("premium_users") & admin)
 async def premium_user(client, message):
-    aa = await message.reply_text("<i>ꜰᴇᴛᴄʜɪɴɢ...</i>")
-    new = f" ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀꜱ ʟɪꜱᴛ :\n\n"
-    user_count = 1
-    users = await codeflixbots.get_all_users()
-    found_premium_users = False
-    async for user in users:
-        data = await codeflixbots.get_user(user['_id'])
-        if data and data.get("expiry_time"):
-            expiry = data.get("expiry_time")
-            expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
-            expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")
-            current_time = datetime.datetime.now(pytz.timezone("Asia/Kolkata"))
-            time_left = expiry_ist - current_time
-            days = time_left.days
-            hours, remainder = divmod(time_left.seconds, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            time_left_str = f"{days} days, {hours} hours, {minutes} minutes"
-            new += f"{user_count}. {(await client.get_users(user['id'])).mention}\n• ᴜꜱᴇʀ ɪᴅ : {user['id']}\n⏳ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}\n⏰ ᴛɪᴍᴇ ʟᴇꜰᴛ : {time_left_str}\n"
-            user_count += 1
-            found_premium_users = True
-    if not found_premium_users:
-        await aa.edit_text("Nᴏ ᴜsᴇʀ ғᴏᴜɴᴅ ɪɴ ᴛʜᴇ ᴅᴀᴛᴀʙᴀsᴇ")
+    try:
+        aa = await message.reply_text("<i>ꜰᴇᴛᴄʜɪɴɢ...</i>")
+        new = f" ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀꜱ ʟɪꜱᴛ :\n\n"
+        user_count = 1
+        users = await codeflixbots.get_all_users()
+        found_premium_users = False
+        async for user in users:
+            data = await codeflixbots.get_user(user['_id'])
+            if data and data.get("expiry_time"):
+                expiry = data.get("expiry_time")
+                expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
+                expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")
+                current_time = datetime.now(pytz.timezone("Asia/Kolkata"))
+                time_left = expiry_ist - current_time
+                days = time_left.days
+                hours, remainder = divmod(time_left.seconds, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                time_left_str = f"{days} days, {hours} hours, {minutes} minutes"
+                new += f"{user_count}. {(await client.get_users(user['_id'])).mention}\n• ᴜꜱᴇʀ ɪᴅ : {user['_id']}\n⏳ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}\n⏰ ᴛɪᴍᴇ ʟᴇꜰᴛ : {time_left_str}\n\n"
+                user_count += 1
+                found_premium_users = True
+        
+        if not found_premium_users:
+            await aa.edit_text("Nᴏ ᴜsᴇʀ ғᴏᴜɴᴅ ɪɴ ᴛʜᴇ ᴅᴀᴛᴀʙᴀsᴇ")
+        else:
+            try:
+                await aa.edit_text(new)
+            except MessageTooLong:
+                with open('usersplan.txt', 'w+') as outfile:
+                    outfile.write(new)
+                await message.reply_document('usersplan.txt', caption="<u>Pʀᴇᴍɪᴜᴍ ᴜsᴇʀs</u>:\n\n")
+                await aa.delete()
+                os.remove('usersplan.txt')
     except Exception as e:
-        await aa.reply_text(f"❌ Error occurred: {str(e)}")
-    else:
-        try:
-            await aa.edit_text(new)
-        except MessageTooLong:
-            with open('usersplan.txt', 'w+') as outfile:
-                outfile.write(new)
-            await message.reply_document('usersplan.txt', caption="<u>Pʀᴇᴍɪᴜᴍ ᴜsᴇʀs</u>:\n\n")
-            await aa.delete()
-            os.remove('usersplan.txt')
+        await aa.edit_text(f"❌ Error occurred: {str(e)}")
             
 
 @Client.on_message(filters.command("plan"))
@@ -311,7 +313,6 @@ async def plan(client, message):
         photo="https://envs.sh/Wdj.jpg",
         caption=PREMIUM_TXT,
         reply_markup=keyboard)
-    #==================================================================================
 
 @Client.on_message(filters.private & filters.command("restart") & filters.private & admin)
 async def restart_bot(b, m):
@@ -319,10 +320,8 @@ async def restart_bot(b, m):
     if not is_restarting:
         is_restarting = True
         await m.reply_text("**Hᴇʏ...!! Oᴡɴᴇʀ/Aᴅᴍɪɴ Jᴜsᴛ ʀᴇʟᴀx ɪᴀᴍ ʀᴇsᴛᴀʀᴛɪɴɢ...!!**")
-        # Gracefully stop the bot's event loop
         b.stop()
         time.sleep(2)
-        # Restart the bot process
         os.execl(sys.executable, sys.executable, *sys.argv)
 
 
@@ -370,7 +369,7 @@ async def broadcast_handler(bot: Client, m: Message):
         done += 1
         if not done % 20:
             await sts_msg.edit(f"Broadcast In Progress: \n\nTotal Users {total_users} \nCompleted : {done} / {total_users}\nSuccess : {success}\nFailed : {failed}")
-    completed_in = datetime.timedelta(seconds=int(time.time() - start_time)) # Corrected to datetime.timedelta
+    completed_in = timedelta(seconds=int(time.time() - start_time))
     await sts_msg.edit(f"Bʀᴏᴀᴅᴄᴀꜱᴛ Cᴏᴍᴩʟᴇᴛᴇᴅ: \nCᴏᴍᴩʟᴇᴛᴇᴅ Iɴ `{completed_in}`.\n\nTotal Users {total_users}\nCompleted: {done} / {total_users}\nSuccess: {success}\nFailed: {failed}")
 
 async def send_msg(user_id, message):
@@ -393,7 +392,6 @@ async def send_msg(user_id, message):
         logger.error(f"{user_id} : {e}")
         return 500
 
-# --- Ban User Command ---
 @Client.on_message(filters.command("ban") & filters.private & admin)
 async def ban_user(bot, message):
     try:
@@ -424,7 +422,6 @@ async def ban_user(bot, message):
     except Exception as e:
         await message.reply_text(f"An unexpected error occurred: `{e}`")
 
-# --- Unban User Command ---
 @Client.on_message(filters.command("unban") & filters.private & admin)
 async def unban_user(bot, message):
     try:
@@ -441,7 +438,6 @@ async def unban_user(bot, message):
     except Exception as e:
         await message.reply_text(f"Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /unban <ᴜsᴇʀ_ɪᴅ>")
 
-#banned user status
 @Client.on_message(filters.command("banned") & filters.private & admin)
 async def banned_list(bot, message):
     msg = await message.reply("**Pʟᴇᴀsᴇ ᴡᴀɪᴛ...**")
@@ -452,7 +448,7 @@ async def banned_list(bot, message):
         reason = user.get('ban_status', {}).get('ban_reason', '')
         try:
             user_obj = await bot.get_users(uid)
-            name = user_obj.mention  # clickable name
+            name = user_obj.mention
         except PeerIdInvalid:
             name = f"`{uid}` (Name not found)"
         lines.append(f"• {name} - {reason}")
@@ -578,12 +574,11 @@ async def leaderboard_handler(bot: Client, message: Message):
             if user_rank:
                 leaderboard.append(f"\n<b>Yᴏᴜʀ Rᴀɴᴋ:</b> {user_rank} ᴡɪᴛʜ {user_count} ʀᴇɴᴀᴍᴇs")
 
-            leaderboard.append(f"\nLᴀsᴛ ᴜᴘᴅᴀᴛᴇᴅ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
+            leaderboard.append(f"\nLᴀsᴛ ᴜᴘᴅᴀᴛᴇᴅ: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
             leaderboard.append(f"\n<i>**Tʜɪs ᴍᴇssᴀɢᴇ ᴡɪʟʟ ᴀᴜᴛᴏ-ᴅᴇʟᴇᴛᴇ ɪɴ {Config.LEADERBOARD_DELETE_TIMER} sᴇᴄᴏɴᴅs**</i>")
 
             return "\n".join(leaderboard)
 
-        # Call the generate_leaderboard function, but it will always use "lifetime" now
         leaderboard_text = await generate_leaderboard("lifetime")
 
         if not leaderboard_text:
@@ -592,14 +587,10 @@ async def leaderboard_handler(bot: Client, message: Message):
             await no_data_msg.delete()
             return
 
-        # FIX: Removed reply_markup=keyboard from the reply_text call
         sent_msg = await message.reply_photo(
             photo=Config.LEADERBOARD_PIC,
             caption=leaderboard_text
         )
-
-        # NOTE: The leaderboard_callback function is no longer needed or registered,
-        # so it has been removed.
 
         async def delete_messages():
             await asyncio.sleep(Config.LEADERBOARD_DELETE_TIMER)
