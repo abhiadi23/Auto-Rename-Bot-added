@@ -195,7 +195,7 @@ async def cb_handler(client, query: CallbackQuery):
                     InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_1")
                 ]
             ],
-            [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]]
+            [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
             keyboard = InlineKeyboardMarkup(buttons)
             await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_1}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
 
@@ -215,7 +215,7 @@ async def cb_handler(client, query: CallbackQuery):
                     InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_2")
                 ]
             ],
-            [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]]
+            [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
             keyboard = InlineKeyboardMarkup(buttons)
             await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟸 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_2}\nAPI: {verify_token_2}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
 
