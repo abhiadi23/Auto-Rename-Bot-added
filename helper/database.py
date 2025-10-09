@@ -133,20 +133,28 @@ class Database:
     async def db_update_verify_status(self, user_id, verify_data):
         await self.col.update_one({'_id': user_id}, {'$set': verify_data})
 
-    async def get_verification_mode_2(self, user_id):
-        user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('verification_mode_2', "Off", upsert=True)
-        
-    async def set_verification_mode_2(self, user_id):
-        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_2': verify_status_2}})
+    async def get_verification_mode_1(self):
+    settings = await self.verification_settings.find_one({'_id': 'global_settings'})
+    return settings.get('verify_status_2', False) if settings else False
+    
+    async def set_verification_mode_2(self, status: bool):
+    await self.verification_settings.update_one(
+        {'_id': 'global_settings'}, 
+        {'$set': {'verify_status_2': status}},
+        upsert=True
+    )
 
-    async def get_verification_mode_1(self, user_id):
-        user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('verification_mode_1', "Off", upsert=True)
-        
-    async def set_verification_mode_1(self, user_id):
-        await self.col.update_one({'_id': int(user_id)}, {'$set': {'verification_mode_1': verify_status_1}})
-
+    async def get_verification_mode_1(self):
+    settings = await self.verification_settings.find_one({'_id': 'global_settings'})
+    return settings.get('verify_status_1', False) if settings else False
+    
+    async def set_verification_mode_1(self, status: bool):
+    await self.verification_settings.update_one(
+        {'_id': 'global_settings'}, 
+        {'$set': {'verify_status_1': status}},
+        upsert=True
+    )
+    
     async def get_verification_settings(self):
         settings = await self.verification_settings.find_one({'_id': 'global_settings'})
         if not settings:
@@ -183,7 +191,7 @@ class Database:
 
     async def set_verify_1(self, api_link: str, verify_token: str):
         """Sets the API link and verification token for verification method 1."""
-        await self.update_verification_settings(api_link_1=api_link, verify_token_1=verify_token_1)
+        await self.update_verification_settings(api_link_1=api_link, verify_token_1=verify_token)
 
     async def set_verify_2(self, api_link: str, verify_token: str):
         """Sets the API link and verification token for verification method 2."""
