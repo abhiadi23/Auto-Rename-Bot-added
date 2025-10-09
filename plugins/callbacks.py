@@ -34,7 +34,7 @@ async def cb_handler(client, query: CallbackQuery):
                 ),
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴds •", callback_data='help')],
+                    [InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs •", callback_data='help')],
                     [InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/botskingdoms'), InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/botskingdomsgroup')],
                     [InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about'), InlineKeyboardButton('Dᴇᴠᴇʟᴏᴘᴇʀ •', url='https://t.me/botskingdoms')]
                 ])
@@ -61,7 +61,7 @@ async def cb_handler(client, query: CallbackQuery):
             )
         elif data == "sequence":
             await query.message.edit_text(
-                "<b>Sᴇɴᴅ ᴍᴇ ғɪʟᴇs ᴀɴᴅ I ᴡɪʟʟ ɢɪᴠᴇ ʏᴏᴜ ᴛʜᴀᴛ ғɪʟᴇs ɪɴ ᴀ ᴘᴇʀғᴇᴄᴛ sᴇǫᴜᴇɴᴄᴇ...!! \n\nʜᴇʀᴇ ɪꜱ ʜᴇʟᴘ ᴍᴇɴᴜ ғᴏʀ sᴇǫᴜᴇɴᴄᴇ ᴄᴏᴍᴍᴀɴᴅꜱ: \n\nᴀᴡᴇsᴏᴍᴇ Cᴏᴍᴍᴀɴds🫧 \n\n/start_sequence - Tᴏ sᴛᴀʀᴛ sᴇǫᴜᴇɴᴄᴇ. \n/end_sequence - Tᴏ ᴇɴᴅ sᴇǫᴜᴇɴᴄᴇ.</b>",
+                "<b>Sᴇɴᴅ ᴍᴇ ғɪʟᴇs ᴀɴᴅ I ᴡɪʟʟ ɢɪᴠᴇ ʏᴏᴜ ᴛʜᴀᴛ ғɪʟᴇs ɪɴ ᴀ ᴘᴇʀғᴇᴄᴛ sᴇǫᴜᴇɴᴄᴇ...!! \n\nʜᴇʀᴇ ɪꜱ ʜᴇʟᴘ ᴍᴇɴᴜ ғᴏʀ sᴇǫᴜᴇɴᴄᴇ ᴄᴏᴍᴍᴀɴᴅꜱ: \n\nᴀᴡᴇsᴏᴍᴇ Cᴏᴍᴍᴀɴᴅs🫧 \n\n/start_sequence - Tᴏ sᴛᴀʀᴛ sᴇǫᴜᴇɴᴄᴇ. \n/end_sequence - Tᴏ ᴇɴᴅ sᴇǫᴜᴇɴᴄᴇ.</b>",
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close"),
@@ -295,28 +295,28 @@ async def cb_handler(client, query: CallbackQuery):
                 logger.error(f"Error setting verification 1: {e}")
                 await query.message.reply_text(f"An error occurred: {e}")
 
+        elif data == "verify_count":
+            today = await codeflixbots.get_vr_count_combined('today')
+            yesterday = await codeflixbots.get_vr_count_combined('yesterday')
+            this_week = await codeflixbots.get_vr_count_combined('this_week')
+            this_month = await codeflixbots.get_vr_count_combined('this_month')
+            last_month = await codeflixbots.get_vr_count_combined('last_month')
+            
+            count_text = (
+                "<b>📊 ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴛᴀᴛɪsᴛɪᴄs:\n\n"
+                f"👥 ᴛᴏᴅᴀʏ: {today} ᴜsᴇʀs\n"
+                f"📊 ʏᴇsᴛᴇʀᴅᴀʏ: {yesterday} ᴜsᴇʀs\n"
+                f"📅 ᴛʜɪs ᴡᴇᴇᴋ: {this_week} ᴜsᴇʀs\n"
+                f"📆 ᴛʜɪs ᴍᴏɴᴛʜ: {this_month} ᴜsᴇʀs\n"
+                f"📋 ʟᴀsᴛ ᴍᴏɴᴛʜ: {last_month} ᴜsᴇʀs</b>"
+            )
+            
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔄 ʀᴇғʀᴇsʜ", callback_data="verify_count")],
+                [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="verify_settings")]
+            ])
+            
+            await query.message.edit_text(count_text, reply_markup=keyboard)
+
     except Exception as e:
         await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
-
-elif data == "verify_count":
-    today = await codeflixbots.get_vr_count_combined('today')
-    yesterday = await codeflixbots.get_vr_count_combined('yesterday')
-    this_week = await codeflixbots.get_vr_count_combined('this_week')
-    this_month = await codeflixbots.get_vr_count_combined('this_month')
-    last_month = await codeflixbots.get_vr_count_combined('last_month')
-    
-    count_text = (
-        "<b>📊 ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴛᴀᴛɪsᴛɪᴄs:\n\n"
-        f"👥 ᴛᴏᴅᴀʏ: {today} ᴜsᴇʀs\n"
-        f"📊 ʏᴇsᴛᴇʀᴅᴀʏ: {yesterday} ᴜsᴇʀs\n"
-        f"📅 ᴛʜɪs ᴡᴇᴇᴋ: {this_week} ᴜsᴇʀs\n"
-        f"📆 ᴛʜɪs ᴍᴏɴᴛʜ: {this_month} ᴜsᴇʀs\n"
-        f"📋 ʟᴀsᴛ ᴍᴏɴᴛʜ: {last_month} ᴜsᴇʀs</b>"
-    )
-    
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔄 ʀᴇғʀᴇsʜ", callback_data="verify_count")],
-        [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="verify_settings")]
-    ])
-    
-    await query.message.edit_text(count_text, reply_markup=keyboard)
