@@ -188,8 +188,8 @@ async def cb_handler(client, query: CallbackQuery):
             
             buttons = [
                 [
-                    InlineKeyboardButton(f"Oɴ{' ✅' if current_status == 'True' else ''}", callback_data='on_vrfy_1'),
-                    InlineKeyboardButton(f"Oғғ{' ✅' if current_status == 'False' else ''}", callback_data='off_vrfy_1')
+                    InlineKeyboardButton(f"Oɴ{' ✅' if verify_status_1 else ''}", callback_data='on_vrfy_1'),
+                    InlineKeyboardButton(f"Oғғ{' ✅' if not verify_status_1 else ''}", callback_data='off_vrfy_1')
                 ],
                 [
                     InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_1")
@@ -207,8 +207,8 @@ async def cb_handler(client, query: CallbackQuery):
 
             buttons = [
                 [
-                    InlineKeyboardButton(f"Oɴ{' ✅' if current_status == 'True' else ''}", callback_data='on_vrfy_2'),
-                    InlineKeyboardButton(f"Oғғ{' ✅' if current_status == 'False' else ''}", callback_data='off_vrfy_2')
+                    InlineKeyboardButton(f"Oɴ{' ✅' if verify_status_2 else ''}", callback_data='on_vrfy_2'),
+                    InlineKeyboardButton(f"Oғғ{' ✅' if not verify_status_2 else ''}", callback_data='off_vrfy_2')
                 ],
                 [
                     InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_2")
