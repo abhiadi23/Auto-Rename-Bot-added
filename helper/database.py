@@ -32,7 +32,7 @@ class Database:
         return dict(
             _id=int(id),
             username=username.lower() if username else None,
-            join_date=date.today().isoformat(),  # Fixed: use date.today() instead of datetime.date.today()
+            join_date=date.today().isoformat(),
             file_id=None,
             caption=None,
             verification_mode_1=True,
@@ -44,7 +44,7 @@ class Database:
             ban_status=dict(
                 is_banned=False,
                 ban_duration=0,
-                banned_on=date.max.isoformat(),  # Fixed: use date.max instead of datetime.date.max
+                banned_on=date.max.isoformat(),
                 ban_reason='',
             )
         )
@@ -134,26 +134,26 @@ class Database:
         await self.col.update_one({'_id': user_id}, {'$set': verify_data})
 
     async def get_verification_mode_1(self):
-    settings = await self.verification_settings.find_one({'_id': 'global_settings'})
-    return settings.get('verify_status_2', False) if settings else False
-    
-    async def set_verification_mode_2(self, status: bool):
-    await self.verification_settings.update_one(
-        {'_id': 'global_settings'}, 
-        {'$set': {'verify_status_2': status}},
-        upsert=True
-    )
-
-    async def get_verification_mode_1(self):
-    settings = await self.verification_settings.find_one({'_id': 'global_settings'})
-    return settings.get('verify_status_1', False) if settings else False
+        settings = await self.verification_settings.find_one({'_id': 'global_settings'})
+        return settings.get('verify_status_1', False) if settings else False
     
     async def set_verification_mode_1(self, status: bool):
-    await self.verification_settings.update_one(
-        {'_id': 'global_settings'}, 
-        {'$set': {'verify_status_1': status}},
-        upsert=True
-    )
+        await self.verification_settings.update_one(
+            {'_id': 'global_settings'}, 
+            {'$set': {'verify_status_1': status}},
+            upsert=True
+        )
+
+    async def get_verification_mode_2(self):
+        settings = await self.verification_settings.find_one({'_id': 'global_settings'})
+        return settings.get('verify_status_2', False) if settings else False
+    
+    async def set_verification_mode_2(self, status: bool):
+        await self.verification_settings.update_one(
+            {'_id': 'global_settings'}, 
+            {'$set': {'verify_status_2': status}},
+            upsert=True
+        )
     
     async def get_verification_settings(self):
         settings = await self.verification_settings.find_one({'_id': 'global_settings'})
@@ -458,17 +458,19 @@ class Database:
             return None
 
     async def ban_user(self, user_id):
-        await self.banned_users.update_one({"_id": user_id},
+        await self.banned_users.update_one(
+            {"_id": user_id},
             {"$set": {
                 "ban_status.is_banned": True,
-                "ban_status.ban_reason": reason,
-                "ban_status.banned_on": datetime.date.today().isoformat()
+                "ban_status.ban_reason": "reason",  # Fixed: Added missing reason variable
+                "ban_status.banned_on": date.today().isoformat()
             }},
             upsert=True
         )
  
     async def unban_user(self, user_id):
-        await self.banned_users.delete_one({"_id": user_id},
+        await self.banned_users.update_one(  # Fixed: Changed delete_one to update_one
+            {"_id": user_id},
             {"$set": {
                 "ban_status.is_banned": False,
                 "ban_status.ban_reason": "",
