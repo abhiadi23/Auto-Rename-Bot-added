@@ -297,3 +297,26 @@ async def cb_handler(client, query: CallbackQuery):
 
     except Exception as e:
         await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
+
+elif data == "verify_count":
+    today = await codeflixbots.get_vr_count_combined('today')
+    yesterday = await codeflixbots.get_vr_count_combined('yesterday')
+    this_week = await codeflixbots.get_vr_count_combined('this_week')
+    this_month = await codeflixbots.get_vr_count_combined('this_month')
+    last_month = await codeflixbots.get_vr_count_combined('last_month')
+    
+    count_text = (
+        "<b>📊 ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴛᴀᴛɪsᴛɪᴄs:\n\n"
+        f"👥 ᴛᴏᴅᴀʏ: {today} ᴜsᴇʀs\n"
+        f"📊 ʏᴇsᴛᴇʀᴅᴀʏ: {yesterday} ᴜsᴇʀs\n"
+        f"📅 ᴛʜɪs ᴡᴇᴇᴋ: {this_week} ᴜsᴇʀs\n"
+        f"📆 ᴛʜɪs ᴍᴏɴᴛʜ: {this_month} ᴜsᴇʀs\n"
+        f"📋 ʟᴀsᴛ ᴍᴏɴᴛʜ: {last_month} ᴜsᴇʀs</b>"
+    )
+    
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔄 ʀᴇғʀᴇsʜ", callback_data="verify_count")],
+        [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="verify_settings")]
+    ])
+    
+    await query.message.edit_text(count_text, reply_markup=keyboard)
