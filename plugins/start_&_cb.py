@@ -266,7 +266,7 @@ async def cancel_handler(client, message):
     else:
         await message.reply_text("Nᴏ ᴀᴄᴛɪᴠᴇ ᴘʀᴏᴄᴇss ᴛᴏ ᴄᴀɴᴄᴇʟ...!!")
 
-@Client.on_message(filters.command("verify_settings"))
+@Client.on_message(filters.command("verify_settings") & admin)
 async def verify_settings(client, message):
     user_id = message.from_user.id
     keyboard = InlineKeyboardMarkup([
