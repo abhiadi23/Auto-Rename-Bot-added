@@ -173,12 +173,6 @@ async def cb_handler(client, query: CallbackQuery):
                 "sᴇʟᴇᴄᴛ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ɪᴛs ғᴏʀᴄᴇ-sᴜʙ ᴍᴏᴅᴇ:",
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
-            
-        elif data == "verify_settings":
-            if user_id not in admin:
-                await query.answer("⚠️ Only admins can access verification settings!", show_alert=True)
-                return 
-            
             keyboard = InlineKeyboardMarkup([
                 [InlineKeyboardButton("ᴠᴇʀɪꜰʏ 𝟷", callback_data="verify_1_cbb"), InlineKeyboardButton("ᴠᴇʀɪꜰʏ 𝟸", callback_data="verify_2_cbb")],
                 [InlineKeyboardButton("ᴄᴏᴜɴᴛs", callback_data="verify_count")]
@@ -414,3 +408,11 @@ async def cb_handler(client, query: CallbackQuery):
 
     except Exception as e:
         await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
+
+#============= Response 1 and 2 ========================
+
+resp_1 = request.get(https://{api_link_1}/api?api={verify_token_1}&url=https://telegram.dog/{BOT_USERNAME}?start={base_64}
+         if resp.get('status') == 'success' and 'shortenedUrl'
+                                                                                                                
+resp_2 = request.get(https://{api_link_2}/api?api={verify_token_2}&url=https://telegram.dog/{BOT_USERNAME}?start={base_64}
+         if resp.get('status') == 'success' and 'shortenedUrl'
