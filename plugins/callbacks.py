@@ -4,6 +4,7 @@ from pyromod import listen
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from helper.database import codeflixbots
+from helper_func *
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -172,7 +173,12 @@ async def cb_handler(client, query: CallbackQuery):
                 "sᴇʟᴇᴄᴛ ᴀ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴛᴏɢɢʟᴇ ɪᴛs ғᴏʀᴄᴇ-sᴜʙ ᴍᴏᴅᴇ:",
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
+            
         elif data == "verify_settings":
+            if user_id not in admin:
+                await query.answer("⚠️ Only admins can access verification settings!", show_alert=True)
+                return 
+            
             keyboard = InlineKeyboardMarkup([
                 [InlineKeyboardButton("ᴠᴇʀɪꜰʏ 𝟷", callback_data="verify_1_cbb"), InlineKeyboardButton("ᴠᴇʀɪꜰʏ 𝟸", callback_data="verify_2_cbb")],
                 [InlineKeyboardButton("ᴄᴏᴜɴᴛs", callback_data="verify_count")]
@@ -194,7 +200,8 @@ async def cb_handler(client, query: CallbackQuery):
                 [
                     InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_1")
                 ],
-                [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]]
+                [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
+            ]
             keyboard = InlineKeyboardMarkup(buttons)
             await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_1}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
 
@@ -213,14 +220,89 @@ async def cb_handler(client, query: CallbackQuery):
                 [
                     InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_2")
                 ],
-                [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]]
+                [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
+            ]
             keyboard = InlineKeyboardMarkup(buttons)
             await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟸 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_2}\nAPI: {verify_token_2}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
 
+        elif data == "on_vrfy_1":
+            try:
+                await codeflixbots.set_verification_mode_1(True)
+                await query.answer("Verification 1 turned ON", show_alert=True)
+                
+                # Refresh the display to show updated tick mark
+                settings = await codeflixbots.get_verification_settings()
+                verify_status_1 = settings.get("verify_status_1", False)
+                verify_token_1 = settings.get("verify_token_1", "Not set")
+                api_link_1 = settings.get("api_link_1", "Not set")
+                current_status = "On" if verify_status_1 else "Off"
+                
+                buttons = [
+                    [
+                        InlineKeyboardButton(f"Oɴ{' ✅' if verify_status_1 else ''}", callback_data='on_vrfy_1'),
+                        InlineKeyboardButton(f"Oғғ{' ✅' if not verify_status_1 else ''}", callback_data='off_vrfy_1')
+                    ],
+                    [
+                        InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_1")
+                    ],
+                    [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
+                ]
+                keyboard = InlineKeyboardMarkup(buttons)
+                await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_1}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
+            except Exception as e:
+                await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
+
+        elif data == "off_vrfy_1":
+            try:
+                await codeflixbots.set_verification_mode_1(False)
+                await query.answer("Verification 1 turned OFF", show_alert=True)
+                
+                # Refresh the display to show updated tick mark
+                settings = await codeflixbots.get_verification_settings()
+                verify_status_1 = settings.get("verify_status_1", False)
+                verify_token_1 = settings.get("verify_token_1", "Not set")
+                api_link_1 = settings.get("api_link_1", "Not set")
+                current_status = "On" if verify_status_1 else "Off"
+                
+                buttons = [
+                    [
+                        InlineKeyboardButton(f"Oɴ{' ✅' if verify_status_1 else ''}", callback_data='on_vrfy_1'),
+                        InlineKeyboardButton(f"Oғғ{' ✅' if not verify_status_1 else ''}", callback_data='off_vrfy_1')
+                    ],
+                    [
+                        InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_1")
+                    ],
+                    [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
+                ]
+                keyboard = InlineKeyboardMarkup(buttons)
+                await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_1}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
+            except Exception as e:
+                await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
+                
         elif data == "on_vrfy_2":
             try:
                 await codeflixbots.set_verification_mode_2(True)
                 await query.answer("Verification 2 turned ON", show_alert=True)
+                
+                # Refresh the display to show updated tick mark
+                settings = await codeflixbots.get_verification_settings()
+                verify_status_2 = settings.get("verify_status_2", False)
+                verify_token_2 = settings.get("verify_token_2", "Not set")
+                api_link_2 = settings.get("api_link_2", "Not set")
+                current_status = "On" if verify_status_2 else "Off"
+                
+                buttons = [
+                    [
+                        InlineKeyboardButton(f"Oɴ{' ✅' if verify_status_2 else ''}", callback_data='on_vrfy_2'),
+                        InlineKeyboardButton(f"Oғғ{' ✅' if not verify_status_2 else ''}", callback_data='off_vrfy_2')
+                    ],
+                    [
+                        InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_2")
+                    ],
+                    [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
+                ]
+                keyboard = InlineKeyboardMarkup(buttons)
+                await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟸 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_2}\nAPI: {verify_token_2}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
             except Exception as e:
                 await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
 
@@ -228,8 +310,53 @@ async def cb_handler(client, query: CallbackQuery):
             try:
                 await codeflixbots.set_verification_mode_2(False)
                 await query.answer("Verification 2 turned OFF", show_alert=True)
+                
+                # Refresh the display to show updated tick mark
+                settings = await codeflixbots.get_verification_settings()
+                verify_status_2 = settings.get("verify_status_2", False)
+                verify_token_2 = settings.get("verify_token_2", "Not set")
+                api_link_2 = settings.get("api_link_2", "Not set")
+                current_status = "On" if verify_status_2 else "Off"
+                
+                buttons = [
+                    [
+                        InlineKeyboardButton(f"Oɴ{' ✅' if verify_status_2 else ''}", callback_data='on_vrfy_2'),
+                        InlineKeyboardButton(f"Oғғ{' ✅' if not verify_status_2 else ''}", callback_data='off_vrfy_2')
+                    ],
+                    [
+                        InlineKeyboardButton("Sᴇᴛ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="vrfy_set_2")
+                    ],
+                    [InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
+                ]
+                keyboard = InlineKeyboardMarkup(buttons)
+                await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟸 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_2}\nAPI: {verify_token_2}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
             except Exception as e:
                 await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
+
+        elif data == "vrfy_set_1":
+            msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
+            try:
+                api_data_1 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+                await msg.delete()
+                api_link_1_s = api_data_1.text.strip()
+
+                msg = await api_data_1.reply("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
+                verify_data_1 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
+                await msg.delete()
+                verify_token_1_s = verify_data_1.text.strip()
+
+                await codeflixbots.set_verify_1(api_link_1_s, verify_token_1_s)
+                await query.message.reply_text(
+                    "<b>ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ 1 ꜱᴇᴛᴛɪɴɢꜱ ᴜᴘᴅᴀᴛᴇᴅ!</b>",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("Hᴏᴍᴇ", callback_data="home"), InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
+                    ])
+                )
+            except asyncio.TimeoutError:
+                await query.message.reply_text("Tɪᴍᴇᴏᴜᴛ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ.")
+            except Exception as e:
+                logger.error(f"Error setting verification 1: {e}")
+                await query.message.reply_text(f"An error occurred: {e}")
 
         elif data == "vrfy_set_2":
             msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟸 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
@@ -254,45 +381,6 @@ async def cb_handler(client, query: CallbackQuery):
                 await query.message.reply_text("Tɪᴍᴇᴏᴜᴛ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ.")
             except Exception as e:
                 logger.error(f"Error setting verification 2: {e}")
-                await query.message.reply_text(f"An error occurred: {e}")
-
-        elif data == "on_vrfy_1":
-            try:
-                await codeflixbots.set_verification_mode_1(True)
-                await query.answer("Verification 1 turned ON", show_alert=True)
-            except Exception as e:
-                await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
-
-        elif data == "off_vrfy_1":
-            try:
-                await codeflixbots.set_verification_mode_1(False)
-                await query.answer("Verification 1 turned OFF", show_alert=True)
-            except Exception as e:
-                await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
-                
-        elif data == "vrfy_set_1":
-            msg = await query.message.edit_text("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴜʀʟ:\n\nʟɪᴋᴇ - `gplinks.com`\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
-            try:
-                api_data_1 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
-                await msg.delete()
-                api_link_1_s = api_data_1.text.strip()
-
-                msg = await api_data_1.reply("<b>ꜱᴇɴᴅ ᴠᴇʀɪꜰʏ 𝟷 ꜱʜᴏʀᴛɴᴇʀ ᴀᴘɪ ᴋᴇʏ:\n\nʟɪᴋᴇ - 064438447747gdg4\n\n/cancel ᴛᴏ ᴄᴀɴᴄᴇʟ</b>")
-                verify_data_1 = await client.listen(chat_id=query.message.chat.id, filters=filters.text, timeout=300)
-                await msg.delete()
-                verify_token_1_s = verify_data_1.text.strip()
-
-                await codeflixbots.set_verify_1(api_link_1_s, verify_token_1_s)
-                await query.message.reply_text(
-                    "<b>ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ 1 ꜱᴇᴛᴛɪɴɢꜱ ᴜᴘᴅᴀᴛᴇᴅ!</b>",
-                    reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("Hᴏᴍᴇ", callback_data="home"), InlineKeyboardButton("Bᴀᴄᴋ", callback_data="verify_settings")]
-                    ])
-                )
-            except asyncio.TimeoutError:
-                await query.message.reply_text("Tɪᴍᴇᴏᴜᴛ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ.")
-            except Exception as e:
-                logger.error(f"Error setting verification 1: {e}")
                 await query.message.reply_text(f"An error occurred: {e}")
 
         elif data == "verify_count":
