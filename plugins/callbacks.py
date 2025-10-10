@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import request 
 from pyromod import listen
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
@@ -410,9 +411,18 @@ async def cb_handler(client, query: CallbackQuery):
         await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
 
 #============= Response 1 and 2 ========================
+alias = generate_random_alphanumeric()
 
-resp_1 = request.get(https://{api_link_1}/api?api={verify_token_1}&url=https://telegram.dog/{BOT_USERNAME}?start={base_64}
-         if resp.get('status') == 'success' and 'shortenedUrl'
+resp_1 = 'https://{api_link_1}/api?api={verify_token_1}&alias={alias}'
+         response = requests.get(resp_1, timeout=10)
+         rjson = response.json()
+        
+        if rjson.get("status") == "success" and response.status_code == 200:
+            short_link = rjson.get("shortenedUrl", "")
                                                                                                                 
-resp_2 = request.get(https://{api_link_2}/api?api={verify_token_2}&url=https://telegram.dog/{BOT_USERNAME}?start={base_64}
-         if resp.get('status') == 'success' and 'shortenedUrl'
+resp_2 = 'https://{api_link_2}/api?api={verify_token_2}&alias={alias}'
+         response = requests.get(resp_2, timeout=10)
+         rjson = response.json()
+        
+        if rjson.get("status") == "success" and response.status_code == 200:
+            short_link = rjson.get("shortenedUrl", "")
