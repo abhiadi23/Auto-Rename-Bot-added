@@ -4,8 +4,8 @@ from pyromod import listen
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from helper.database import codeflixbots
-from .helper_func *
 from config import Config
+from plugins.helper_func import *
 
 logger = logging.getLogger(__name__)
 
