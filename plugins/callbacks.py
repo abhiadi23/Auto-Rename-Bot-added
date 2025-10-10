@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import random
+import string 
 import requests
 from pyromod import listen
 from pyrogram import Client, filters
@@ -9,6 +11,10 @@ from config import Config
 from plugins.helper_func import *
 
 logger = logging.getLogger(__name__)
+
+def generate_random_alphanumeric():
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(8))
 
 @Client.on_callback_query()
 async def cb_handler(client, query: CallbackQuery):
