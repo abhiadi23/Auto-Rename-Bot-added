@@ -407,4 +407,10 @@ async def cb_handler(client, query: CallbackQuery):
             await query.message.edit_text(count_text, reply_markup=keyboard)
 
     except Exception as e:
+        if "MESSAGE_NOT_MODIFIED" in str(e) or "message is not modified" in str(e):
+            await query.answer("✅ Data is already up to date!", show_alert=True)
+        else:
+            await query.answer(f"Error: {e}", show_alert=True)
+
+    except Exception as e:
         await query.answer(f"An unexpected error occurred: {e}", show_alert=True)
