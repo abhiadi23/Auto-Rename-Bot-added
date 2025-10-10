@@ -3,6 +3,7 @@ import logging
 import random
 import string 
 import requests
+from datetime import datetime, timedelta
 from pyromod import listen
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
@@ -384,6 +385,48 @@ async def cb_handler(client, query: CallbackQuery):
                 logger.error(f"Error setting verification 2: {e}")
                 await query.message.reply_text(f"An error occurred: {e}")
 
+        elif data == "check_verify":
+            user_id = query.from_user.id
+            current_time = datetime.utcnow()
+            
+            user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+            verification_data = user_data.get("verification", {})
+            
+            shortener1_time = verification_data.get("shortener1_time")
+            shortener2_time = verification_data.get("shortener2_time")
+            
+            if shortener1_time and shortener2_time:
+                if current_time < shortener1_time + timedelta(hours=24):
+                    await query.message.edit_text(
+                        "Verification complete! You are verified for 24 hours."
+                    )
+                else:
+                    await codeflixbots.col.update_one(
+                        {"_id": user_id},
+                        {"$unset": {"verification": ""}}
+                    )
+                    await query.message.edit_text(
+                        "Verification expired. Please use /verify to start again."
+                    )
+            elif shortener1_time:
+                await codeflixbots.col.update_one(
+                    {"_id": user_id},
+                    {"$set": {"verification.shortener2_time": current_time}}
+                )
+                await query.message.edit_text(
+                    "Shortener 2 verified! You are now fully verified for 24 hours."
+                )
+            else:
+                await codeflixbots.col.update_one(
+                    {"_id": user_id},
+                    {"$set": {"verification.shortener1_time": current_time}}
+                )
+                await query.message.edit_text(
+                    "Shortener 1 verified! Please verify Shortener 2 after 6 hours using /verify."
+                )
+            
+            await query.answer()
+        
         elif data == "verify_count":
             today = await codeflixbots.get_vr_count_combined('today')
             yesterday = await codeflixbots.get_vr_count_combined('yesterday')
