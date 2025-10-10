@@ -278,4 +278,150 @@ async def verify_settings(client, message):
         "ʜᴇʀᴇ ʏᴏᴜ ᴄᴀɴ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ:\n\n ➲ ʏᴏᴜ ᴄᴀɴ ᴅᴏ ᴛᴜʀɴ ᴏɴ/ᴏꜰꜰ ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇꜱꜱ & Aʟsᴏ ʏᴏᴜ ᴄᴀɴ sᴇᴇ ᴄᴏᴜɴᴛs.",
         reply_markup=keyboard,
         disable_web_page_preview=True)
+
+
+async def get_shortlink(link, is_second_shortener=False):
+    """Generate a shortlink using the configured shortener from verification settings."""
+    settings = await codeflixbots.get_verification_settings()
+    verify_status_1 = settings.get("verify_status_1", False)
+    verify_status_2 = settings.get("verify_status_2", False)
+    
+    # Choose shortener based on is_second_shortener and status
+    if is_second_shortener:
+        if not verify_status_2:
+            logger.error("Shortener 2 is disabled")
+            return None
+        api, site = settings.get("verify_token_2", "Not set"), settings.get("api_link_2", "Not set")
+    else:
+        if not verify_status_1:
+            logger.error("Shortener 1 is disabled")
+            return None
+        api, site = settings.get("verify_token_1", "Not set"), settings.get("api_link_1", "Not set")
+    
+    if site == "Not set" or api == "Not set":
+        logger.error(f"Shortener settings missing: {site} or {api}")
+        return None
+    
+    try:
+        resp = requests.get(f"https://{site}/api?api={api}&url={link}").json()
+        if resp.get('status') == 'success' and 'shortenedUrl' in resp:
+            return resp['shortenedUrl']
+        else:
+            logger.error(f"Shortlink API error: {resp}")
+            return None
+    except Exception as e:
+        logger.error(f"Error generating shortlink: {e}")
+        try:
+            resp = requests.get(f"https://{site}/api?api={api}&url={link}").json()
+            return resp.get('shortenedUrl') if resp.get('status') == 'success' else None
+        except Exception as e2:
+            logger.error(f"Fallback shortlink failed: {e2}")
+            return None
+
+@Client.on_message(filters.command("verify") & filters.private)
+async def verify_command(client, message: Message):
+    user_id = message.from_user.id
+    user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+    
+    # Check verification status
+    verification_data = user_data.get("verification", {})
+    shortener1_time = verification_data.get("shortener1_time")
+    shortener2_time = verification_data.get("shortener2_time")
+    current_time = datetime.utcnow()
+    
+    # Check if fully verified (both shorteners done within 24 hours)
+    if shortener1_time and shortener2_time:
+        if current_time < shortener1_time + timedelta(hours=24):
+            await message.reply_text("You are already fully verified for the next 24 hours!")
+            return
+    
+    # Check if Shortener 1 is verified and waiting for Shortener 2 (6-hour gap)
+    if shortener1_time and not shortener2_time:
+        time_diff = current_time - shortener1_time
+        if time_diff < timedelta(hours=6):
+            remaining = timedelta(hours=6) - time_diff
+            await message.reply_text(
+                f"Please wait {remaining.seconds // 3600} hours and {(remaining.seconds % 3600) // 60} minutes before verifying Shortener 2."
+            )
+            return
+    
+    # Check if shorteners are enabled
+    settings = await codeflixbots.get_verification_settings()
+    verify_status_1 = settings.get("verify_status_1", False)
+    verify_status_2 = settings.get("verify_status_2", False)
+    
+    # Determine which shortener to use
+    is_second_shortener = bool(shortener1_time)
+    if is_second_shortener and not verify_status_2:
+        await message.reply_text("Shortener 2 is currently disabled. Please try again later.")
+        return
+    if not is_second_shortener and not verify_status_1:
+        await message.reply_text("Shortener 1 is currently disabled. Please try again later.")
+        return
+    
+    shortener_name = "Shortener 2" if is_second_shortener else "Shortener 1"
+    
+    # Generate shortlink
+    base_url = "https://t.me/" + Config.BOT_USERNAME + "?start=verify_" + str(user_id)
+    shortlink = await get_shortlink(base_url, is_second_shortener)
+    
+    if not shortlink:
+        await message.reply_text(
+            "Error generating shortlink. Please try again later or contact @seishiro_obito."
+        )
+        return
+    
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton(f"Verify {shortener_name}", url=shortlink)],
+        [InlineKeyboardButton("Check Verification", callback_data="check_verify")]
+    ])
+    
+    await message.reply_text(
+        f"Please verify using {shortener_name} to proceed.\n"
+        "Click the button below and complete the verification process.",
+        reply_markup=buttons
+    )
+
+@Client.on_callback_query(filters.regex("check_verify"))
+async def check_verify_callback(client, callback_query):
+    user_id = callback_query.from_user.id
+    current_time = datetime.utcnow()
+    
+    user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+    verification_data = user_data.get("verification", {})
+    
+    shortener1_time = verification_data.get("shortener1_time")
+    shortener2_time = verification_data.get("shortener2_time")
+    
+    if shortener1_time and shortener2_time:
+        if current_time < shortener1_time + timedelta(hours=24):
+            await callback_query.message.edit_text(
+                "Verification complete! You are verified for 24 hours."
+            )
+        else:
+            await codeflixbots.col.update_one(
+                {"_id": user_id},
+                {"$unset": {"verification": ""}}
+            )
+            await callback_query.message.edit_text(
+                "Verification expired. Please use /verify to start again."
+            )
+    elif shortener1_time:
+        await codeflixbots.col.update_one(
+            {"_id": user_id},
+            {"$set": {"verification.shortener2_time": current_time}}
+        )
+        await callback_query.message.edit_text(
+            "Shortener 2 verified! You are now fully verified for 24 hours."
+        )
+    else:
+        await codeflixbots.col.update_one(
+            {"_id": user_id},
+            {"$set": {"verification.shortener1_time": current_time}}
+        )
+        await callback_query.message.edit_text(
+            "Shortener 1 verified! Please verify Shortener 2 after 6 hours using /verify."
+        )
+    
+    await callback_query.answer()
     
