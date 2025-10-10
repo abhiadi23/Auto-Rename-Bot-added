@@ -412,20 +412,3 @@ async def cb_handler(client, query: CallbackQuery):
             await query.answer("✅ Data is already up to date!", show_alert=True)
         else:
             await query.answer(f"Error: {e}", show_alert=True)
-
-#============= Response 1 and 2 ========================
-alias = generate_random_alphanumeric()
-
-resp_1 = f'https://{api_link_1}/api?api={verify_token_1}&alias={alias}'
-response = requests.get(resp_1, timeout=10)
-rjson = response.json()
-
-if rjson.get("status") == "success" and response.status_code == 200:
-    short_link = rjson.get("shortenedUrl", "")
-
-resp_2 = f'https://{api_link_2}/api?api={verify_token_2}&alias={alias}'
-response = requests.get(resp_2, timeout=10)
-rjson = response.json()
-
-if rjson.get("status") == "success" and response.status_code == 200:
-    short_link = rjson.get("shortenedUrl", "")
