@@ -1,6 +1,7 @@
 import requests
 import random
 import asyncio
+import base64
 import logging
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
@@ -201,11 +202,48 @@ async def not_joined(client: Client, message: Message):
             f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
         )
 
+async def handle_verification_callback(client, message: Message, base64_string: str):
+    """Handle when user returns after completing verification through shortlink"""
+    user_id = message.from_user.id
+    current_time = datetime.utcnow()
+    
+    # Get user data
+    user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+    verification_data = user_data.get("verification", {})
+    
+    # Update verification time (24 hour validity)
+    await codeflixbots.col.update_one(
+        {"_id": user_id},
+        {"$set": {"verification.verified_time": current_time}},
+        upsert=True
+    )
+    
+    # Send success message
+    await message.reply_text(
+        "›› ʏᴏᴜʀ ᴛᴏᴋᴇɴ ʜᴀs ʙᴇᴇɴ sᴜᴄᴄᴇssғᴜʟʟʏ ᴠᴇʀɪғɪᴇᴅ ᴀɴᴅ ɪs ᴠᴀʟɪᴅ ғᴏʀ 24 ʜᴏᴜʀs.‼️",
+        reply_markup=InlineKeyboardMarkup([[
+            InlineKeyboardButton("📥 Gᴇᴛ Fɪʟᴇ", url=f"https://t.me/{Config.BOT_USERNAME}?start={base64_string}")
+        ]])
+    )
+
+
 @Client.on_message(filters.private & filters.command("start"))
 @check_ban
 @check_fsub
 async def start(client, message: Message):
     logger.debug(f"/start command received from user {message.from_user.id}")
+    
+    # Check if this is a verification callback
+    text = message.text
+    if len(text) > 7:
+        command_param = text.split(" ", 1)[1] if " " in text else ""
+        
+        # Handle verification callback (user returned from shortlink website)
+        if command_param.startswith("verify_"):
+            base64_string = command_param[7:]  # Remove "verify_" prefix
+            await handle_verification_callback(client, message, base64_string)
+            return
+    
     await codeflixbots.add_user(client, message)
 
     m = await message.reply_text("Wᴇᴡ...Hᴏᴡ ᴀʀᴇ ʏᴏᴜ ᴅᴜᴅᴇ \nᴡᴀɪᴛ ᴀ ᴍᴏᴍᴇɴᴛ. . .")
@@ -281,26 +319,19 @@ async def verify_settings(client, message):
         disable_web_page_preview=True)
 
 
-async def get_shortlink(link, is_second_shortener=False):
-    """Generate a shortlink using the configured shortener from verification settings."""
+async def get_shortlink(link, shortener_num):
+    """Generate a shortlink using the specified shortener (1 or 2)"""
     settings = await codeflixbots.get_verification_settings()
-    verify_status_1 = settings.get("verify_status_1", False)
-    verify_status_2 = settings.get("verify_status_2", False)
     
-    # Choose shortener based on is_second_shortener and status
-    if is_second_shortener:
-        if not verify_status_2:
-            logger.error("Shortener 2 is disabled")
-            return None
-        api, site = settings.get("verify_token_2", "Not set"), settings.get("api_link_2", "Not set")
+    if shortener_num == 1:
+        api = settings.get("verify_token_1", "Not set")
+        site = settings.get("api_link_1", "Not set")
     else:
-        if not verify_status_1:
-            logger.error("Shortener 1 is disabled")
-            return None
-        api, site = settings.get("verify_token_1", "Not set"), settings.get("api_link_1", "Not set")
+        api = settings.get("verify_token_2", "Not set")
+        site = settings.get("api_link_2", "Not set")
     
     if site == "Not set" or api == "Not set":
-        logger.error(f"Shortener settings missing: {site} or {api}")
+        logger.error(f"Shortener {shortener_num} settings missing: {site} or {api}")
         return None
     
     try:
@@ -319,66 +350,86 @@ async def get_shortlink(link, is_second_shortener=False):
             logger.error(f"Fallback shortlink failed: {e2}")
             return None
 
+
+async def is_user_verified(user_id):
+    """Check if user has valid verification (within 24 hours)"""
+    user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+    verification_data = user_data.get("verification", {})
+    verified_time = verification_data.get("verified_time")
+    
+    if not verified_time:
+        return False
+    
+    current_time = datetime.utcnow()
+    time_diff = current_time - verified_time
+    
+    # Check if verification is still valid (within 24 hours)
+    return time_diff < timedelta(hours=24)
+
+
 @Client.on_message(filters.command("verify") & filters.private)
 async def verify_command(client, message: Message):
     user_id = message.from_user.id
-    user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
     
-    # Check verification status
-    verification_data = user_data.get("verification", {})
-    shortener1_time = verification_data.get("shortener1_time")
-    shortener2_time = verification_data.get("shortener2_time")
-    current_time = datetime.utcnow()
+    # Check if user is already verified
+    if await is_user_verified(user_id):
+        await message.reply_text("Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ ғᴏʀ ᴛʜᴇ ɴᴇxᴛ 24 ʜᴏᴜʀs!")
+        return
     
-    # Check if fully verified (both shorteners done within 24 hours)
-    if shortener1_time and shortener2_time:
-        if current_time < shortener1_time + timedelta(hours=24):
-            await message.reply_text("You are already fully verified for the next 24 hours!")
-            return
-    
-    # Check if Shortener 1 is verified and waiting for Shortener 2 (6-hour gap)
-    if shortener1_time and not shortener2_time:
-        time_diff = current_time - shortener1_time
-        if time_diff < timedelta(hours=6):
-            remaining = timedelta(hours=6) - time_diff
-            await message.reply_text(
-                f"Please wait {remaining.seconds // 3600} hours and {(remaining.seconds % 3600) // 60} minutes before verifying Shortener 2."
-            )
-            return
-    
-    # Check if shorteners are enabled
+    # Get verification settings
     settings = await codeflixbots.get_verification_settings()
     verify_status_1 = settings.get("verify_status_1", False)
     verify_status_2 = settings.get("verify_status_2", False)
     
-    # Determine which shortener to use
-    is_second_shortener = bool(shortener1_time)
-    if is_second_shortener and not verify_status_2:
-        await message.reply_text("Shortener 2 is currently disabled. Please try again later.")
-        return
-    if not is_second_shortener and not verify_status_1:
-        await message.reply_text("Shortener 1 is currently disabled. Please try again later.")
+    # Check if at least one shortener is enabled
+    if not verify_status_1 and not verify_status_2:
+        await message.reply_text("Vᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ᴅɪsᴀʙʟᴇᴅ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ.")
         return
     
-    shortener_name = "Shortener 2" if is_second_shortener else "Shortener 1"
+    # Get available shorteners
+    available_shorteners = []
+    if verify_status_1:
+        available_shorteners.append(1)
+    if verify_status_2:
+        available_shorteners.append(2)
     
-    # Generate shortlink
-    base_url = "https://t.me/" + Config.BOT_USERNAME + "?start=verify_" + str(user_id)
-    shortlink = await get_shortlink(base_url, is_second_shortener)
+    # Randomly select a shortener from available ones
+    selected_shortener = random.choice(available_shorteners)
+    shortener_name = f"Sʜᴏʀᴛᴇɴᴇʀ {selected_shortener}"
+    
+    # Extract base64 string from command
+    text = message.text
+    base64_string = ""
+    
+    if len(text) > 7:
+        try:
+            base64_string = text.split(" ", 1)[1]
+        except Exception as e:
+            logger.error(f"Error extracting base64 string: {e}")
+            await message.reply_text("Iɴᴠᴀʟɪᴅ ᴄᴏᴍᴍᴀɴᴅ ғᴏʀᴍᴀᴛ. Pʟᴇᴀsᴇ ᴜsᴇ ᴀ ᴠᴀʟɪᴅ ʟɪɴᴋ.")
+            return
+    else:
+        await message.reply_text("Pʟᴇᴀsᴇ ᴘʀᴏᴠɪᴅᴇ ᴀ ᴠᴀʟɪᴅ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ʟɪɴᴋ.")
+        return
+    
+    # Generate shortlink (with 24 hour expiry)
+    base_url = f"https://t.me/{Config.BOT_USERNAME}?start=verify_{base64_string}"
+    shortlink = await get_shortlink(base_url, selected_shortener)
     
     if not shortlink:
         await message.reply_text(
-            "Error generating shortlink. Please try again later or contact @seishiro_obito."
+            "Eʀʀᴏʀ ɢᴇɴᴇʀᴀᴛɪɴɢ sʜᴏʀᴛʟɪɴᴋ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ ᴏʀ ᴄᴏɴᴛᴀᴄᴛ @seishiro_obito."
         )
         return
     
     buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"Verify {shortener_name}", url=shortlink)],
-        [InlineKeyboardButton("Check Verification", callback_data="check_verify")]
+        [InlineKeyboardButton(f"Vᴇʀɪғʏ {shortener_name}", url=shortlink)],
+        [InlineKeyboardButton("Cʜᴇᴄᴋ Vᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="check_verify")]
     ])
     
     await message.reply_text(
-        f"Please verify using {shortener_name} to proceed.\n"
-        "Click the button below and complete the verification process.",
+        f"Pʟᴇᴀsᴇ ᴠᴇʀɪғʏ ᴜsɪɴɢ {shortener_name} ᴛᴏ ᴘʀᴏᴄᴇᴇᴅ.\n\n"
+        "Cʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴀɴᴅ ᴄᴏᴍᴘʟᴇᴛᴇ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇss.\n\n"
+        "⏰ <b>Lɪɴᴋ ᴇxᴘɪʀᴇs ɪɴ 24 ʜᴏᴜʀs</b>",
         reply_markup=buttons
     )
