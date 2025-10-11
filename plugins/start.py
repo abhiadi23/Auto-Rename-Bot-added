@@ -1,4 +1,4 @@
- import requests
+import requests
 import random
 import asyncio
 import base64
@@ -23,7 +23,7 @@ OWNER_ID = Config.OWNER_ID
 FSUB_LINK_EXPIRY = 10
 active_tasks = {}
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(name)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 def check_ban(func):
@@ -36,7 +36,7 @@ def check_ban(func):
                 [[InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ ʜᴇʀᴇ...!!", url=ADMIN_URL)]]
             )
             return await message.reply_text(
-                "Wᴛғ ʏᴏᴜ ᴀʀᴇ ʙᴀɴɴᴇᴅ ғʀᴏᴍ ᴜsɪɴɢ ᴍᴇ ʙʏ ᴏᴜʀ ᴀᴅᴍɪɴ/ᴏᴡɴᴇʀ . Iғ ʏᴏᴜ ᴛʜɪɴᴋs ɪᴛ's ᴍɪsᴛᴀᴋᴇ ᴄʟɪᴄᴋ ᴏɴ **ᴄᴏɴᴛᴀᴄᴛ ʜᴇʀᴇ...!!**",
+                "Wᴛғ ʏᴏᴜ ᴀʀᴇ ʙᴀɴɴᴇᴅ ғʀᴏᴍ ᴜsɪɴɢ ᴍᴇ ʙʏ ᴏᴜʀ ᴀᴅᴍɪɴ/ᴏᴡɴᴇʀ . Iғ ʏᴏᴜ ᴛʜɪɴᴋs ɪᴛ's ᴍɪsᴛᴀᴋᴇ ᴄʟɪᴄᴋ ᴏɴ ᴄᴏɴᴛᴀᴄᴛ ʜᴇʀᴇ...!!",
                 reply_markup=keyboard
             )
         return await func(client, message, *args, **kwargs)
@@ -95,7 +95,7 @@ def check_fsub(func):
         
         except Exception as e:
             logger.error(f"FATAL ERROR in check_fsub: {e}")
-            await message.reply_text(f"An unexpected error occurred: `{e}`. Please contact the developer.")
+            await message.reply_text(f"An unexpected error occurred: {e}. Please contact the developer.")
             return
 
     return wrapper
@@ -195,26 +195,37 @@ async def not_joined(client: Client, message: Message):
             reply_markup=InlineKeyboardMarkup(buttons),
         )
 
-    except Exception as e:
+except Exception as e:
         logger.error(f"Final Error in not_joined: {e}")
         await temp.edit(
             f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
             f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
         )
 
-async def send_verify_button(client, message: Message, base64_string: str):
-    """Send verification button with shortlink directly"""
+@Client.on_message(filters.private & filters.command("start"))
+@check_ban
+@check_fsub
+async def start(client, message: Message):
+    logger.debug(f"/start command received from user {message.from_user.id}")
     user_id = message.from_user.id
-    
-    # Get verification settings
+            
+            text = message.text
+            if len(text) > 7:
+        try:
+            base64_string = text.split(" ", 1)[1]
+            verify_request = base64_string.startswith("verify_")
+            
+            if verify_request:
+                base64_string = base64_string[4:]
+                msg_id = range(start, end + 1) if start <= end else list(range(start, end - 1, -1))
+            except Exception as e:
+                print(f"Error decoding IDs: {e}")
+                return
+
+# Get verification settings
     settings = await codeflixbots.get_verification_settings()
     verify_status_1 = settings.get("verify_status_1", False)
     verify_status_2 = settings.get("verify_status_2", False)
-    
-    # Check if at least one shortener is enabled
-    if not verify_status_1 and not verify_status_2:
-        await message.reply_text("Vᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ᴅɪsᴀʙʟᴇᴅ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ.")
-        return
     
     # Get available shorteners
     available_shorteners = []
@@ -225,16 +236,14 @@ async def send_verify_button(client, message: Message, base64_string: str):
     
     # Randomly select a shortener from available ones
     selected_shortener = random.choice(available_shorteners)
+    shortener_name = f"Sʜᴏʀᴛᴇɴᴇʀ {selected_shortener}"
     
-    # Generate shortlink
+# This is the URL that shortener will redirect to after verification
     base_url = f"https://t.me/{Config.BOT_USERNAME}?start=verify_{base64_string}"
     shortlink = await get_shortlink(base_url, selected_shortener)
-    
-    if not shortlink:
-        await message.reply_text(
-            "Eʀʀᴏʀ ɢᴇɴᴇʀᴀᴛɪɴɢ sʜᴏʀᴛʟɪɴᴋ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ ᴏʀ ᴄᴏɴᴛᴀᴄᴛ @seishiro_obito."
-        )
-        return
+
+    if not verify_status_1 and not verify_status_2:
+        pass
     
     # Store verify attempt to track callback
     current_time = datetime.utcnow()
@@ -251,58 +260,18 @@ async def send_verify_button(client, message: Message, base64_string: str):
     
     # Send button with shortlink directly
     buttons = InlineKeyboardMarkup([[
-        InlineKeyboardButton("🔐 Vᴇʀɪғʏ Tᴏ Aᴄᴄᴇss", url=shortlink)
+        InlineKeyboardButton("• Vᴇʀɪғʏ •", url=shortlink)
     ]])
-    
+
+
+    if not await is_user_verified(user_id):
     await message.reply_text(
-        "⚠️ Yᴏᴜ ɴᴇᴇᴅ ᴛᴏ ᴠᴇʀɪғʏ ғɪʀsᴛ ᴛᴏ ᴀᴄᴄᴇss ᴛʜɪs ғɪʟᴇ.\n\n"
+        "ʜᴇʏ {message.from_user.mention}, \n\n‼️ ʏᴏᴜ'ʀᴇ ɴᴏᴛ ᴠᴇʀɪғɪᴇᴅ ᴛᴏᴅᴀʏ ‼️
+        "⚠️ Yᴏᴜ ɴᴇᴇᴅ ᴛᴏ ᴠᴇʀɪғʏ ғɪʀsᴛ ᴛᴏ ɢᴇᴛ ᴛʜᴇ ᴀᴄᴄᴇss ᴏғ ʀᴇɴᴀᴍɪɴɢ ᴛʜᴇ ғɪʟᴇs \n\n"
         "Cʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴛᴏ ᴠᴇʀɪғʏ.\n\n"
         "⏰ <b>Lɪɴᴋ ᴇxᴘɪʀᴇs ɪɴ 24 ʜᴏᴜʀs</b>",
         reply_markup=buttons
     )
-
-
-async def process_verify_request(client, message: Message, base64_string: str):
-    """Process verification request and generate shortlink"""
-    user_id = message.from_user.id
-    
-    # Check if user is already verified
-    if await is_user_verified(user_id):
-        await message.reply_text("Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ ғᴏʀ ᴛʜᴇ ɴᴇxᴛ 24 ʜᴏᴜʀs!")
-        # Redirect to file
-        await message.reply_text(
-            "Cʟɪᴄᴋ ʙᴇʟᴏᴡ ᴛᴏ ᴀᴄᴄᴇss ʏᴏᴜʀ ғɪʟᴇ:",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("📥 Gᴇᴛ Fɪʟᴇ", url=f"https://t.me/{Config.BOT_USERNAME}?start={base64_string}")
-            ]])
-        )
-        return
-    
-    # Get verification settings
-    settings = await codeflixbots.get_verification_settings()
-    verify_status_1 = settings.get("verify_status_1", False)
-    verify_status_2 = settings.get("verify_status_2", False)
-    
-    # Check if at least one shortener is enabled
-    if not verify_status_1 and not verify_status_2:
-        await message.reply_text("Vᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ᴅɪsᴀʙʟᴇᴅ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ.")
-        return
-    
-    # Get available shorteners
-    available_shorteners = []
-    if verify_status_1:
-        available_shorteners.append(1)
-    if verify_status_2:
-        available_shorteners.append(2)
-    
-    # Randomly select a shortener from available ones
-    selected_shortener = random.choice(available_shorteners)
-    shortener_name = f"Sʜᴏʀᴛᴇɴᴇʀ {selected_shortener}"
-    
-    # Generate shortlink (with 24 hour expiry)
-    # This is the URL that shortener will redirect to after verification
-    base_url = f"https://t.me/{Config.BOT_USERNAME}?start=verify_{base64_string}"
-    shortlink = await get_shortlink(base_url, selected_shortener)
     
     if not shortlink:
         await message.reply_text(
@@ -310,31 +279,18 @@ async def process_verify_request(client, message: Message, base64_string: str):
         )
         return
     
-    # Store verify attempt to track callback
-    current_time = datetime.utcnow()
-    await codeflixbots.col.update_one(
-        {"_id": user_id},
-        {"$set": {
-            "verification.last_verify_attempt": {
-                "time": current_time,
-                "base64_string": base64_string
-            }
-        }},
-        upsert=True
-    )
+async def process_verify_request(client, message: Message, base64_string: str):
+    """Process verification request."""
+    user_id = message.from_user.id
     
-    buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"Vᴇʀɪғʏ {shortener_name}", url=shortlink)],
-        [InlineKeyboardButton("Cʜᴇᴄᴋ Vᴇʀɪғɪᴄᴀᴛɪᴏɴ", callback_data="check_verify")]
-    ])
-    
-    await message.reply_text(
-        f"Pʟᴇᴀsᴇ ᴠᴇʀɪғʏ ᴜsɪɴɢ {shortener_name} ᴛᴏ ᴘʀᴏᴄᴇᴇᴅ.\n\n"
-        "Cʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴀɴᴅ ᴄᴏᴍᴘʟᴇᴛᴇ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇss.\n\n"
-        "⏰ <b>Lɪɴᴋ ᴇxᴘɪʀᴇs ɪɴ 24 ʜᴏᴜʀs</b>",
-        reply_markup=buttons
-    )
-
+    if await is_user_verified(user_id):
+        await message.reply_text(
+            "›› ʏᴏᴜʀ ᴛᴏᴋᴇɴ ʜᴀs ʙᴇᴇɴ sᴜᴄᴄᴇssғᴜʟʟʏ ᴠᴇʀɪғɪᴇᴅ ᴀɴᴅ ɪs ᴠᴀʟɪᴅ ғᴏʀ 24ʜᴏᴜʀs ‼️",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+            ]])
+        )
+        return
 
 async def handle_verification_callback(client, message: Message, base64_string: str):
     """Handle when user returns after completing verification through shortlink"""
@@ -351,50 +307,6 @@ async def handle_verification_callback(client, message: Message, base64_string: 
         {"$set": {"verification.verified_time": current_time}},
         upsert=True
     )
-    
-    # Send success message
-    await message.reply_text(
-        "›› ʏᴏᴜʀ ᴛᴏᴋᴇɴ ʜᴀs ʙᴇᴇɴ sᴜᴄᴄᴇssғᴜʟʟʏ ᴠᴇʀɪғɪᴇᴅ ᴀɴᴅ ɪs ᴠᴀʟɪᴅ ғᴏʀ 24 ʜᴏᴜʀs.‼️",
-        reply_markup=InlineKeyboardMarkup([[
-            InlineKeyboardButton("📥 Gᴇᴛ Fɪʟᴇ", url=f"https://t.me/{Config.BOT_USERNAME}?start={base64_string}")
-        ]])
-    )
-
-
-@Client.on_message(filters.private & filters.command("start"))
-@check_ban
-@check_fsub
-async def start(client, message: Message):
-    logger.debug(f"/start command received from user {message.from_user.id}")
-    user_id = message.from_user.id
-            
-            text = message.text
-            if len(text) > 7:
-        try:
-            base64_string = text.split(" ", 1)[1]
-            verify_request = base64_string.startswith("verify_")
-            await handle_verification_callback(client, message, base64)
-            
-            if verify_request:
-                base64_string = base64_string[4:]
-                msg_id = range(start, end + 1) if start <= end else list(range(start, end - 1, -1))
-            except Exception as e:
-                print(f"Error decoding IDs: {e}")
-                return
-
-await message.reply_text(
-        f"Pʟᴇᴀsᴇ ᴠᴇʀɪғʏ ᴜsɪɴɢ {shortener_name} ᴛᴏ ᴘʀᴏᴄᴇᴇᴅ.\n\n"
-        "Cʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴀɴᴅ ᴄᴏᴍᴘʟᴇᴛᴇ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴄᴇss.\n\n"
-        "⏰ <b>Lɪɴᴋ ᴇxᴘɪʀᴇs ɪɴ 24 ʜᴏᴜʀs</b>",
-        reply_markup=buttons
-    )
-else:
-    if not await is_user_verified(user_id):
-                await message.reply_text(
-                    "⚠️ Yᴏᴜ ɴᴇᴇᴅ ᴛᴏ ᴠᴇʀɪғʏ ғɪʀsᴛ ᴛᴏ ᴀᴄᴄᴇss ᴛʜɪs ғɪʟᴇ.\n\n"
-                    "Usᴇ /verify ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴠᴇʀɪғʏ ʏᴏᴜʀsᴇʟғ."
-                )
-                return
             
     await codeflixbots.add_user(client, message)
 
@@ -406,7 +318,7 @@ else:
     await asyncio.sleep(0.5)
     await message.reply_chat_action(ChatAction.CHOOSE_STICKER)
     await asyncio.sleep(3)
-    await m.edit_text("**Iᴀᴍ sᴛᴀʀᴛɪɴɢ...!!**")
+    await m.edit_text("Iᴀᴍ sᴛᴀʀᴛɪɴɢ...!!")
     await asyncio.sleep(0.4)
     await m.delete()
 
@@ -418,7 +330,8 @@ else:
         ],
         [
             InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/botskingdoms'),
-            InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/botskingdomsgroup')
+
+InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/botskingdomsgroup')
         ],
         [
             InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about'),
@@ -518,7 +431,6 @@ async def is_user_verified(user_id):
     # Check if verification is still valid (within 24 hours)
     return time_diff < timedelta(hours=24)
 
-
 @Client.on_message(filters.command("verify") & filters.private)
 async def verify_command(client, message: Message):
     """Check verification status"""
@@ -537,11 +449,17 @@ async def verify_command(client, message: Message):
             minutes_left = (time_left.seconds % 3600) // 60
             
             await message.reply_text(
-                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                f"⏰ Tɪᴍᴇ Rᴇᴍᴀɪɴɪɴɢ: {hours_left}ʜ {minutes_left}ᴍ"
-            )
+                f""›› ʏᴏᴜʀ ᴛᴏᴋᴇɴ ʜᴀs ʙᴇᴇɴ sᴜᴄᴄᴇssғᴜʟʟʏ ᴠᴇʀɪғɪᴇᴅ ᴀɴᴅ ɪs ᴠᴀʟɪᴅ ғᴏʀ 24ʜᴏᴜʀs ‼️",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+            ]]))
     else:
+# Send button with shortlink directly
+    buttons = InlineKeyboardMarkup([[
+        InlineKeyboardButton("• Vᴇʀɪғʏ •", url=shortlink)
+    ]])
         await message.reply_text(
-            "❌ Yᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴠᴇʀɪғɪᴇᴅ.\n\n"
-            "Pʟᴇᴀsᴇ ʀᴇǫᴜᴇsᴛ ᴀ ғɪʟᴇ ᴛᴏ ɢᴇᴛ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ʟɪɴᴋ."
-        )
+            "ʜᴇʏ {message.from_user.mention}, \n\n‼️ ʏᴏᴜ'ʀᴇ ɴᴏᴛ ᴠᴇʀɪғɪᴇᴅ ᴛᴏᴅᴀʏ ‼️
+        "⚠️ Yᴏᴜ ɴᴇᴇᴅ ᴛᴏ ᴠᴇʀɪғʏ ғɪʀsᴛ ᴛᴏ ɢᴇᴛ ᴛʜᴇ ᴀᴄᴄᴇss ᴏғ ʀᴇɴᴀᴍɪɴɢ ᴛʜᴇ ғɪʟᴇs \n\n"
+        "Cʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴛᴏ ᴠᴇʀɪғʏ.\n\n"
+        "⏰ <b>Lɪɴᴋ ᴇxᴘɪʀᴇs ɪɴ 24 ʜᴏᴜʀs</b>", reply_markup=buttons)
