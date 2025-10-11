@@ -308,11 +308,43 @@ async def handle_verification_callback(client, message: Message, token: str):
     user_id = message.from_user.id
     current_time = datetime.utcnow()
     
-    # Update verification time (24 hour validity)
+    # Find the document with this pending_token
+    user_doc = await codeflixbots.col.find_one({"verification.pending_token": token})
+    
+    if not user_doc:
+        await message.reply_text("Invalid or expired token.")
+        return
+    
+    stored_user_id = user_doc["_id"]
+    
+    if user_id != stored_user_id:
+        await message.reply_text("It's not your link.")
+        return
+    
+    token_created_at = user_doc["verification"].get("token_created_at")
+    if current_time - token_created_at > timedelta(hours=24):
+        await message.reply_text("Token has expired.")
+        await codeflixbots.col.update_one({"_id": stored_user_id}, {"$unset": {"verification.pending_token": "", "verification.verification_start_time": ""}})
+        return
+    
+    verification_start_time = user_doc["verification"].get("verification_start_time")
+    if verification_start_time:
+        time_taken = current_time - verification_start_time
+    else:
+        time_taken = timedelta(hours=1)  # Assume ok for old tokens
+    
+    if time_taken < timedelta(minutes=1):
+        await message.reply_text("You bypassed the link. Verify again because you bypassed the link.")
+        await codeflixbots.col.update_one({"_id": stored_user_id}, {"$unset": {"verification.pending_token": "", "verification.verification_start_time": ""}})
+        return
+    
+    # All checks passed - verify the user
     await codeflixbots.col.update_one(
-        {"_id": user_id},
-        {"$set": {"verification.verified_time": current_time}},
-        upsert=True
+        {"_id": stored_user_id},
+        {
+            "$set": {"verification.verified_time": current_time},
+            "$unset": {"verification.pending_token": "", "verification.verification_start_time": ""}
+        }
     )
     
     # Send success message
@@ -378,7 +410,8 @@ async def send_verification_message(client, message: Message):
         {"$set": {
             "verification.pending_token": token,
             "verification.token_created_at": current_time,
-            "verification.token_user_id": user_id
+            "verification.token_user_id": user_id,
+            "verification.verification_start_time": current_time
         }},
         upsert=True
     )
