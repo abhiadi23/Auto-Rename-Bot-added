@@ -223,6 +223,7 @@ async def not_joined(client: Client, message: Message):
 
 @Client.on_message(filters.private & filters.command("start"))
 @check_ban
+@check_verification
 @check_fsub
 async def start(client, message: Message):
     logger.debug(f"/start command received from user {message.from_user.id}")
@@ -326,6 +327,27 @@ async def send_verification_message(client, message: Message):
     """Generate and send verification shortlink to user"""
     user_id = message.from_user.id
     
+    # Check if user is already verified
+    if await is_user_verified(user_id):
+        user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+        verification_data = user_data.get("verification", {})
+        verified_time = verification_data.get("verified_time")
+        
+        if verified_time:
+            current_time = datetime.utcnow()
+            time_left = timedelta(hours=24) - (current_time - verified_time)
+            hours_left = time_left.seconds // 3600
+            minutes_left = (time_left.seconds % 3600) // 60
+            
+            await message.reply_text(
+                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                ]])
+            )
+        return None
+    
     # Get verification settings
     settings = await codeflixbots.get_verification_settings()
     verify_status_1 = settings.get("verify_status_1", False)
@@ -349,6 +371,18 @@ async def send_verification_message(client, message: Message):
     # Generate a random token for verification
     token = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
     
+    # Store token with user_id and creation time (for expiry and ownership check)
+    current_time = datetime.utcnow()
+    await codeflixbots.col.update_one(
+        {"_id": user_id},
+        {"$set": {
+            "verification.pending_token": token,
+            "verification.token_created_at": current_time,
+            "verification.token_user_id": user_id
+        }},
+        upsert=True
+    )
+    
     # This is the bot deep link that shortener will redirect to
     redirect_url = f"https://t.me/{Config.BOT_USERNAME}?start=verify_{token}"
     
@@ -367,10 +401,12 @@ async def send_verification_message(client, message: Message):
     ]])
     
     await message.reply_text(
-        f"ʜᴇʏ {message.from_user.mention}, \n\n‼️ ʏᴏᴜ'ʀᴇ ɴᴏᴛ ᴠᴇʀɪғɪᴇᴅ ᴛᴏᴅᴀʏ ‼️\n\n"
-        "⚠️ Yᴏᴜ ɴᴇᴇᴅ ᴛᴏ ᴠᴇʀɪғʏ ғɪʀsᴛ ᴛᴏ ɢᴇᴛ ᴛʜᴇ ᴀᴄᴄᴇss ᴏғ ʀᴇɴᴀᴍɪɴɢ ᴛʜᴇ ғɪʟᴇs \n\n"
+        f"ʜᴇʏ {message.from_user.mention},\n\n"
+        "‼️ ʏᴏᴜ'ʀᴇ ɴᴏᴛ ᴠᴇʀɪғɪᴇᴅ ᴛᴏᴅᴀʏ ‼️\n\n"
+        "⚠️ Yᴏᴜ ɴᴇᴇᴅ ᴛᴏ ᴠᴇʀɪғʏ ғɪʀsᴛ ᴛᴏ ɢᴇᴛ ᴛʜᴇ ᴀᴄᴄᴇss ᴏғ ʀᴇɴᴀᴍɪɴɢ ᴛʜᴇ ғɪʟᴇs\n\n"
         "Cʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴛᴏ ᴠᴇʀɪғʏ.\n\n"
-        "⏰ <b>Lɪɴᴋ ᴇxᴘɪʀᴇs ɪɴ 24 ʜᴏᴜʀs</b>",
+        "⏰ <b>Vᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴠᴀʟɪᴅ ғᴏʀ 24 ʜᴏᴜʀs</b>\n"
+        "<b>Tᴏᴋᴇɴ ᴇxᴘɪʀᴇs ɪɴ 24 ʜᴏᴜʀs</b>",
         reply_markup=buttons
     )
     
@@ -481,15 +517,3 @@ async def verify_command(client, message: Message):
     
     # User not verified - generate and send verification link
     await send_verification_message(client, message)
-    buttons = InlineKeyboardMarkup([[
-        InlineKeyboardButton("• Vᴇʀɪғʏ •", url=shortlink)
-    ]])
-    
-    await message.reply_text(
-        f"ʜᴇʏ {message.from_user.mention}, \n\n‼️ ʏᴏᴜ'ʀᴇ ɴᴏᴛ ᴠᴇʀɪғɪᴇᴅ ᴛᴏᴅᴀʏ ‼️\n\n"
-        "⚠️ Yᴏᴜ ɴᴇᴇᴅ ᴛᴏ ᴠᴇʀɪғʏ ғɪʀsᴛ ᴛᴏ ɢᴇᴛ ᴛʜᴇ ᴀᴄᴄᴇss ᴏғ ʀᴇɴᴀᴍɪɴɢ ᴛʜᴇ ғɪʟᴇs \n\n"
-        "Cʟɪᴄᴋ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴛᴏ ᴠᴇʀɪғʏ.\n\n"
-        "⏰ <b>Lɪɴᴋ ᴇxᴘɪʀᴇs ɪɴ 24 ʜᴏᴜʀs</b>",
-        reply_markup=buttons
-    )
-    
