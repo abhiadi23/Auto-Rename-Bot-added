@@ -312,17 +312,20 @@ async def handle_verification_callback(client, message: Message, token: str):
     user_doc = await codeflixbots.col.find_one({"verification.pending_token": token})
     
     if not user_doc:
+        logger.error(f"Token {token} not found in database for user {user_id}")
         await message.reply_text("Invalid or expired token.")
         return
     
     stored_user_id = user_doc["_id"]
     
     if user_id != stored_user_id:
+        logger.info(f"User {user_id} attempted to use token for user {stored_user_id}")
         await message.reply_text("It's not your link.")
         return
     
     token_created_at = user_doc["verification"].get("token_created_at")
-    if current_time - token_created_at > timedelta(hours=24):
+    if not token_created_at or current_time - token_created_at > timedelta(hours=24):
+        logger.info(f"Token {token} expired for user {user_id}")
         await message.reply_text("Token has expired.")
         await codeflixbots.col.update_one({"_id": stored_user_id}, {"$unset": {"verification.pending_token": "", "verification.verification_start_time": ""}})
         return
@@ -334,19 +337,30 @@ async def handle_verification_callback(client, message: Message, token: str):
         time_taken = timedelta(hours=1)  # Assume ok for old tokens
     
     if time_taken < timedelta(minutes=1):
+        logger.info(f"User {user_id} completed verification in {time_taken.total_seconds()} seconds, suspected bypass")
         await message.reply_text("You bypassed the link. Verify again because you bypassed the link.")
         await codeflixbots.col.update_one({"_id": stored_user_id}, {"$unset": {"verification.pending_token": "", "verification.verification_start_time": ""}})
         return
     
-    # All checks passed - verify the user
-    await codeflixbots.col.update_one(
-        {"_id": stored_user_id},
-        {
-            "$set": {"verification.verified_time": current_time},
-            "$unset": {"verification.pending_token": "", "verification.verification_start_time": ""}
-        }
-    )
+    # Update verification status
+    try:
+        result = await codeflixbots.col.update_one(
+            {"_id": stored_user_id},
+            {
+                "$set": {"verification.verified_time": current_time},
+                "$unset": {"verification.pending_token": "", "verification.verification_start_time": ""}
+            }
+        )
+        if result.modified_count == 0:
+            logger.error(f"Failed to update verification status for user {stored_user_id}")
+            await message.reply_text("Error updating verification status. Please try again or contact @seishiro_obito.")
+            return
+    except Exception as e:
+        logger.error(f"Database error updating verification for user {stored_user_id}: {e}")
+        await message.reply_text("Database error occurred. Please contact @seishiro_obito.")
+        return
     
+    logger.info(f"User {user_id} successfully verified")
     # Send success message
     await message.reply_text(
         "›› ʏᴏᴜʀ ᴛᴏᴋᴇɴ ʜᴀs ʙᴇᴇɴ sᴜᴄᴄᴇssғᴜʟʟʏ ᴠᴇʀɪғɪᴇᴅ ᴀɴᴅ ɪs ᴠᴀʟɪᴅ ғᴏʀ 24ʜᴏᴜʀs ‼️",
