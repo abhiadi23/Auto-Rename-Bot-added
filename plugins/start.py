@@ -115,6 +115,12 @@ def check_verification(func):
                     # User not verified - send verification link
                     await send_verification_message(client, message)
                     return
+    except Exception as e:
+        logger.error(f"Exception in check_verification: {e}")
+
+    if not await is_user_verified(user_id):
+        await send_verification_message(client, message)
+                    return
         
         # User is verified - proceed with command
         return await func(client, message, *args, **kwargs)
@@ -413,28 +419,50 @@ async def handle_verification_callback(client, message: Message, token: str):
 async def send_verification_message(client, message: Message):
     """Generate and send verification shortlink to user"""
     user_id = message.from_user.id
-    
-    # Check if user is already verified
-    if await is_user_verified(user_id):
-        user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
-        verification_data = user_data.get("verification", {})
-        verified_time = verification_data.get("verified_time")
+
+    try:
+        if await codeflixbots.has_premium_access(message.from_user.id):
+            pass
+            return None
+        else:
+            if await is_user_verified(user_id):
+                user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+                verification_data = user_data.get("verification", {})
+                verified_time = verification_data.get("verified_time")
+                
+                if verified_time:
+                    current_time = datetime.utcnow()
+                    time_left = timedelta(hours=24) - (current_time - verified_time)
+                    hours_left = time_left.seconds // 3600
+                    minutes_left = (time_left.seconds % 3600) // 60
+                    
+                    await message.reply_text(
+                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n
+                        f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                        reply_markup=InlineKeyboardMarkup([[
+                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")]]))
+                        return None
+    except Exception as e:
+        logger.error(f"Exception in check_verification: {e}")
         
-        if verified_time:
-            current_time = datetime.utcnow()
-            time_left = timedelta(hours=24) - (current_time - verified_time)
-            hours_left = time_left.seconds // 3600
-            minutes_left = (time_left.seconds % 3600) // 60
-            
-            await message.reply_text(
-                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                ]])
-            )
-        return None
-    
+           if await is_user_verified(user_id):
+                user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+                verification_data = user_data.get("verification", {})
+                verified_time = verification_data.get("verified_time")
+                
+                if verified_time:
+                    current_time = datetime.utcnow()
+                    time_left = timedelta(hours=24) - (current_time - verified_time)
+                    hours_left = time_left.seconds // 3600
+                    minutes_left = (time_left.seconds % 3600) // 60
+                    
+                    await message.reply_text(
+                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n
+                        f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                        reply_markup=InlineKeyboardMarkup([[
+                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")]]))
+                        return None
+
     # Get verification settings
     settings = await codeflixbots.get_verification_settings()
     verify_status_1 = settings.get("verify_status_1", False)
