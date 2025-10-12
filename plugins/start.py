@@ -223,6 +223,7 @@ async def not_joined(client: Client, message: Message):
 
 @Client.on_message(filters.private & filters.command("start"))
 @check_ban
+@check_verification
 @check_fsub
 async def start(client, message: Message):
     logger.debug(f"/start command received from user {message.from_user.id}")
