@@ -437,7 +437,7 @@ async def send_verification_message(client, message: Message):
                     minutes_left = (time_left.seconds % 3600) // 60
                     
                     await message.reply_text(
-                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n
+                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
                         f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
                         reply_markup=InlineKeyboardMarkup([[
                         InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")]]))
