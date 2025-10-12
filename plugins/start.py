@@ -106,12 +106,15 @@ def check_verification(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
-        
-        # Check if user is verified
-        if not await is_user_verified(user_id):
-            # User not verified - send verification link
-            await send_verification_message(client, message)
-            return
+
+        try:
+            if await codeflixbots.has_premium_access(message.from_user.id):
+                pass
+            else:
+                if not await is_user_verified(user_id):
+                    # User not verified - send verification link
+                    await send_verification_message(client, message)
+                    return
         
         # User is verified - proceed with command
         return await func(client, message, *args, **kwargs)
