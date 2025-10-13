@@ -439,9 +439,9 @@ async def send_verification_message(client, message: Message):
                     minutes_left = (time_left.seconds % 3600) // 60
                     
                     await message.reply_text(
-                    f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                    f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                    reply_markup=InlineKeyboardMarkup([[
+                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                        f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                        reply_markup=InlineKeyboardMarkup([[
                         InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
                     ]])
                 )
@@ -449,19 +449,19 @@ async def send_verification_message(client, message: Message):
                 
     except Exception as e:
         logger.error(f"Exception in send_verification_message: {e}")
-
-           if await is_user_verified(user_id):
-                user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
-                verification_data = user_data.get("verification", {})
-                verified_time = verification_data.get("verified_time")
+        
+        if await is_user_verified(user_id):
+            user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+            verification_data = user_data.get("verification", {})
+            verified_time = verification_data.get("verified_time")
+            
+            if verified_time:
+                current_time = datetime.utcnow()
+                time_left = timedelta(hours=24) - (current_time - verified_time)
+                hours_left = time_left.seconds // 3600
+                minutes_left = (time_left.seconds % 3600) // 60
                 
-                if verified_time:
-                    current_time = datetime.utcnow()
-                    time_left = timedelta(hours=24) - (current_time - verified_time)
-                    hours_left = time_left.seconds // 3600
-                    minutes_left = (time_left.seconds % 3600) // 60
-                    
-                    await message.reply_text(
+                await message.reply_text(
                     f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
                     f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
                     reply_markup=InlineKeyboardMarkup([[
