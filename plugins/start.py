@@ -439,14 +439,17 @@ async def send_verification_message(client, message: Message):
                     minutes_left = (time_left.seconds % 3600) // 60
                     
                     await message.reply_text(
-                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                        f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                        reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")]]))
-                        return None
+                    f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                    f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                    reply_markup=InlineKeyboardMarkup([[
+                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                    ]])
+                )
+                return None
+                
     except Exception as e:
-        logger.error(f"Exception in check_verification: {e}")
-        
+        logger.error(f"Exception in send_verification_message: {e}")
+
            if await is_user_verified(user_id):
                 user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
                 verification_data = user_data.get("verification", {})
@@ -459,12 +462,14 @@ async def send_verification_message(client, message: Message):
                     minutes_left = (time_left.seconds % 3600) // 60
                     
                     await message.reply_text(
-                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                        f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                        reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")]]))
-                        return None
-
+                    f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                    f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                    reply_markup=InlineKeyboardMarkup([[
+                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                    ]])
+                )
+                return None
+               
     # Get verification settings
     settings = await codeflixbots.get_verification_settings()
     verify_status_1 = settings.get("verify_status_1", False)
