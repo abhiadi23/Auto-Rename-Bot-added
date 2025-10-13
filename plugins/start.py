@@ -106,24 +106,27 @@ def check_verification(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
-
+        
         try:
             if await codeflixbots.has_premium_access(message.from_user.id):
                 pass
+                # Premium users bypass verification
+                return await func(client, message, *args, **kwargs)
             else:
                 if not await is_user_verified(user_id):
                     # User not verified - send verification link
                     await send_verification_message(client, message)
                     return
-    except Exception as e:
-        logger.error(f"Exception in check_verification: {e}")
-
-    if not await is_user_verified(user_id):
-        await send_verification_message(client, message)
-                    return
+        except Exception as e:
+            logger.error(f"Exception in check_verification: {e}")
+        
+        if not await is_user_verified(user_id):
+            await send_verification_message(client, message)
+            return
         
         # User is verified - proceed with command
         return await func(client, message, *args, **kwargs)
+    
     return wrapper
 
 async def check_admin(filter, client, update):
