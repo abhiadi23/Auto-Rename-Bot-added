@@ -399,9 +399,9 @@ async def handle_verification_callback(client, message: Message, token: str):
                   "verification.verify_status_1": verify_status_1,
                   "verification.verify_status_2": verify_status_2},
          "$unset": {
-            "verification.pending_token": "",
-            "verification.token_created_at": "",
-            "verification.token_user_id": ""
+            "verification.pending_token": "1",
+            "verification.token_created_at": "1",
+            "verification.token_user_id": "1"
          }},
         upsert=True
     )
