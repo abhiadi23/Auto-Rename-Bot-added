@@ -43,6 +43,45 @@ def check_ban(func):
         return await func(client, message, *args, **kwargs)
     return wrapper
 
+def check_verification(func):
+    """Decorator to check if user is verified before allowing command usage"""
+    @wraps(func)
+    async def wrapper(client, message, *args, **kwargs):
+        user_id = message.from_user.id
+        
+        try:
+            # Premium users bypass verification
+            if await codeflixbots.has_premium_access(message.from_user.id):
+                return await func(client, message, *args, **kwargs)
+            
+            # Check if user is verified
+            if not await is_user_verified(user_id):
+                # User not verified - send verification link
+                await send_verification_message(client, message)
+                return
+                
+        except Exception as e:
+            logger.error(f"Exception in check_verification: {e}")
+            # On exception, still check verification status
+            if not await is_user_verified(user_id):
+                await send_verification_message(client, message)
+                return
+        
+        # User is verified - proceed with command
+        return await func(client, message, *args, **kwargs)
+    
+    return wrapper
+
+async def check_admin(filter, client, update):
+    try:
+        user_id = update.from_user.id
+        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
+    except Exception as e:
+        logger.error(f"Exception in check_admin: {e}")
+        return False
+
+admin = filters.create(check_admin)
+
 def check_fsub(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
@@ -98,47 +137,6 @@ def check_fsub(func):
             logger.error(f"FATAL ERROR in check_fsub: {e}")
             await message.reply_text(f"An unexpected error occurred: {e}. Please contact the developer.")
             return
-
-    return wrapper
-
-def check_verification(func):
-    """Decorator to check if user is verified before allowing command usage"""
-    @wraps(func)
-    async def wrapper(client, message, *args, **kwargs):
-        user_id = message.from_user.id
-        
-        try:
-            # Premium users bypass verification
-            if await codeflixbots.has_premium_access(message.from_user.id):
-                return await func(client, message, *args, **kwargs)
-            
-            # Check if user is verified
-            if not await is_user_verified(user_id):
-                # User not verified - send verification link
-                await send_verification_message(client, message)
-                return
-                
-        except Exception as e:
-            logger.error(f"Exception in check_verification: {e}")
-            # On exception, still check verification status
-            if not await is_user_verified(user_id):
-                await send_verification_message(client, message)
-                return
-        
-        # User is verified - proceed with command
-        return await func(client, message, *args, **kwargs)
-    
-    return wrapper
-
-async def check_admin(filter, client, update):
-    try:
-        user_id = update.from_user.id
-        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
-    except Exception as e:
-        logger.error(f"Exception in check_admin: {e}")
-        return False
-
-admin = filters.create(check_admin)
 
 async def not_joined(client: Client, message: Message):
     logger.debug(f"not_joined function called for user {message.from_user.id}")
@@ -233,6 +231,7 @@ async def not_joined(client: Client, message: Message):
             f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
             f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
         )
+        return wrapper
 
 @Client.on_message(filters.private & filters.command("start"))
 @check_ban
@@ -328,8 +327,7 @@ async def handle_verification_callback(client, message: Message, token: str):
     
     # Check if verification is disabled - if so, just return
     if not verify_status_1 and not verify_status_2:
-        await message.reply_text("Vᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ᴅɪsᴀʙʟᴇᴅ.")
-        return
+        pass
     
     # Find the user who owns this token
     token_owner = await codeflixbots.col.find_one({"verification.pending_token": token})
@@ -457,7 +455,8 @@ async def send_verification_message(client, message: Message):
     
     # Check if at least one shortener is enabled
     if not verify_status_1 and not verify_status_2:
-        pass
+        await message.reply_text("Vᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ᴅɪsᴀʙʟᴇᴅ.")
+        return None
     
     # Get available shorteners
     available_shorteners = []
