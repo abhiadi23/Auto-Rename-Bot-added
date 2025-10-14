@@ -395,7 +395,9 @@ async def handle_verification_callback(client, message: Message, token: str):
     # All checks passed - Update verification time (24 hour validity)
     await codeflixbots.col.update_one(
         {"_id": user_id},
-        {"$set": {"verification.verified_time": current_time},
+        {"$set": {"verification.verified_time": current_time,
+                  "verification.verify_status_1": verify_status_1,
+                  "verification.verify_status_2": verify_status_2},
          "$unset": {
             "verification.pending_token": "",
             "verification.token_created_at": "",
