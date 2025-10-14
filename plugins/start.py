@@ -108,21 +108,22 @@ def check_verification(func):
         user_id = message.from_user.id
         
         try:
+            # Premium users bypass verification
             if await codeflixbots.has_premium_access(message.from_user.id):
-                pass
-                # Premium users bypass verification
                 return await func(client, message, *args, **kwargs)
-            else:
-                if not await is_user_verified(user_id):
-                    # User not verified - send verification link
-                    await send_verification_message(client, message)
-                    return
+            
+            # Check if user is verified
+            if not await is_user_verified(user_id):
+                # User not verified - send verification link
+                await send_verification_message(client, message)
+                return
+                
         except Exception as e:
             logger.error(f"Exception in check_verification: {e}")
-        
-        if not await is_user_verified(user_id):
-            await send_verification_message(client, message)
-            return
+            # On exception, still check verification status
+            if not await is_user_verified(user_id):
+                await send_verification_message(client, message)
+                return
         
         # User is verified - proceed with command
         return await func(client, message, *args, **kwargs)
@@ -325,9 +326,10 @@ async def handle_verification_callback(client, message: Message, token: str):
     verify_status_1 = settings.get("verify_status_1", False)
     verify_status_2 = settings.get("verify_status_2", False)
     
-    # Check if verification is disabled
+    # Check if verification is disabled - if so, just return
     if not verify_status_1 and not verify_status_2:
-        pass
+        await message.reply_text("Vᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ᴅɪsᴀʙʟᴇᴅ.")
+        return
     
     # Find the user who owns this token
     token_owner = await codeflixbots.col.find_one({"verification.pending_token": token})
@@ -373,10 +375,10 @@ async def handle_verification_callback(client, message: Message, token: str):
     if token_created_at:
         time_taken = current_time - token_created_at
         if time_taken < timedelta(minutes=1):
-            seconds_taken = time_taken.total_seconds()
             await message.reply_text(
                 f"⚠️ Bʏᴘᴀss Dᴇᴛᴇᴄᴛᴇᴅ!\n\n"
-                f"• Yᴏᴜ ᴄᴏᴍᴘʟᴇᴛᴇᴅ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ʙʏ ʙʏᴘᴀssɪɴɢ ᴛʜᴇ ʟɪɴᴋ ᴡʜɪᴄʜ ɪs ᴡʀᴏɴɢ.",
+                f"• Yᴏᴜ ᴄᴏᴍᴘʟᴇᴛᴇᴅ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴛᴏᴏ ǫᴜɪᴄᴋʟʏ ({int(time_taken.total_seconds())} sᴇᴄᴏɴᴅs).\n\n"
+                f"Pʟᴇᴀsᴇ ᴄᴏᴍᴘʟᴇᴛᴇ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴘᴇʀʟʏ.",
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("• Vᴇʀɪғʏ Aɢᴀɪɴ •", url=f"https://t.me/{Config.BOT_USERNAME}?start=verify")
                 ]])
@@ -412,7 +414,8 @@ async def handle_verification_callback(client, message: Message, token: str):
     # Send success message
     await message.reply_text(
         f"✅ Vᴇʀɪғɪᴄᴀᴛɪᴏɴ Sᴜᴄᴄᴇssғᴜʟ!\n\n"
-        f"›› ʏᴏᴜʀ ᴛᴏᴋᴇɴ ʜᴀs ʙᴇᴇɴ sᴜᴄᴄᴇssғᴜʟʟʏ ᴠᴇʀɪғɪᴇᴅ ᴀɴᴅ ɪs ᴠᴀʟɪᴅ ғᴏʀ 24ʜᴏᴜʀs ‼️",
+        f"›› ʏᴏᴜʀ ᴛᴏᴋᴇɴ ʜᴀs ʙᴇᴇɴ sᴜᴄᴄᴇssғᴜʟʟʏ ᴠᴇʀɪғɪᴇᴅ ᴀɴᴅ ɪs ᴠᴀʟɪᴅ ғᴏʀ 24ʜᴏᴜʀs ‼️\n\n"
+        f"⏱️ Tɪᴍᴇ ᴛᴀᴋᴇɴ: {minutes_taken}m {seconds_taken}s",
         reply_markup=InlineKeyboardMarkup([[
             InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
         ]])
@@ -422,54 +425,31 @@ async def send_verification_message(client, message: Message):
     """Generate and send verification shortlink to user"""
     user_id = message.from_user.id
 
-    try:
-        if await codeflixbots.has_premium_access(message.from_user.id):
-            pass
-            return None
-        else:
-            if await is_user_verified(user_id):
-                user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
-                verification_data = user_data.get("verification", {})
-                verified_time = verification_data.get("verified_time")
-                
-                if verified_time:
-                    current_time = datetime.utcnow()
-                    time_left = timedelta(hours=24) - (current_time - verified_time)
-                    hours_left = time_left.seconds // 3600
-                    minutes_left = (time_left.seconds % 3600) // 60
-                    
-                    await message.reply_text(
-                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                        f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                        reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                    ]])
-                )
-                return None
-                
-    except Exception as e:
-        logger.error(f"Exception in send_verification_message: {e}")
+    # Check if user has premium access
+    if await codeflixbots.has_premium_access(message.from_user.id):
+        return None
+    
+    # Check if user is already verified
+    if await is_user_verified(user_id):
+        user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+        verification_data = user_data.get("verification", {})
+        verified_time = verification_data.get("verified_time")
         
-        if await is_user_verified(user_id):
-            user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
-            verification_data = user_data.get("verification", {})
-            verified_time = verification_data.get("verified_time")
+        if verified_time:
+            current_time = datetime.utcnow()
+            time_left = timedelta(hours=24) - (current_time - verified_time)
+            hours_left = time_left.seconds // 3600
+            minutes_left = (time_left.seconds % 3600) // 60
             
-            if verified_time:
-                current_time = datetime.utcnow()
-                time_left = timedelta(hours=24) - (current_time - verified_time)
-                hours_left = time_left.seconds // 3600
-                minutes_left = (time_left.seconds % 3600) // 60
-                
-                await message.reply_text(
-                    f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                    f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                    reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                    ]])
-                )
-                return None
-               
+            await message.reply_text(
+                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                ]])
+            )
+            return None
+
     # Get verification settings
     settings = await codeflixbots.get_verification_settings()
     verify_status_1 = settings.get("verify_status_1", False)
@@ -477,8 +457,7 @@ async def send_verification_message(client, message: Message):
     
     # Check if at least one shortener is enabled
     if not verify_status_1 and not verify_status_2:
-        await message.reply_text("Vᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ᴅɪsᴀʙʟᴇᴅ.")
-        return None
+        pass
     
     # Get available shorteners
     available_shorteners = []
