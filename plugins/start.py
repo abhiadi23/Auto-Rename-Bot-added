@@ -327,7 +327,8 @@ async def handle_verification_callback(client, message: Message, token: str):
     
     # Check if verification is disabled - if so, just return
     if not verify_status_1 and not verify_status_2:
-        pass
+        await show_start_message(client, message)
+        return 
     
     # Find the user who owns this token
     token_owner = await codeflixbots.col.find_one({"verification.pending_token": token})
@@ -397,11 +398,12 @@ async def handle_verification_callback(client, message: Message, token: str):
         {"_id": user_id},
         {"$set": {"verification.verified_time": current_time,
                   "verification.verify_status_1": verify_status_1,
-                  "verification.verify_status_2": verify_status_2},
+                  "verification.verify_status_2": verify_status_2,
+                  "verification.is_user_verified" : True},
          "$unset": {
-            "verification.pending_token": "1",
-            "verification.token_created_at": "1",
-            "verification.token_user_id": "1"
+            "verification.pending_token": True,
+            "verification.token_created_at": True,
+            "verification.token_user_id": True
          }},
         upsert=True
     )
@@ -448,7 +450,7 @@ async def send_verification_message(client, message: Message):
                     InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
                 ]])
             )
-            return None
+            return True
 
     # Get verification settings
     settings = await codeflixbots.get_verification_settings()
