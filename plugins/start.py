@@ -327,6 +327,7 @@ async def handle_verification_callback(client, message: Message, token: str):
     
     # Check if verification is disabled - if so, just return
     if not verify_status_1 and not verify_status_2:
+        await codeflixbots.add_user(client, message)
         await show_start_message(client, message)
         return 
     
@@ -396,14 +397,11 @@ async def handle_verification_callback(client, message: Message, token: str):
     # All checks passed - Update verification time (24 hour validity)
     await codeflixbots.col.update_one(
         {"_id": user_id},
-        {"$set": {"verification.verified_time": current_time,
-                  "verification.verify_status_1": verify_status_1,
-                  "verification.verify_status_2": verify_status_2,
-                  "verification.is_user_verified" : True},
+        {"$set": {"verification.verified_time": current_time},
          "$unset": {
-            "verification.pending_token": True,
-            "verification.token_created_at": True,
-            "verification.token_user_id": True
+            "verification.pending_token": "",
+            "verification.token_created_at": "",
+            "verification.token_user_id": ""
          }},
         upsert=True
     )
