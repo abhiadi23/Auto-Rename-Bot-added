@@ -63,19 +63,25 @@ def check_verification(func):
             # Premium users bypass verification
             if await codeflixbots.has_premium_access(user_id):
                 await codeflixbots.add_user(client, message)
-                await show_start_message(client, message)       
+                await show_start_message(client, message)
+                return await func(client, message, *args, **kwargs)
                 
-            # Check if user is verified
-            if await codeflixbots.has_premium_access(user_id):
+            # Check if user is NOT premium (non-premium users need verification)
+            if not await codeflixbots.has_premium_access(user_id):
                 try:
                     if not await is_user_verified(user_id):
                         await send_verification_message(client, message)
-                        return 
+                        return
                 except Exception as e:
                     logger.error(f"Exception in check_verification: {e}")
                     
-                    return await func(client, message, *args, **kwargs)
-                    return wrapper
+            return await func(client, message, *args, **kwargs)
+            
+        except Exception as e:
+            logger.error(f"Exception in outer check_verification: {e}")
+            return await func(client, message, *args, **kwargs)
+            
+    return wrapper
 
 def check_fsub(func):
     @wraps(func)
