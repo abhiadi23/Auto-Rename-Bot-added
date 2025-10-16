@@ -398,7 +398,8 @@ async def handle_verification_callback(client, message: Message, token: str):
     # All checks passed - Update verification time (24 hour validity)
     await codeflixbots.col.update_one(
         {"_id": user_id},
-        {"$set": {"verification.verified_time": current_time},
+        {"$set": {"verification.verified_time_1": current_time,
+                  "verification.verified_time_2": current_time},
          "$unset": {
             "verification.pending_token": "",
             "verification.token_created_at": "",
@@ -578,19 +579,32 @@ async def get_shortlink(link, shortener_num):
             return None
 
 async def is_user_verified(user_id):
-    """Check if user has valid verification (within 24 hours)"""
     user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
     verification_data = user_data.get("verification", {})
-    verified_time = verification_data.get("verified_time")
     
-    if not verified_time:
-        return False
+    # Get current active shorteners
+    settings = await codeflixbots.get_verification_settings()
+    verify_status_1 = settings.get("verify_status_1", False)
+    verify_status_2 = settings.get("verify_status_2", False)
     
     current_time = datetime.utcnow()
-    time_diff = current_time - verified_time
     
-    # Check if verification is still valid (within 24 hours)
-    return time_diff < timedelta(hours=24)
+    # Check verification for each enabled shortener
+    if verify_status_1:
+        verified_time_1 = verification_data.get("verified_time_1")
+        if verified_time_1:
+            time_diff = current_time - verified_time_1
+            if time_diff < timedelta(hours=24):
+                return True
+    
+    if verify_status_2:
+        verified_time_2 = verification_data.get("verified_time_2")
+        if verified_time_2:
+            time_diff = current_time - verified_time_2
+            if time_diff < timedelta(hours=24):
+                return True
+
+return False
 
 @Client.on_message(filters.command("verify") & filters.private)
 async def verify_command(client, message: Message):
