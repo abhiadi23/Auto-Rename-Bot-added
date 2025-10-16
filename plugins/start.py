@@ -607,8 +607,6 @@ async def is_user_verified(user_id):
             if time_diff < timedelta(hours=24):
                 return True
 
-return False
-
 @Client.on_message(filters.command("verify") & filters.private)
 async def verify_command(client, message: Message):
     """Check verification status or initiate verification"""
