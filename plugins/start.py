@@ -64,6 +64,8 @@ def check_verification(func):
                 try:
                     if not await is_user_verified(user_id):
                         await send_verification_message(client, message)
+                        await codeflixbots.add_user(client, message)
+                        await show_start_message(client, message)
                         return
                 except Exception as e:
                     logger.error(f"Exception in check_verification: {e}")
@@ -76,21 +78,21 @@ def check_verification(func):
             
     return wrapper
 
+    async def check_admin(filter, client, update):
+        try:
+            user_id = update.from_user.id
+            return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
+        except Exception as e:
+            logger.error(f"Exception in check_admin: {e}")
+            return False
+            
+admin = filters.create(check_admin)
+
 def check_fsub(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
         logger.debug(f"check_fsub decorator called for user {user_id}")
-
-        async def check_admin(filter, client, update):
-    try:
-        user_id = update.from_user.id
-        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
-    except Exception as e:
-        logger.error(f"Exception in check_admin: {e}")
-        return False
-        
-        admin = filters.create(check_admin)
 
         async def is_sub(client, user_id, channel_id):
             try:
