@@ -60,8 +60,12 @@ def check_verification(func):
                 try:
                     if not await is_user_verified(user_id):
                         await send_verification_message(client, message)
-                        return await func(client, message, *args, **kwargs)
-                        return wrapper
+                        return 
+                except Exception as e:
+                    logger.error(f"Exception in check_verification: {e}")
+                    
+                    return await func(client, message, *args, **kwargs)
+                    return wrapper
 
 async def check_admin(filter, client, update):
     try:
