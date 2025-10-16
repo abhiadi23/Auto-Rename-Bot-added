@@ -27,6 +27,16 @@ active_tasks = {}
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+async def check_admin(filter, client, update):
+    try:
+        user_id = update.from_user.id
+        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
+    except Exception as e:
+        logger.error(f"Exception in check_admin: {e}")
+        return False
+
+admin = filters.create(check_admin)
+
 def check_ban(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
@@ -66,16 +76,6 @@ def check_verification(func):
                     
                     return await func(client, message, *args, **kwargs)
                     return wrapper
-
-async def check_admin(filter, client, update):
-    try:
-        user_id = update.from_user.id
-        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
-    except Exception as e:
-        logger.error(f"Exception in check_admin: {e}")
-        return False
-
-admin = filters.create(check_admin)
 
 def check_fsub(func):
     @wraps(func)
