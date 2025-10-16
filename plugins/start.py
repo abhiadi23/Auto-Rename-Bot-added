@@ -51,15 +51,17 @@ def check_verification(func):
         
         try:
             # Premium users bypass verification
-            if await codeflixbots.has_premium_access(message.from_user.id):
+            if await codeflixbots.has_premium_access(user_id):
+                await codeflixbots.add_user(client, message)
+                await show_start_message(client, message)       
                 
-            
             # Check if user is verified
-            if not await is_user_verified(user_id):
-                # User not verified - send verification link
-                await send_verification_message(client, message)
-                return await func(client, message, *args, **kwargs)
-    return wrapper
+            if await codeflixbots.has_premium_access(user_id):
+                try:
+                    if not await is_user_verified(user_id):
+                        await send_verification_message(client, message)
+                        return await func(client, message, *args, **kwargs)
+                        return wrapper
 
 async def check_admin(filter, client, update):
     try:
@@ -446,8 +448,8 @@ async def send_verification_message(client, message: Message):
     
     # Check if at least one shortener is enabled
     if not verify_status_1 and not verify_status_2:
-        await message.reply_text("Vᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ᴅɪsᴀʙʟᴇᴅ.")
-        return None
+        await codeflixbots.add_user(client, message)
+        await show_start_message(client, message) 
     
     # Get available shorteners
     available_shorteners = []
