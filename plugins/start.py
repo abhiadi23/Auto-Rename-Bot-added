@@ -64,7 +64,10 @@ def check_verification(func):
             if await codeflixbots.has_premium_access(user_id):
                 await codeflixbots.add_user(client, message)
                 await show_start_message(client, message)
-                return await func(client, message, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Exception in has_premium_access {e}")
+            return await message.reply_text("<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n <blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>")
+            return await func(client, message, *args, **kwargs)
                 
             # Check if user is NOT premium (non-premium users need verification)
             if not await codeflixbots.has_premium_access(user_id):
