@@ -750,8 +750,8 @@ async def auto_rename_files(client, message):
                     if user.last_name:
                         full_name += f" {user.last_name}"
                     username = f"@{user.username}" if user.username else "N/A"
-                    has_premium = user.has_premium if hasattr(user, 'has_premium') else False
-                    premium_status = '🗸' if has_premium else '✘'
+                    has_premium_access = user.has_premium_access if hasattr(user, 'has_premium_access') else False
+                    premium_status = '🗸' if has_premium_access else '✘'
                     
                     dump_caption = (
                         f"» Usᴇʀ Dᴇᴛᴀɪʟs «\n"
