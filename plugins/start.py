@@ -52,13 +52,6 @@ def check_verification(func):
         try:
             if await codeflixbots.has_premium_access(user_id):
                 return await func(client, message, *args, **kwargs)
-                
-        except Exception as e:
-            logger.error(f"Exception in check_verification: {str(e)}")
-            await message.reply_text(
-                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
-                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
-            )
             
             # Check if user is NOT premium (non-premium users need verification)
             if not await codeflixbots.has_premium_access(user_id):
@@ -67,12 +60,12 @@ def check_verification(func):
                         await send_verification_message(client, message)
                         return
                 except Exception as e:
-                    logger.error(f"Exception in check_verification: {e}")
+                    logger.error(f"Exception in check_verification: {str(e)}")
+                    await message.reply_text(
+                        f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                        f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+                    )
                     
-            return await func(client, message, *args, **kwargs)
-            
-        except Exception as e:
-            logger.error(f"Exception in outer check_verification: {e}")
             return await func(client, message, *args, **kwargs)
             
     return wrapper
@@ -332,7 +325,6 @@ async def handle_verification_callback(client, message: Message, token: str):
     
     # Check if verification is disabled - if so, just return
     if not verify_status_1 and not verify_status_2:
-        await codeflixbots.add_user(client, message)
         await show_start_message(client, message)
         return 
     
@@ -459,12 +451,7 @@ async def send_verification_message(client, message: Message):
     # Get verification settings
     settings = await codeflixbots.get_verification_settings()
     verify_status_1 = settings.get("verify_status_1", False)
-    verify_status_2 = settings.get("verify_status_2", False)
-    
-    # Check if at least one shortener is enabled
-    if not verify_status_1 and not verify_status_2:
-        await codeflixbots.add_user(client, message)
-        await show_start_message(client, message) 
+    verify_status_2 = settings.get("verify_status_2", False) 
     
     # Get available shorteners
     available_shorteners = []
