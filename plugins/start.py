@@ -50,9 +50,9 @@ def check_verification(func):
         user_id = message.from_user.id
         
         try:
-            # Premium users bypass verification
             if await codeflixbots.has_premium_access(user_id):
-            return await func(client, message, *args, **kwargs)
+                return await func(client, message, *args, **kwargs)
+                
         except Exception as e:
             logger.error(f"Exception in check_verification: {str(e)}")
             await message.reply_text(
