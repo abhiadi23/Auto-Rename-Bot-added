@@ -52,11 +52,13 @@ def check_verification(func):
         try:
             # Premium users bypass verification
             if await codeflixbots.has_premium_access(user_id):
-                await codeflixbots.add_user(client, message)
-                await show_start_message(client, message)
+            return await func(client, message, *args, **kwargs)
         except Exception as e:
-            logger.error(f"Exception in has_premium_access {str(e)}")
-            return await message.reply_text("<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n <blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>")
+            logger.error(f"Exception in check_verification: {str(e)}")
+            await message.reply_text(
+                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+            )
             
             # Check if user is NOT premium (non-premium users need verification)
             if not await codeflixbots.has_premium_access(user_id):
