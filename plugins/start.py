@@ -587,6 +587,8 @@ async def is_user_verified(user_id):
             time_diff = current_time - verified_time_1
             if time_diff < timedelta(hours=24):
                 return True
+
+return False
     
     if verify_status_2:
         verified_time_2 = verification_data.get("verified_time_2")
