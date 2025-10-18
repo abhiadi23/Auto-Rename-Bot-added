@@ -354,17 +354,31 @@ class Database:
             upsert=True
         )
 
-    async def has_premium_access(self, user_id):
-        user_data = await self.get_user(user_id)
-        if user_data:
-            expiry_time = user_data.get("expiry_time")
-            if expiry_time is None:
-                return False
-            elif isinstance(expiry_time, datetime) and datetime.now(self.timezone) <= expiry_time:
+async def has_premium_access(self, user_id):
+    user_data = await self.get_user(user_id)
+    if user_data:
+        expiry_time = user_data.get("expiry_time")
+        if expiry_time is None:
+            return False
+        elif isinstance(expiry_time, datetime):
+            # Get current time with timezone
+            current_time = datetime.now(self.timezone)
+            
+            # MongoDB returns datetime as naive even if stored as aware
+            # Add timezone info back if it's missing
+            if expiry_time.tzinfo is None:
+                expiry_time = expiry_time.replace(tzinfo=self.timezone)
+            
+            # Now both are timezone-aware, safe to compare
+            if current_time <= expiry_time:
                 return True
             else:
+                # Premium expired, remove it
                 await self.col.update_one({"_id": user_id}, {"$set": {"expiry_time": None, "is_premium": False}})
-        return False
+        else:
+            # Invalid expiry_time format, clean it up
+            await self.col.update_one({"_id": user_id}, {"$set": {"expiry_time": None, "is_premium": False}})
+    return False
 
     async def get_expired(self, current_time=None):
         if current_time is None:
