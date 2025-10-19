@@ -11,7 +11,7 @@ from pyrogram.errors import UserNotParticipant
 from datetime import datetime, timedelta
 from functools import wraps
 
-from helper.database import codeflixbots
+from helper.database import *
 from config import Config
 from .callbacks import cb_handler
 from plugins.helper_func import *
