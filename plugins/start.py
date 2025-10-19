@@ -43,6 +43,36 @@ def check_ban(func):
         return await func(client, message, *args, **kwargs)
     return wrapper
 
+async def check_user_premium(user_id):
+    """Check if user has premium access - handles missing method gracefully"""
+    try:
+        # First check if the method exists
+        if hasattr(codeflixbots, 'has_premium_access'):
+            return await codeflixbots.has_premium_access(user_id)
+        else:
+            # Fallback: Check database directly
+            user_data = await codeflixbots.col.find_one({"_id": user_id})
+            if not user_data:
+                return False
+            
+            # Check for premium in user data
+            premium_data = user_data.get("premium", {})
+            
+            # Check if premium is active and not expired
+            is_premium = premium_data.get("is_premium", False)
+            expiry_date = premium_data.get("expiry_date")
+            
+            if is_premium and expiry_date:
+                if isinstance(expiry_date, datetime):
+                    return expiry_date > datetime.utcnow()
+                else:
+                    return True
+            
+            return is_premium
+    except Exception as e:
+        logger.error(f"Error checking premium status: {e}")
+        return False
+
 def check_verification(func):
     """Decorator to check if user is verified before allowing command usage"""
     @wraps(func)
@@ -51,10 +81,19 @@ def check_verification(func):
         
         try:
             # Premium users bypass verification
-            if await codeflixbots.has_premium_access(user_id):
+            if await check_user_premium(user_id):
                 return await func(client, message, *args, **kwargs)
             
-            # Check if user is NOT premium (non-premium users need verification)
+            # Get verification settings to check if verification is enabled
+            settings = await codeflixbots.get_verification_settings()
+            verify_status_1 = settings.get("verify_status_1", False)
+            verify_status_2 = settings.get("verify_status_2", False)
+            
+            # If verification is disabled completely, allow access
+            if not verify_status_1 and not verify_status_2:
+                return await func(client, message, *args, **kwargs)
+            
+            # Check if user is NOT verified (non-premium users need verification)
             if not await is_user_verified(user_id):
                 await send_verification_message(client, message)
                 return
@@ -137,6 +176,7 @@ def check_fsub(func):
             logger.error(f"FATAL ERROR in check_fsub: {e}")
             await message.reply_text(f"An unexpected error occurred: {e}. Please contact the developer.")
             return
+    return wrapper
 
 async def not_joined(client: Client, message: Message):
     logger.debug(f"not_joined function called for user {message.from_user.id}")
@@ -231,7 +271,6 @@ async def not_joined(client: Client, message: Message):
             f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
             f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
         )
-        return wrapper
 
 @Client.on_message(filters.private & filters.command("start"))
 @check_ban
@@ -426,14 +465,25 @@ async def send_verification_message(client, message: Message):
     user_id = message.from_user.id
 
     # Check if user has premium access
-    if await codeflixbots.has_premium_access(message.from_user.id):
+    if await check_user_premium(user_id):
         return None
     
     # Check if user is already verified
     if await is_user_verified(user_id):
         user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
         verification_data = user_data.get("verification", {})
-        verified_time = verification_data.get("verified_time")
+        
+        # Get verification settings to check which shorteners are active
+        settings = await codeflixbots.get_verification_settings()
+        verify_status_1 = settings.get("verify_status_1", False)
+        verify_status_2 = settings.get("verify_status_2", False)
+        
+        # Determine which verified_time to show based on active shorteners
+        verified_time = None
+        if verify_status_1:
+            verified_time = verification_data.get("verified_time_1")
+        elif verify_status_2:
+            verified_time = verification_data.get("verified_time_2")
         
         if verified_time:
             current_time = datetime.utcnow()
@@ -461,6 +511,10 @@ async def send_verification_message(client, message: Message):
         available_shorteners.append(1)
     if verify_status_2:
         available_shorteners.append(2)
+    
+    if not available_shorteners:
+        await message.reply_text("Vᴇʀɪғɪᴄᴀᴛɪᴏɴ ɪs ᴄᴜʀʀᴇɴᴛʟʏ ᴅɪsᴀʙʟᴇᴅ.")
+        return None
     
     # Randomly select a shortener from available ones
     selected_shortener = random.choice(available_shorteners)
@@ -572,6 +626,7 @@ async def get_shortlink(link, shortener_num):
             return None
 
 async def is_user_verified(user_id):
+    """Check if user has valid verification for currently active shorteners"""
     user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
     verification_data = user_data.get("verification", {})
     
@@ -579,6 +634,10 @@ async def is_user_verified(user_id):
     settings = await codeflixbots.get_verification_settings()
     verify_status_1 = settings.get("verify_status_1", False)
     verify_status_2 = settings.get("verify_status_2", False)
+    
+    # If both are disabled, user doesn't need verification
+    if not verify_status_1 and not verify_status_2:
+        return True
     
     current_time = datetime.utcnow()
     
@@ -604,11 +663,33 @@ async def verify_command(client, message: Message):
     """Check verification status or initiate verification"""
     user_id = message.from_user.id
     
+    # Check if user has premium
+    if await check_user_premium(user_id):
+        await message.reply_text(
+            "✨ <b>Yᴏᴜ ʜᴀᴠᴇ Pʀᴇᴍɪᴜᴍ Aᴄᴄᴇss!</b>\n\n"
+            "Pʀᴇᴍɪᴜᴍ ᴜsᴇʀs ᴅᴏɴ'ᴛ ɴᴇᴇᴅ ᴛᴏ ᴠᴇʀɪғʏ.",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+            ]])
+        )
+        return
+    
     # Check if user is already verified
     if await is_user_verified(user_id):
         user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
         verification_data = user_data.get("verification", {})
-        verified_time = verification_data.get("verified_time")
+        
+        # Get verification settings to check which shorteners are active
+        settings = await codeflixbots.get_verification_settings()
+        verify_status_1 = settings.get("verify_status_1", False)
+        verify_status_2 = settings.get("verify_status_2", False)
+        
+        # Determine which verified_time to show based on active shorteners
+        verified_time = None
+        if verify_status_1:
+            verified_time = verification_data.get("verified_time_1")
+        elif verify_status_2:
+            verified_time = verification_data.get("verified_time_2")
         
         if verified_time:
             current_time = datetime.utcnow()
