@@ -50,31 +50,35 @@ def check_verification(func):
         user_id = message.from_user.id
         
         try:
+            # Premium users bypass verification
             if await codeflixbots.has_premium_access(user_id):
                 return await func(client, message, *args, **kwargs)
             
             # Check if user is NOT premium (non-premium users need verification)
-            if not await codeflixbots.has_premium_access(user_id):
-                try:
-                    if not await is_user_verified(user_id):
-                        await send_verification_message(client, message)
-                        return
-                except Exception as e:
-                    logger.error(f"Exception in check_verification: {str(e)}")
-                    await message.reply_text(
-                        f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
-                        f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
-                    )
-                    return await func(client, message, *args, **kwargs)
-                    return wrapper
-
-    async def check_admin(filter, client, update):
-        try:
-            user_id = update.from_user.id
-            return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
+            if not await is_user_verified(user_id):
+                await send_verification_message(client, message)
+                return
+                
         except Exception as e:
-            logger.error(f"Exception in check_admin: {e}")
-            return False
+            logger.error(f"Exception in check_verification: {str(e)}")
+            await message.reply_text(
+                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+            )
+            return
+        
+        # User is verified - proceed with command
+        return await func(client, message, *args, **kwargs)
+    
+    return wrapper
+
+async def check_admin(filter, client, update):
+    try:
+        user_id = update.from_user.id
+        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
+    except Exception as e:
+        logger.error(f"Exception in check_admin: {e}")
+        return False
             
 admin = filters.create(check_admin)
 
