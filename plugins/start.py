@@ -82,6 +82,7 @@ def check_verification(func):
         try:
             # Premium users bypass verification
             if await check_user_premium(user_id):
+                await codeflixbots.has_premium_access(user_id)
                 return await func(client, message, *args, **kwargs)
             
             # Get verification settings to check if verification is enabled
