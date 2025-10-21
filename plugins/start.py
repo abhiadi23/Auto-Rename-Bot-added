@@ -680,30 +680,30 @@ async def verify_command(client, message: Message):
         time_left = timedelta(hours=24) - (current_time - verified_time)
         hours_left = time_left.seconds // 3600
         minutes_left = (time_left.seconds % 3600) // 60
-
+        
         # Check if fully verified (both shorteners done within 24 hours)
         if verified_time_1:
             if current_time < verified_time_1 + timedelta(hours=24):
-            await message.reply_text(
-                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                ]])
-            )
-            return True
+                await message.reply_text(
+                    f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                    f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                    reply_markup=InlineKeyboardMarkup([[
+                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                    ]])
+                )
+                return True
 
         # Check if fully verified (both shorteners done within 24 hours)
         if verified_time_2:
             if current_time < verified_time_2 + timedelta(hours=24):
-            await message.reply_text(
-                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                ]])
-            )
-            return True
+                await message.reply_text(
+                    f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                    f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                    reply_markup=InlineKeyboardMarkup([[
+                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                    ]])
+                )
+                return True
             
         if not verified_time_1:
             time_diff = current_time - verified_time_1
