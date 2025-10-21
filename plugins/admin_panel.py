@@ -167,6 +167,8 @@ async def remove_premium(client, message):
             await message.reply_text("ᴜɴᴀʙʟᴇ ᴛᴏ ʀᴇᴍᴏᴠᴇ ᴜꜱᴇᴅ !\nᴀʀᴇ ʏᴏᴜ ꜱᴜʀᴇ, ɪᴛ ᴡᴀꜱ ᴀ ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀ ɪᴅ ?")
     else:
         await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /remove_premium <ᴜsᴇʀ_ɪᴅ>")
+except Exception as e:
+    await message.reply_text(f"❌ Error occurred: {str(e)}")
 
 @Client.on_message(filters.command("myplan"))
 async def myplan(client, message):
