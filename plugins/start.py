@@ -87,7 +87,7 @@ def check_verification(func):
             
             # Check if user is NOT verified (non-premium users need verification)
             if not await check_user_premium(user_id):
-                if not await is_user_verified(user_id):
+                await is_user_verified(user_id):
                 await send_verification_message(client, message)
                 return
                 
