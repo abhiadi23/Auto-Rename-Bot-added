@@ -85,17 +85,9 @@ def check_verification(func):
                 await codeflixbots.has_premium_access(user_id)
                 return await func(client, message, *args, **kwargs)
             
-            # Get verification settings to check if verification is enabled
-            settings = await codeflixbots.get_verification_settings()
-            verify_status_1 = settings.get("verify_status_1", False)
-            verify_status_2 = settings.get("verify_status_2", False)
-            
-            # If verification is disabled completely, allow access
-            if not verify_status_1 and not verify_status_2:
-                return await func(client, message, *args, **kwargs)
-            
             # Check if user is NOT verified (non-premium users need verification)
-            if not await is_user_verified(user_id):
+            if not await check_user_premium(user_id):
+                if not await is_user_verified(user_id):
                 await send_verification_message(client, message)
                 return
                 
