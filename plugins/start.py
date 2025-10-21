@@ -497,7 +497,7 @@ async def send_verification_message(client, message: Message):
 
         # Check if fully verified (both shorteners done within 24 hours)
         if verified_time_1:
-            if current_time < verified_time_1 + timedelta(hours=24):
+            current_time < verified_time_1 + timedelta(hours=24):
             await message.reply_text(
                 f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
                 f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
@@ -509,7 +509,7 @@ async def send_verification_message(client, message: Message):
 
         # Check if fully verified (both shorteners done within 24 hours)
         if verified_time_2:
-            if current_time < verified_time_2 + timedelta(hours=24):
+            current_time < verified_time_2 + timedelta(hours=24):
             await message.reply_text(
                 f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
                 f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
