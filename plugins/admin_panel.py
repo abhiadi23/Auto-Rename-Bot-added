@@ -262,7 +262,6 @@ async def give_premium_cmd_handler(client, message):
             await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs: `/add_premium <ᴜsᴇʀ_ɪᴅ> <ᴛɪᴍᴇ_ᴠᴀʟᴜᴇ> <ᴛɪᴍᴇ_ᴜɴɪᴛ>`.\n\nExample: `/add_premium 1234567890 30 days`")
     except Exception as e:
         await message.reply_text(f"❌ Error occurred: {str(e)}")
-        print(f"Error in add_premium: {e}")
         
 @Client.on_message(filters.command("premium_users") & admin)
 async def premium_user(client, message):
