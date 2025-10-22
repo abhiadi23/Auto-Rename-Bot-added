@@ -168,8 +168,9 @@ async def remove_premium(client, message):
     else:
         await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /remove_premium <ᴜsᴇʀ_ɪᴅ>")
 except Exception as e:
-    await message.reply_text(f"❌ Error occurred: {str(e)}")
+        await message.reply_text(f"❌ Error occurred: {str(e)}")
 
+        
 @Client.on_message(filters.command("myplan"))
 async def myplan(client, message):
     user = message.from_user.mention
