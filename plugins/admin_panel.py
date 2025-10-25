@@ -1,5 +1,5 @@
 from config import *
-from helper.database import codeflixbots
+from helper.database import *
 from pyrogram.types import Message
 from pyrogram import Client, filters
 from pyrogram.errors import FloodWait, InputUserDeactivated, UserIsBlocked, PeerIdInvalid, MessageTooLong
@@ -158,6 +158,7 @@ async def remove_premium(client, message):
         if len(message.command) == 2:
             user_id = int(message.command[1])
             user = await client.get_users(user_id)
+            if hasattr(codeflixbots, "remove_premium_access"):
             if await codeflixbots.remove_premium_access(user_id):
                 await message.reply_text("ᴜꜱᴇʀ ʀᴇᴍᴏᴠᴇᴅ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ✅")
                 await client.send_message(
