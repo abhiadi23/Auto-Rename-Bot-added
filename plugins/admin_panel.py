@@ -160,18 +160,19 @@ async def remove_premium(client, message):
             user = await client.get_users(user_id)
             if hasattr(codeflixbots, "remove_premium_access"):
                 if await codeflixbots.remove_premium_access(user_id):
-                await message.reply_text("ᴜꜱᴇʀ ʀᴇᴍᴏᴠᴇᴅ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ✅")
-                await client.send_message(
-                    chat_id=user_id,
-                    text=f"<b>ʜᴇʏ {user.mention},\n\n<blockquote>Yᴏᴜʀ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇss ʜᴀs ʙᴇᴇɴ ʀᴇᴍᴏᴠᴇᴅ. Tʜᴀɴᴋs ғᴏʀ ᴜsɪɴɢ ᴏᴜʀ sᴇʀᴠɪᴄᴇs. Usᴇ /ᴘʟᴀɴ ᴛᴏ ᴄʜᴇᴄᴋ ᴏᴛʜᴇʀ ᴘʟᴀɴs...!!</blockquote></b>"
-                )
-            else:
-                await message.reply_text("ᴜɴᴀʙʟᴇ ᴛᴏ ʀᴇᴍᴏᴠᴇ ᴜꜱᴇʀ! \nᴀʀᴇ ʏᴏᴜ ꜱᴜʀᴇ, ɪᴛ ᴡᴀꜱ ᴀ ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀ ɪᴅ?")
-        else:
-            await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /remove_premium <ᴜsᴇʀ_ɪᴅ>")
+                    await message.reply_text("ᴜꜱᴇʀ ʀᴇᴍᴏᴠᴇᴅ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ✅")
+                    await client.send_message(
+                        chat_id=user_id,
+                        text=f"<b>ʜᴇʏ {user.mention},\n\n<blockquote>Yᴏᴜʀ ᴘʀᴇᴍɪᴜᴍ ᴀᴄᴄᴇss ʜᴀs ʙᴇᴇɴ ʀᴇᴍᴏᴠᴇᴅ. Tʜᴀɴᴋs ғᴏʀ ᴜsɪɴɢ ᴏᴜʀ sᴇʀᴠɪᴄᴇs. Usᴇ /ᴘʟᴀɴ ᴛᴏ ᴄʜᴇᴄᴋ ᴏᴛʜᴇʀ ᴘʟᴀɴs...!!</blockquote></b>"
+                    )
+                else:
+                    await message.reply_text("ᴜɴᴀʙʟᴇ ᴛᴏ ʀᴇᴍᴏᴠᴇ ᴜꜱᴇʀ! \nᴀʀᴇ ʏᴏᴜ ꜱᴜʀᴇ, ɪᴛ ᴡᴀꜱ ᴀ ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀ ɪᴅ?")
+                else:
+                    await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /premium_info <ᴜsᴇʀ_ɪᴅ>")
     except Exception as e:
         await message.reply_text(f"❌ Error occurred: {str(e)}")
 
+                    
 @Client.on_message(filters.command("myplan"))
 async def myplan(client, message):
     user = message.from_user.mention
