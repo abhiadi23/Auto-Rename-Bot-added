@@ -159,7 +159,7 @@ async def remove_premium(client, message):
             user_id = int(message.command[1])
             user = await client.get_users(user_id)
             if hasattr(codeflixbots, "remove_premium_access"):
-            if await codeflixbots.remove_premium_access(user_id):
+                if await codeflixbots.remove_premium_access(user_id):
                 await message.reply_text("ᴜꜱᴇʀ ʀᴇᴍᴏᴠᴇᴅ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ✅")
                 await client.send_message(
                     chat_id=user_id,
