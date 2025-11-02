@@ -469,57 +469,6 @@ async def send_verification_message(client, message: Message):
             ]])
         )
         return
-    
-    # Check if user is already verified
-    if await is_user_verified(user_id):
-        user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
-        verification_data = user_data.get("verification", {})
-        
-        # Get verification settings to check which shorteners are active
-        settings = await codeflixbots.get_verification_settings()
-        verify_status_1 = settings.get("verify_status_1", False)
-        verify_status_2 = settings.get("verify_status_2", False)
-        verified_time_1 = settings.get("verified_time_1")
-        verified_time_2 = settings.get("verified_time_2")
-        
-        current_time = datetime.utcnow()
-        time_left = timedelta(hours=24) - (current_time - verified_time)
-        hours_left = time_left.seconds // 3600
-        minutes_left = (time_left.seconds % 3600) // 60
-
-        # Check if fully verified (both shorteners done within 24 hours)
-        if verified_time_1:
-            if current_time < verified_time_1 + timedelta(hours=24):
-                await message.reply_text(
-                    f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                    f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                    reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                    ]])
-                )
-                return True
-
-        # Check if fully verified (both shorteners done within 24 hours)
-        if verified_time_2:
-            if current_time < verified_time_2 + timedelta(hours=24):
-                await message.reply_text(
-                    f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                    f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                    reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                    ]])
-                )
-                return True
-            
-        if not verified_time_1:
-            time_diff = current_time - verified_time_1
-            if time_diff < timedelta(hours=24):
-                return
-
-        if not verified_time_2:
-            time_diff = current_time - verified_time_2
-            if time_diff < timedelta(hours=24):
-                return
 
     # Get verification settings
     settings = await codeflixbots.get_verification_settings()
@@ -648,6 +597,35 @@ async def get_shortlink(link, shortener_num):
             logger.error(f"Fallback shortlink failed: {e2}")
             return None
 
+async def is_user_verified(user_id):
+    """Check if user is verified (either verified_time_1 or verified_time_2 is valid)"""
+    try:
+        user_data = await codeflixbots.col.find_one({"_id": user_id})
+        if not user_data:
+            return False
+        
+        verification_data = user_data.get("verification", {})
+        verified_time_1 = verification_data.get("verified_time_1")
+        verified_time_2 = verification_data.get("verified_time_2")
+        
+        current_time = datetime.utcnow()
+        
+        # Check if either verification is valid (within 24 hours)
+        if verified_time_1:
+            if isinstance(verified_time_1, datetime):
+                if current_time < verified_time_1 + timedelta(hours=24):
+                    return True
+        
+        if verified_time_2:
+            if isinstance(verified_time_2, datetime):
+                if current_time < verified_time_2 + timedelta(hours=24):
+                    return True
+        
+        return False
+    except Exception as e:
+        logger.error(f"Error checking if user is verified: {e}")
+        return False
+
 @Client.on_message(filters.command("verify") & filters.private)
 async def verify_command(client, message: Message):
     """Check verification status or initiate verification"""
@@ -675,10 +653,8 @@ async def verify_command(client, message: Message):
                 user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
                 verification_data = user_data.get("verification", {})
                 
-                # Get verification settings to check which shorteners are active
+                # Get verification settings
                 settings = await codeflixbots.get_verification_settings()
-                verify_status_1 = settings.get("verify_status_1", False)
-                verify_status_2 = settings.get("verify_status_2", False)
                 verified_time_1 = verification_data.get("verified_time_1")
                 verified_time_2 = verification_data.get("verified_time_2")
                 
@@ -687,7 +663,7 @@ async def verify_command(client, message: Message):
                 # Check if fully verified (shortener 1 within 24 hours)
                 if verified_time_1:
                     try:
-                        if current_time < verified_time_1 + timedelta(hours=24):
+                        if isinstance(verified_time_1, datetime) and current_time < verified_time_1 + timedelta(hours=24):
                             time_left = timedelta(hours=24) - (current_time - verified_time_1)
                             hours_left = time_left.seconds // 3600
                             minutes_left = (time_left.seconds % 3600) // 60
@@ -706,7 +682,7 @@ async def verify_command(client, message: Message):
                 # Check if fully verified (shortener 2 within 24 hours)
                 if verified_time_2:
                     try:
-                        if current_time < verified_time_2 + timedelta(hours=24):
+                        if isinstance(verified_time_2, datetime) and current_time < verified_time_2 + timedelta(hours=24):
                             time_left = timedelta(hours=24) - (current_time - verified_time_2)
                             hours_left = time_left.seconds // 3600
                             minutes_left = (time_left.seconds % 3600) // 60
