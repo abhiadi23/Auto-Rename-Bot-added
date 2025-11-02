@@ -653,67 +653,88 @@ async def verify_command(client, message: Message):
     """Check verification status or initiate verification"""
     user_id = message.from_user.id
     
-    # Check if user has premium
-    if await check_user_premium(user_id):
-        await message.reply_text(
-            "✨ <b>Yᴏᴜ ʜᴀᴠᴇ Pʀᴇᴍɪᴜᴍ Aᴄᴄᴇss!</b>\n\n"
-            "Pʀᴇᴍɪᴜᴍ ᴜsᴇʀs ᴅᴏɴ'ᴛ ɴᴇᴇᴅ ᴛᴏ ᴠᴇʀɪғʏ.",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-            ]])
-        )
-        return
+    try:
+        # Check if user has premium
+        if await check_user_premium(user_id):
+            await message.reply_text(
+                "✨ <b>Yᴏᴜ ʜᴀᴠᴇ Pʀᴇᴍɪᴜᴍ Aᴄᴄᴇss!</b>\n\n"
+                "Pʀᴇᴍɪᴜᴍ ᴜsᴇʀs ᴅᴏɴ'ᴛ ɴᴇᴇᴅ ᴛᴏ ᴠᴇʀɪғʏ.",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                ]])
+            )
+            return
+    except Exception as e:
+        logger.error(f"Error checking premium status in verify command: {e}")
+        # Continue with verification check even if premium check fails
 
-    # Check if user is already verified
-    if await is_user_verified(user_id):
-        user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
-        verification_data = user_data.get("verification", {})
-        
-        # Get verification settings to check which shorteners are active
-        settings = await codeflixbots.get_verification_settings()
-        verify_status_1 = settings.get("verify_status_1", False)
-        verify_status_2 = settings.get("verify_status_2", False)
-        verified_time_1 = settings.get("verified_time_1")
-        verified_time_2 = settings.get("verified_time_2")
-        
-        current_time = datetime.utcnow()
-        time_left = timedelta(hours=24) - (current_time - verified_time)
-        hours_left = time_left.seconds // 3600
-        minutes_left = (time_left.seconds % 3600) // 60
-        
-        # Check if fully verified (both shorteners done within 24 hours)
-        if verified_time_1:
-            if current_time < verified_time_1 + timedelta(hours=24):
-                await message.reply_text(
-                    f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                    f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                    reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                    ]])
-                )
-                return True
+    try:
+        # Check if user is already verified
+        if await is_user_verified(user_id):
+            try:
+                user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+                verification_data = user_data.get("verification", {})
+                
+                # Get verification settings to check which shorteners are active
+                settings = await codeflixbots.get_verification_settings()
+                verify_status_1 = settings.get("verify_status_1", False)
+                verify_status_2 = settings.get("verify_status_2", False)
+                verified_time_1 = verification_data.get("verified_time_1")
+                verified_time_2 = verification_data.get("verified_time_2")
+                
+                current_time = datetime.utcnow()
+                
+                # Check if fully verified (shortener 1 within 24 hours)
+                if verified_time_1:
+                    try:
+                        if current_time < verified_time_1 + timedelta(hours=24):
+                            time_left = timedelta(hours=24) - (current_time - verified_time_1)
+                            hours_left = time_left.seconds // 3600
+                            minutes_left = (time_left.seconds % 3600) // 60
+                            
+                            await message.reply_text(
+                                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                                f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                                reply_markup=InlineKeyboardMarkup([[
+                                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                                ]])
+                            )
+                            return
+                    except Exception as e:
+                        logger.error(f"Error checking verified_time_1: {e}")
 
-        # Check if fully verified (both shorteners done within 24 hours)
-        if verified_time_2:
-            if current_time < verified_time_2 + timedelta(hours=24):
-                await message.reply_text(
-                    f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                    f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                    reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                    ]])
-                )
-                return True
-            
-        if not verified_time_1:
-            time_diff = current_time - verified_time_1
-            if time_diff < timedelta(hours=24):
-                return
-
-        if not verified_time_2:
-            time_diff = current_time - verified_time_2
-            if time_diff < timedelta(hours=24):
-                return
+                # Check if fully verified (shortener 2 within 24 hours)
+                if verified_time_2:
+                    try:
+                        if current_time < verified_time_2 + timedelta(hours=24):
+                            time_left = timedelta(hours=24) - (current_time - verified_time_2)
+                            hours_left = time_left.seconds // 3600
+                            minutes_left = (time_left.seconds % 3600) // 60
+                            
+                            await message.reply_text(
+                                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                                f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                                reply_markup=InlineKeyboardMarkup([[
+                                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                                ]])
+                            )
+                            return
+                    except Exception as e:
+                        logger.error(f"Error checking verified_time_2: {e}")
+                        
+            except Exception as e:
+                logger.error(f"Error checking verification status: {e}")
+                # Continue to generate new verification link if there's an error
+    
+    except Exception as e:
+        logger.error(f"Error in is_user_verified check: {e}")
     
     # User not verified - generate and send verification link
-    await send_verification_message(client, message)
+    try:
+        await send_verification_message(client, message)
+    except Exception as e:
+        logger.error(f"Error sending verification message: {e}")
+        await message.reply_text(
+            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+        )
