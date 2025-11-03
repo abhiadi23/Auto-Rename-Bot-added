@@ -266,32 +266,50 @@ async def give_premium_cmd_handler(client, message):
             await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs: `/add_premium <ᴜsᴇʀ_ɪᴅ> <ᴛɪᴍᴇ_ᴠᴀʟᴜᴇ> <ᴛɪᴍᴇ_ᴜɴɪᴛ>`.\n\nExample: `/add_premium 1234567890 30 days`")
     except Exception as e:
         await message.reply_text(f"❌ Error occurred: {str(e)}")
-        
+
 @Client.on_message(filters.command("premium_users") & admin)
 async def premium_user(client, message):
     try:
         aa = await message.reply_text("<i>ꜰᴇᴛᴄʜɪɴɢ...</i>")
         new = f" ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀꜱ ʟɪꜱᴛ :\n\n"
         user_count = 1
+        found_premium_users = False
         users = await codeflixbots.get_all_users()
+        current_time = datetime.now(pytz.timezone("Asia/Kolkata"))
+        
         async for user in users:
             data = await codeflixbots.get_user(user['_id'])
             if data and data.get("expiry_time"):
                 expiry = data.get("expiry_time")
                 expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
-                expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")
-                current_time = datetime.now(pytz.timezone("Asia/Kolkata"))
-                time_left = expiry_ist - current_time
-                days = time_left.days
-                hours, remainder = divmod(time_left.seconds, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                time_left_str = f"{days} days, {hours} hours, {minutes} minutes"
-                new += f"{user_count}. {(await client.get_users(user['_id'])).mention}\n• ᴜꜱᴇʀ ɪᴅ : {user['_id']}\n⏳ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}\n⏰ ᴛɪᴍᴇ ʟᴇꜰᴛ : {time_left_str}\n\n"
-                user_count += 1
-                found_premium_users = True
+                
+                # Check if premium is still active
+                if expiry_ist > current_time:
+                    expiry_str_in_ist = expiry_ist.strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")
+                    time_left = expiry_ist - current_time
+                    days = time_left.days
+                    hours, remainder = divmod(time_left.seconds, 3600)
+                    minutes, seconds = divmod(remainder, 60)
+                    time_left_str = f"{days} days, {hours} hours, {minutes} minutes"
+                    
+                    # Get user mention with error handling
+                    try:
+                        user_obj = await client.get_users(user['_id'])
+                        user_mention = user_obj.mention
+                    except PeerIdInvalid:
+                        # Use stored name from database or fallback to ID
+                        stored_name = data.get('first_name', 'Unknown')
+                        user_mention = f"{stored_name} (<code>{user['_id']}</code>)"
+                    except Exception:
+                        # Any other error, use ID only
+                        user_mention = f"User <code>{user['_id']}</code>"
+                    
+                    new += f"{user_count}. {user_mention}\n• ᴜꜱᴇʀ ɪᴅ : <code>{user['_id']}</code>\n⏳ ᴇxᴘɪʀʏ ᴅᴀᴛᴇ : {expiry_str_in_ist}\n⏰ ᴛɪᴍᴇ ʟᴇꜰᴛ : {time_left_str}\n\n"
+                    user_count += 1
+                    found_premium_users = True
         
         if not found_premium_users:
-            await aa.edit_text("Nᴏ ᴜsᴇʀ ғᴏᴜɴᴅ ɪɴ ᴛʜᴇ ᴅᴀᴛᴀʙᴀsᴇ")
+            await aa.edit_text("Nᴏ ᴀᴄᴛɪᴠᴇ ᴘʀᴇᴍɪᴜᴍ ᴜsᴇʀ ғᴏᴜɴᴅ ɪɴ ᴛʜᴇ ᴅᴀᴛᴀʙᴀsᴇ")
         else:
             try:
                 await aa.edit_text(new)
@@ -303,8 +321,7 @@ async def premium_user(client, message):
                 os.remove('usersplan.txt')
     except Exception as e:
         await aa.edit_text(f"❌ Error occurred: {str(e)}")
-            
-
+        
 @Client.on_message(filters.command("plan"))
 async def plan(client, message):
     user_id = message.from_user.id
