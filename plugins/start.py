@@ -80,16 +80,10 @@ def check_verification(func):
         user_id = message.from_user.id
         
         try:
-            # Premium users bypass verification
+            # Check if user is NOT verified (non-premium users need verification)
             if await check_user_premium(user_id):
-                await codeflixbots.has_premium_access(user_id)
-                return await func(client, message, *args, **kwargs)
-                
-                # Check if user is NOT verified (non-premium users need verification)
-                if await check_user_premium(user_id):
-                    if await is_user_verified(user_id):
-                        await send_verification_message(client, message)
-                        return
+                if await is_user_verified(user_id):
+                    await send_verification_message(client, message)
                 
         except Exception as e:
             logger.error(f"Exception in check_verification: {str(e)}")
