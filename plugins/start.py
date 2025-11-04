@@ -89,6 +89,7 @@ def check_verification(func):
             if not await is_user_verified(user_id):
                 # Not verified - send verification message and stop
                 await send_verification_message(client, message)
+                return
                 
         except Exception as e:
             logger.error(f"Exception in check_verification: {str(e)}")
