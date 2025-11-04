@@ -80,16 +80,10 @@ def check_verification(func):
         user_id = message.from_user.id
         
         try:
-            # Check if user is premium - premium users bypass verification
+            # Check if user is NOT verified (non-premium users need verification)
             if await check_user_premium(user_id):
-                # Premium user - allow command execution
-                return await func(client, message, *args, **kwargs)
-            
-            # Not premium - check if verified
-            if not await is_user_verified(user_id):
-                # Not verified - send verification message and stop
-                await send_verification_message(client, message)
-                return
+                if await is_user_verified(user_id):
+                    await send_verification_message(client, message)
                 
         except Exception as e:
             logger.error(f"Exception in check_verification: {str(e)}")
@@ -99,11 +93,11 @@ def check_verification(func):
             )
             return
         
-        # User is verified (and not premium) - proceed with command
+        # User is verified - proceed with command
         return await func(client, message, *args, **kwargs)
     
     return wrapper
-    
+
 async def check_admin(filter, client, update):
     try:
         user_id = update.from_user.id
@@ -413,7 +407,7 @@ async def handle_verification_callback(client, message: Message, token: str):
                 f"• Yᴏᴜ ᴄᴏᴍᴘʟᴇᴛᴇᴅ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴛᴏᴏ ǫᴜɪᴄᴋʟʏ ({int(time_taken.total_seconds())} sᴇᴄᴏɴᴅs).\n\n"
                 f"Pʟᴇᴀsᴇ ᴄᴏᴍᴘʟᴇᴛᴇ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴘᴇʀʟʏ.",
                 reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("• Vᴇʀɪғʏ Aɢᴀɪɴ •", url=shortlink)
+                    InlineKeyboardButton("• Vᴇʀɪғʏ Aɢᴀɪɴ •", url=f"https://t.me/{Config.BOT_USERNAME}?start=verify")
                 ]])
             )
             # Clear the token so they have to verify again
