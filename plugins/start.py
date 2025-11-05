@@ -410,7 +410,7 @@ async def handle_verification_callback(client, message: Message, token: str):
                 f"• Yᴏᴜ ᴄᴏᴍᴘʟᴇᴛᴇᴅ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴛᴏᴏ ǫᴜɪᴄᴋʟʏ ({int(time_taken.total_seconds())} sᴇᴄᴏɴᴅs).\n\n"
                 f"Pʟᴇᴀsᴇ ᴄᴏᴍᴘʟᴇᴛᴇ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴘᴇʀʟʏ.",
                 reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("• Vᴇʀɪғʏ Aɢᴀɪɴ •", url=f"https://t.me/{Config.BOT_USERNAME}?start=verify")
+                    InlineKeyboardButton("• Vᴇʀɪғʏ Aɢᴀɪɴ •", url=shortlink)
                 ]])
             )
             # Clear the token so they have to verify again
