@@ -80,21 +80,65 @@ def check_verification(func):
         user_id = message.from_user.id
         
         try:
-            # Check if user is NOT verified (non-premium users need verification)
+            # Check if user has premium - premium users bypass verification
             if await check_user_premium(user_id):
-                if await is_user_verified(user_id):
-                    await send_verification_message(client, message)
-                
+                logger.debug(f"User {user_id} has premium access, bypassing verification")
+                return await func(client, message, *args, **kwargs)
         except Exception as e:
-            logger.error(f"Exception in check_verification: {str(e)}")
+            logger.error(f"Error checking premium status in decorator: {e}")
+            # Continue with verification check even if premium check fails
+
+        try:
+            # Check if user is already verified (using same logic as verify_command)
+            if await is_user_verified(user_id):
+                try:
+                    user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+                    verification_data = user_data.get("verification", {})
+                    
+                    # Get verification settings
+                    settings = await codeflixbots.get_verification_settings()
+                    verified_time_1 = verification_data.get("verified_time_1")
+                    verified_time_2 = verification_data.get("verified_time_2")
+                    
+                    current_time = datetime.utcnow()
+                    
+                    # Check if fully verified (shortener 1 within 24 hours)
+                    if verified_time_1:
+                        try:
+                            if isinstance(verified_time_1, datetime) and current_time < verified_time_1 + timedelta(hours=24):
+                                logger.debug(f"User {user_id} verified via shortener 1, allowing command")
+                                return await func(client, message, *args, **kwargs)
+                        except Exception as e:
+                            logger.error(f"Error checking verified_time_1: {e}")
+
+                    # Check if fully verified (shortener 2 within 24 hours)
+                    if verified_time_2:
+                        try:
+                            if isinstance(verified_time_2, datetime) and current_time < verified_time_2 + timedelta(hours=24):
+                                logger.debug(f"User {user_id} verified via shortener 2, allowing command")
+                                return await func(client, message, *args, **kwargs)
+                        except Exception as e:
+                            logger.error(f"Error checking verified_time_2: {e}")
+                            
+                except Exception as e:
+                    logger.error(f"Error checking verification status: {e}")
+                    # Continue to send verification message if there's an error
+        
+        except Exception as e:
+            logger.error(f"Error in is_user_verified check: {e}")
+        
+        # User not verified - send verification message
+        try:
+            logger.debug(f"User {user_id} is not verified, sending verification message")
+            await send_verification_message(client, message)
+            return
+        except Exception as e:
+            logger.error(f"Error sending verification message in decorator: {e}")
             await message.reply_text(
                 f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
                 f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
             )
             return
-        
-        # User is verified - proceed with command
-        return await func(client, message, *args, **kwargs)
     
     return wrapper
 
