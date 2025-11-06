@@ -255,25 +255,6 @@ async def start(client, message: Message):
                 return
         except Exception as e:
             logger.error(f"Error processing start parameter: {e}")
-
-    try:
-        # Check if user has premium - premium users bypass verification
-        if await check_user_premium(user_id):
-            await show_start_message(client, message)
-            return
-        
-        # Non-premium users need verification
-        if not await is_user_verified(user_id):
-            await send_verification_message(client, message)
-            return
-                
-    except Exception as e:
-        logger.error(f"Error in verification check: {e}")
-        await message.reply_text(
-            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
-            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
-        )
-        return
     
     # Normal start command - show welcome message
     await codeflixbots.add_user(client, message)
