@@ -88,9 +88,9 @@ def check_verification(func):
             logger.error(f"Error checking premium status in decorator: {e}")
 
         try:
-            if not await check_user_premium(user_id):
-            await is_user_verified(user_id)
+            if not await is_user_verified(user_id):
             return await send_verification_message(client, message)
+            return await func(client, message, *args, **kwargs)
                 
         except Exception as e:
             logger.error(f"Error sending verification message: {e}")
@@ -98,7 +98,8 @@ def check_verification(func):
                 f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
                 f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
             )
-        return await func(client, message, *args, **kwargs)
+            return 
+            
     return wrapper
 
 async def check_admin(filter, client, update):
