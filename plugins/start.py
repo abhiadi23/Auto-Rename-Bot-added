@@ -89,8 +89,9 @@ def check_verification(func):
 
         try:
             if not await is_user_verified(user_id):
-            return await send_verification_message(client, message)
-            return await func(client, message, *args, **kwargs)
+                return await send_verification_message(client, message)
+                # now it should be here
+        return await func(client, message, *args, **kwargs)
                 
         except Exception as e:
             logger.error(f"Error sending verification message: {e}")
