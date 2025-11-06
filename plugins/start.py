@@ -80,16 +80,9 @@ def check_verification(func):
         user_id = message.from_user.id
         
         try:
-            # Check if user has premium - premium users bypass verification
-            if await check_user_premium(user_id):
-                logger.debug(f"User {user_id} has premium access, bypassing verification")
-                return await func(client, message, *args, **kwargs)
-        except Exception as e:
-            logger.error(f"Error checking premium status in decorator: {e}")
-
-        try:
             if not await is_user_verified(user_id):
-                return await send_verification_message(client, message)
+                await send_verification_message(client, message)
+                return
                 
         except Exception as e:
             logger.error(f"Error sending verification message: {e}")
