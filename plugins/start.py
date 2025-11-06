@@ -72,27 +72,7 @@ async def check_user_premium(user_id):
     except Exception as e:
         logger.error(f"Error checking premium status: {e}")
         return False
-
-def check_verification(func):
-    """Decorator to check if user is verified before allowing command usage"""
-    @wraps(func)
-    async def wrapper(client, message, *args, **kwargs):
-        user_id = message.from_user.id
         
-        try:
-            if not await is_user_verified(user_id):
-                await send_verification_message(client, message)
-                return
-                
-        except Exception as e:
-            logger.error(f"Error sending verification message: {e}")
-            await message.reply_text(
-                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
-                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
-            )
-        return await func(client, message, *args, **kwargs)
-    return wrapper
-
 async def check_admin(filter, client, update):
     try:
         user_id = update.from_user.id
@@ -256,7 +236,6 @@ async def not_joined(client: Client, message: Message):
 
 @Client.on_message(filters.private & filters.command("start"))
 @check_ban
-@check_verification
 @check_fsub
 async def start(client, message: Message):
     logger.debug(f"/start command received from user {message.from_user.id}")
@@ -276,6 +255,26 @@ async def start(client, message: Message):
                 return
         except Exception as e:
             logger.error(f"Error processing start parameter: {e}")
+
+    try:
+        # Check if user has premium - premium users bypass verification
+        if await check_user_premium(user_id):
+            await show_start_message(client, message)
+            return
+    except Exception as e:
+        logger.error(f"Error checking premium status in decorator: {e}")
+
+        try:
+            if not await is_user_verified(user_id):
+                await send_verification_message(client, message)
+                return
+                
+        except Exception as e:
+            logger.error(f"Error sending verification message: {e}")
+            await message.reply_text(
+                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+            )
     
     # Normal start command - show welcome message
     await codeflixbots.add_user(client, message)
