@@ -352,7 +352,9 @@ async def handle_verification_callback(client, message: Message, token: str):
         return 
     
     # Find the user who owns this token
-    token_owner = await codeflixbots.col.find_one({"verification.pending_token": token})
+    token_owner = await codeflixbots.col.find_one({
+        "_id" : user_id,
+        "verification.pending_token": token})
     
     if not token_owner:
         await message.reply_text(
