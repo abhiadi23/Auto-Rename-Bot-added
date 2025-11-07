@@ -89,29 +89,26 @@ def check_verification(func):
                 logger.error(f"Error checking premium status in decorator: {e}")
                 # Continue with verification check even if premium check fails
             
-            # Step 2: Get verification settings to check if verification is enabled
-            settings = await codeflixbots.get_verification_settings()
-            verify_status_1 = settings.get("verify_status_1", False)
-            verify_status_2 = settings.get("verify_status_2", False)
-            
             # If both verification systems are disabled, allow access
             if not verify_status_1 and not verify_status_2:
                 logger.debug(f"Verification disabled, allowing user {user_id}")
                 return await func(client, message, *args, **kwargs)
             
-            # Step 3: Check if user is already verified (EXACTLY like /verify command)
+    try:
+        # Check if user is already verified
+        if await is_user_verified(user_id):
             try:
-                if await is_user_verified(user_id):
-                    try:
-                        user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
-                        verification_data = user_data.get("verification", {})
-                        verified_time_1 = verification_data.get("verified_time_1")
-                        verified_time_2 = verification_data.get("verified_time_2")
-                        current_time = datetime.utcnow()
-
-                    except Exception as e:
-                        logger.error(f"error in is user verified {e}")
-                        
+                user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+                verification_data = user_data.get("verification", {})
+                
+                # Get verification settings
+                settings = await codeflixbots.get_verification_settings()
+                verified_time_1 = verification_data.get("verified_time_1")
+                verified_time_2 = verification_data.get("verified_time_2")
+                
+                current_time = datetime.utcnow()
+                
+                # Check if fully verified (shortener 1 within 24 hours)
                 if verified_time_1:
                     try:
                         if isinstance(verified_time_1, datetime) and current_time < verified_time_1 + timedelta(hours=24):
@@ -151,28 +148,21 @@ def check_verification(func):
                         
             except Exception as e:
                 logger.error(f"Error checking verification status: {e}")
-
-            
-            # Step 4: User is NOT verified - send verification message
-            logger.debug(f"User {user_id} is not verified, sending verification prompt")
-
-            try:
-                await send_verification_message(client, message)
-            except Exception as e:
-                logger.error(f"Error sending verification message in decorator: {e}")
-                await message.reply_text(
-                    f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
-                    f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
-                )
-            return
-            
-        except Exception as e:
-            logger.error(f"FATAL ERROR in check_verification decorator: {e}")
-            await message.reply_text(
-                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
-                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
-            )
-            return
+                # Continue to generate new verification link if there's an error
+    
+    except Exception as e:
+        logger.error(f"Error in is_user_verified check: {e}")
+    
+    # User not verified - generate and send verification link
+    try:
+        await send_verification_message(client, message)
+    except Exception as e:
+        logger.error(f"Error sending verification message: {e}")
+        await message.reply_text(
+            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+        )
+        return
     
     return wrapper
         
