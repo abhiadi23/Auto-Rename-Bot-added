@@ -93,8 +93,7 @@ def check_verification(func):
             if not verify_status_1 and not verify_status_2:
                 logger.debug(f"Verification disabled, allowing user {user_id}")
                 return await func(client, message, *args, **kwargs)
-            
-    try:
+                
         # Check if user is already verified
         if await is_user_verified(user_id):
             try:
@@ -148,11 +147,7 @@ def check_verification(func):
                         
             except Exception as e:
                 logger.error(f"Error checking verification status: {e}")
-                # Continue to generate new verification link if there's an error
-    
-    except Exception as e:
-        logger.error(f"Error in is_user_verified check: {e}")
-    
+                
     # User not verified - generate and send verification link
     try:
         await send_verification_message(client, message)
