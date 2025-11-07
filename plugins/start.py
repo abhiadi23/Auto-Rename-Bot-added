@@ -111,30 +111,46 @@ def check_verification(func):
                         
                         current_time = datetime.utcnow()
                         
-                        # Check verified_time_1 (shortener 1)
-                        if verified_time_1:
-                            try:
-                                if isinstance(verified_time_1, datetime) and current_time < verified_time_1 + timedelta(hours=24):
-                                    logger.debug(f"User {user_id} is verified via shortener 1, proceeding")
-                                    return await func(client, message, *args, **kwargs)
-                            except Exception as e:
-                                logger.error(f"Error checking verified_time_1 in decorator: {e}")
-                        
-                        # Check verified_time_2 (shortener 2)
-                        if verified_time_2:
-                            try:
-                                if isinstance(verified_time_2, datetime) and current_time < verified_time_2 + timedelta(hours=24):
-                                    logger.debug(f"User {user_id} is verified via shortener 2, proceeding")
-                                    return await func(client, message, *args, **kwargs)
-                            except Exception as e:
-                                logger.error(f"Error checking verified_time_2 in decorator: {e}")
-                                
+                if verified_time_1:
+                    try:
+                        if isinstance(verified_time_1, datetime) and current_time < verified_time_1 + timedelta(hours=24):
+                            time_left = timedelta(hours=24) - (current_time - verified_time_1)
+                            hours_left = time_left.seconds // 3600
+                            minutes_left = (time_left.seconds % 3600) // 60
+                            
+                            await message.reply_text(
+                                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                                f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                                reply_markup=InlineKeyboardMarkup([[
+                                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                                ]])
+                            )
+                            return
                     except Exception as e:
-                        logger.error(f"Error checking verification status in decorator: {e}")
-                        # Continue to generate new verification link if there's an error
-            
+                        logger.error(f"Error checking verified_time_1: {e}")
+
+                # Check if fully verified (shortener 2 within 24 hours)
+                if verified_time_2:
+                    try:
+                        if isinstance(verified_time_2, datetime) and current_time < verified_time_2 + timedelta(hours=24):
+                            time_left = timedelta(hours=24) - (current_time - verified_time_2)
+                            hours_left = time_left.seconds // 3600
+                            minutes_left = (time_left.seconds % 3600) // 60
+                            
+                            await message.reply_text(
+                                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                                f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                                reply_markup=InlineKeyboardMarkup([[
+                                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                                ]])
+                            )
+                            return
+                    except Exception as e:
+                        logger.error(f"Error checking verified_time_2: {e}")
+                        
             except Exception as e:
-                logger.error(f"Error in is_user_verified check in decorator: {e}")
+                logger.error(f"Error checking verification status: {e}")
+
             
             # Step 4: User is NOT verified - send verification message
             logger.debug(f"User {user_id} is not verified, sending verification prompt")
