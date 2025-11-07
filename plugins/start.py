@@ -72,6 +72,92 @@ async def check_user_premium(user_id):
     except Exception as e:
         logger.error(f"Error checking premium status: {e}")
         return False
+
+def check_verification(func):
+    @wraps(func)
+    async def wrapper(client, message, *args, **kwargs):
+        user_id = message.from_user.id
+        logger.debug(f"check_verification decorator called for user {user_id}")
+        
+        try:
+            # Step 1: Check if user has premium access - premium users bypass verification
+            try:
+                if await check_user_premium(user_id):
+                    logger.debug(f"User {user_id} has premium, bypassing verification")
+                    return await func(client, message, *args, **kwargs)
+            except Exception as e:
+                logger.error(f"Error checking premium status in decorator: {e}")
+                # Continue with verification check even if premium check fails
+            
+            # Step 2: Get verification settings to check if verification is enabled
+            settings = await codeflixbots.get_verification_settings()
+            verify_status_1 = settings.get("verify_status_1", False)
+            verify_status_2 = settings.get("verify_status_2", False)
+            
+            # If both verification systems are disabled, allow access
+            if not verify_status_1 and not verify_status_2:
+                logger.debug(f"Verification disabled, allowing user {user_id}")
+                return await func(client, message, *args, **kwargs)
+            
+            # Step 3: Check if user is already verified (EXACTLY like /verify command)
+            try:
+                if await is_user_verified(user_id):
+                    try:
+                        user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+                        verification_data = user_data.get("verification", {})
+                        
+                        verified_time_1 = verification_data.get("verified_time_1")
+                        verified_time_2 = verification_data.get("verified_time_2")
+                        
+                        current_time = datetime.utcnow()
+                        
+                        # Check verified_time_1 (shortener 1)
+                        if verified_time_1:
+                            try:
+                                if isinstance(verified_time_1, datetime) and current_time < verified_time_1 + timedelta(hours=24):
+                                    logger.debug(f"User {user_id} is verified via shortener 1, proceeding")
+                                    return await func(client, message, *args, **kwargs)
+                            except Exception as e:
+                                logger.error(f"Error checking verified_time_1 in decorator: {e}")
+                        
+                        # Check verified_time_2 (shortener 2)
+                        if verified_time_2:
+                            try:
+                                if isinstance(verified_time_2, datetime) and current_time < verified_time_2 + timedelta(hours=24):
+                                    logger.debug(f"User {user_id} is verified via shortener 2, proceeding")
+                                    return await func(client, message, *args, **kwargs)
+                            except Exception as e:
+                                logger.error(f"Error checking verified_time_2 in decorator: {e}")
+                                
+                    except Exception as e:
+                        logger.error(f"Error checking verification status in decorator: {e}")
+                        # Continue to generate new verification link if there's an error
+            
+            except Exception as e:
+                logger.error(f"Error in is_user_verified check in decorator: {e}")
+            
+            # Step 4: User is NOT verified - send verification message
+            logger.debug(f"User {user_id} is not verified, sending verification prompt")
+
+            try:
+                await send_verification_message(client, message)
+            except Exception as e:
+                logger.error(f"Error sending verification message in decorator: {e}")
+                await message.reply_text(
+                    f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                    f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+                )
+            return
+            
+        except Exception as e:
+            logger.error(f"FATAL ERROR in check_verification decorator: {e}")
+            await message.reply_text(
+                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+            )
+            return
+    
+    return wrapper
         
 async def check_admin(filter, client, update):
     try:
@@ -236,6 +322,7 @@ async def not_joined(client: Client, message: Message):
 
 @Client.on_message(filters.private & filters.command("start"))
 @check_ban
+@check_verification
 @check_fsub
 async def start(client, message: Message):
     logger.debug(f"/start command received from user {message.from_user.id}")
