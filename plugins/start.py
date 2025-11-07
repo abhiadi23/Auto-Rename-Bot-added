@@ -105,11 +105,12 @@ def check_verification(func):
                     try:
                         user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
                         verification_data = user_data.get("verification", {})
-                        
                         verified_time_1 = verification_data.get("verified_time_1")
                         verified_time_2 = verification_data.get("verified_time_2")
-                        
                         current_time = datetime.utcnow()
+
+                    except Exception as e:
+                        logger.error(f"error in is user verified {e}")
                         
                 if verified_time_1:
                     try:
