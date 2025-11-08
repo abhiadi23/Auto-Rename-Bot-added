@@ -139,9 +139,7 @@ def check_verification(func):
                                     time_left = timedelta(hours=24) - (current_time - verified_time_1)
                                     hours_left = time_left.seconds // 3600
                                     minutes_left = (time_left.seconds % 3600) // 60
-                                    
-                                    await auto_rename_files(client, message)
-                                    return 
+                                    return await func(client, message, *args, **kwargs)
                             except Exception as e:
                                 logger.error(f"Error checking verified_time_1: {e}")
 
@@ -152,9 +150,7 @@ def check_verification(func):
                                     time_left = timedelta(hours=24) - (current_time - verified_time_2)
                                     hours_left = time_left.seconds // 3600
                                     minutes_left = (time_left.seconds % 3600) // 60
-                                    
-                                    await auto_rename_files(client, message)
-                                    return 
+                                    return await func(client, message, *args, **kwargs)
                             except Exception as e:
                                 logger.error(f"Error checking verified_time_2: {e}")
                                 
