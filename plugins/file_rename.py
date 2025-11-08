@@ -606,6 +606,7 @@ async def start_sequence(client, message: Message):
 
 @Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
 @check_ban
+@check_verification
 @check_fsub
 async def auto_rename_files(client, message):
     """Main handler for auto-renaming files"""
