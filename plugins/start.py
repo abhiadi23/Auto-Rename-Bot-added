@@ -131,14 +131,8 @@ def check_verification(func):
                                     hours_left = time_left.seconds // 3600
                                     minutes_left = (time_left.seconds % 3600) // 60
                                     
-                                    await message.reply_text(
-                                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                                        f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                                        reply_markup=InlineKeyboardMarkup([[
-                                            InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                                        ]])
-                                    )
-                                    return
+                                    await show_start_message(client, message)
+                                    return 
                             except Exception as e:
                                 logger.error(f"Error checking verified_time_1: {e}")
 
@@ -150,14 +144,8 @@ def check_verification(func):
                                     hours_left = time_left.seconds // 3600
                                     minutes_left = (time_left.seconds % 3600) // 60
                                     
-                                    await message.reply_text(
-                                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                                        f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                                        reply_markup=InlineKeyboardMarkup([[
-                                            InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                                        ]])
-                                    )
-                                    return
+                                    await show_start_message(client, message)
+                                    return 
                             except Exception as e:
                                 logger.error(f"Error checking verified_time_2: {e}")
                                 
