@@ -86,7 +86,9 @@ def check_verification(func):
                     param = text.split(" ", 1)[1]
                     if param.startswith("verify_"):
                         token = param[7:]
-                        return await func(client, message, *args, **kwargs)
+                        await handle_verification_callback(client, message, token)
+                        return
+                        
                 except Exception as e:
                     logger.error(f"Error processing start parameter: {e}")
     
