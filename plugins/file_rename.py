@@ -99,6 +99,7 @@ def check_verification(func):
                         
                 except Exception as e:
                     logger.error(f"Error processing start parameter: {e}")
+                    await message.reply_text(f"Error: {e}")
     
             # Step 1: Check if user has premium access - premium users bypass verification
             try:
