@@ -80,6 +80,16 @@ def check_verification(func):
         logger.debug(f"check_verification decorator called for user {user_id}")
         
         try:
+            text = message.text
+            if len(text) > 7:
+                try:
+                    param = text.split(" ", 1)[1]
+                    if param.startswith("verify_"):
+                        token = param[7:]
+                        return await func(client, message, *args, **kwargs)
+                except Exception as e:
+                    logger.error(f"Error processing start parameter: {e}")
+    
             # Step 1: Check if user has premium access - premium users bypass verification
             try:
                 if await check_user_premium(user_id):
@@ -357,7 +367,9 @@ async def start(client, message: Message):
             # Check if it's a verification callback
             if param.startswith("verify_"):
                 token = param[7:]
-                return await func(client, message, *args, **kwargs)
+                await handle_verification_callback(client, message, token)
+                return
+                
         except Exception as e:
             logger.error(f"Error processing start parameter: {e}")
     
