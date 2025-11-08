@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor  # Added missing import
 from plugins.antinsfw import check_anti_nsfw
 from helper.utils import progress_for_pyrogram, humanbytes, convert
 from helper.database import codeflixbots
+from plugins.start import *
 from config import Config
 from functools import wraps
 from os import makedirs
@@ -47,6 +48,142 @@ def check_ban(func):
                 reply_markup=keyboard
             )
         return await func(client, message, *args, **kwargs)
+    return wrapper
+
+
+async def check_user_premium(user_id):
+    """Check if user has premium access - handles missing method gracefully"""
+    try:
+        # First check if the method exists
+        if hasattr(codeflixbots, 'has_premium_access'):
+            return await codeflixbots.has_premium_access(user_id)
+        else:
+            # Fallback: Check database directly
+            user_data = await codeflixbots.col.find_one({"_id": user_id})
+            if not user_data:
+                return False
+            
+            # Check for premium in user data
+            premium_data = user_data.get("premium", {})
+            
+            # Check if premium is active and not expired
+            is_premium = premium_data.get("is_premium", False)
+            expiry_date = premium_data.get("expiry_date")
+            
+            if is_premium and expiry_date:
+                if isinstance(expiry_date, datetime):
+                    return expiry_date > datetime.utcnow()
+                else:
+                    return True
+            
+            return is_premium
+    except Exception as e:
+        logger.error(f"Error checking premium status: {e}")
+        return False
+
+def check_verification(func):
+    @wraps(func)
+    async def wrapper(client, message, *args, **kwargs):
+        user_id = message.from_user.id
+        logger.debug(f"check_verification decorator called for user {user_id}")
+        
+        try:
+            text = message.text
+            if len(text) > 7:
+                try:
+                    param = text.split(" ", 1)[1]
+                    if param.startswith("verify_"):
+                        token = param[7:]
+                        await handle_verification_callback(client, message, token)
+                        return
+                        
+                except Exception as e:
+                    logger.error(f"Error processing start parameter: {e}")
+    
+            # Step 1: Check if user has premium access - premium users bypass verification
+            try:
+                if await check_user_premium(user_id):
+                    logger.debug(f"User {user_id} has premium, bypassing verification")
+                    return await func(client, message, *args, **kwargs)
+            except Exception as e:
+                logger.error(f"Error checking premium status in decorator: {e}")
+                # Continue with verification check even if premium check fails
+            
+            # Step 2: Get verification settings to check if verification is enabled
+            settings = await codeflixbots.get_verification_settings()
+            verify_status_1 = settings.get("verify_status_1", False)
+            verify_status_2 = settings.get("verify_status_2", False)
+            
+            # If both verification systems are disabled, allow access
+            if not verify_status_1 and not verify_status_2:
+                logger.debug(f"Verification disabled, allowing user {user_id}")
+                return await func(client, message, *args, **kwargs)
+            
+            # Step 3: Check if user is already verified (EXACTLY like /verify command)
+            try:
+                if await is_user_verified(user_id):
+                    try:
+                        user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+                        verification_data = user_data.get("verification", {})
+                        
+                        verified_time_1 = verification_data.get("verified_time_1")
+                        verified_time_2 = verification_data.get("verified_time_2")
+                        
+                        current_time = datetime.utcnow()
+                        
+                        # Check if fully verified (shortener 1 within 24 hours)
+                        if verified_time_1:
+                            try:
+                                if isinstance(verified_time_1, datetime) and current_time < verified_time_1 + timedelta(hours=24):
+                                    time_left = timedelta(hours=24) - (current_time - verified_time_1)
+                                    hours_left = time_left.seconds // 3600
+                                    minutes_left = (time_left.seconds % 3600) // 60
+                                    
+                                    await auto_rename_files(client, message)
+                                    return 
+                            except Exception as e:
+                                logger.error(f"Error checking verified_time_1: {e}")
+
+                        # Check if fully verified (shortener 2 within 24 hours)
+                        if verified_time_2:
+                            try:
+                                if isinstance(verified_time_2, datetime) and current_time < verified_time_2 + timedelta(hours=24):
+                                    time_left = timedelta(hours=24) - (current_time - verified_time_2)
+                                    hours_left = time_left.seconds // 3600
+                                    minutes_left = (time_left.seconds % 3600) // 60
+                                    
+                                    await auto_rename_files(client, message)
+                                    return 
+                            except Exception as e:
+                                logger.error(f"Error checking verified_time_2: {e}")
+                                
+                    except Exception as e:
+                        logger.error(f"Error checking verification status: {e}")
+            except Exception as e:
+                logger.error(f"Error in is_user_verified check: {e}")
+
+            
+            # Step 4: User is NOT verified - send verification message
+            logger.debug(f"User {user_id} is not verified, sending verification prompt")
+
+            try:
+                await send_verification_message(client, message)
+            except Exception as e:
+                logger.error(f"Error sending verification message in decorator: {e}")
+                await message.reply_text(
+                    f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                    f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+                )
+            return
+            
+        except Exception as e:
+            logger.error(f"FATAL ERROR in check_verification decorator: {e}")
+            await message.reply_text(
+                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+            )
+            return
+    
     return wrapper
 
 def check_fsub(func):
@@ -745,13 +882,13 @@ async def auto_rename_files(client, message):
                     ist = pytz.timezone('Asia/Kolkata')
                     current_time = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S IST")
                     
-                    first_name = user.first_name
+                    first_name = message.from_user.first_name
                     full_name = first_name
-                    if user.last_name:
+                    if message.from_user.last_name:
                         full_name += f" {user.last_name}"
-                    username = f"@{user.username}" if user.username else "N/A"
-                    has_premium_access = user.has_premium_access if hasattr(user, 'has_premium_access') else False
-                    premium_status = '🗸' if has_premium_access else '✘'
+                    username = f"@{message.from_user.username}" if message.from_user.username else "N/A"
+                    has_premium_accesss = await check_user_premium
+                    premium_status = '🗸' if has_premium_accesss else '✘'
                     
                     dump_caption = (
                         f"» Usᴇʀ Dᴇᴛᴀɪʟs «\n"
@@ -789,6 +926,7 @@ async def auto_rename_files(client, message):
                         )
                 except Exception as e:
                     logger.error(f"Error sending to dump channel: {e}")
+                    await msg.edit(f"❌ Eʀʀᴏʀ: {str(e)}")
                     
             await msg.delete()
 
