@@ -88,8 +88,8 @@ def check_verification(func):
         logger.debug(f"check_verification decorator called for user {user_id}")
         
         try:
-            text = message.text
-            if len(text) > 7:
+            text = message.text or message.caption
+            if text and len(text) > 7:
                 try:
                     param = text.split(" ", 1)[1]
                     if param.startswith("verify_"):
