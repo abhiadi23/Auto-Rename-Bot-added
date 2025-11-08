@@ -356,9 +356,8 @@ async def start(client, message: Message):
             
             # Check if it's a verification callback
             if param.startswith("verify_"):
-                token = param[7:]  # Remove "verify_" prefix
-                await handle_verification_callback(client, message, token)
-                return
+                token = param[7:]
+                return await func(client, message, *args, **kwargs)
         except Exception as e:
             logger.error(f"Error processing start parameter: {e}")
     
