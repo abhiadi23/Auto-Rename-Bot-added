@@ -89,75 +89,92 @@ def check_verification(func):
                 logger.error(f"Error checking premium status in decorator: {e}")
                 # Continue with verification check even if premium check fails
             
+            # Step 2: Get verification settings to check if verification is enabled
+            settings = await codeflixbots.get_verification_settings()
+            verify_status_1 = settings.get("verify_status_1", False)
+            verify_status_2 = settings.get("verify_status_2", False)
+            
             # If both verification systems are disabled, allow access
             if not verify_status_1 and not verify_status_2:
                 logger.debug(f"Verification disabled, allowing user {user_id}")
                 return await func(client, message, *args, **kwargs)
-                
-        # Check if user is already verified
-        if await is_user_verified(user_id):
+            
+            # Step 3: Check if user is already verified (EXACTLY like /verify command)
             try:
-                user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
-                verification_data = user_data.get("verification", {})
-                
-                # Get verification settings
-                settings = await codeflixbots.get_verification_settings()
-                verified_time_1 = verification_data.get("verified_time_1")
-                verified_time_2 = verification_data.get("verified_time_2")
-                
-                current_time = datetime.utcnow()
-                
-                # Check if fully verified (shortener 1 within 24 hours)
-                if verified_time_1:
+                if await is_user_verified(user_id):
                     try:
-                        if isinstance(verified_time_1, datetime) and current_time < verified_time_1 + timedelta(hours=24):
-                            time_left = timedelta(hours=24) - (current_time - verified_time_1)
-                            hours_left = time_left.seconds // 3600
-                            minutes_left = (time_left.seconds % 3600) // 60
-                            
-                            await message.reply_text(
-                                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                                f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                                reply_markup=InlineKeyboardMarkup([[
-                                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                                ]])
-                            )
-                            return
-                    except Exception as e:
-                        logger.error(f"Error checking verified_time_1: {e}")
-
-                # Check if fully verified (shortener 2 within 24 hours)
-                if verified_time_2:
-                    try:
-                        if isinstance(verified_time_2, datetime) and current_time < verified_time_2 + timedelta(hours=24):
-                            time_left = timedelta(hours=24) - (current_time - verified_time_2)
-                            hours_left = time_left.seconds // 3600
-                            minutes_left = (time_left.seconds % 3600) // 60
-                            
-                            await message.reply_text(
-                                f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
-                                f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
-                                reply_markup=InlineKeyboardMarkup([[
-                                    InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-                                ]])
-                            )
-                            return
-                    except Exception as e:
-                        logger.error(f"Error checking verified_time_2: {e}")
+                        user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+                        verification_data = user_data.get("verification", {})
                         
+                        verified_time_1 = verification_data.get("verified_time_1")
+                        verified_time_2 = verification_data.get("verified_time_2")
+                        
+                        current_time = datetime.utcnow()
+                        
+                        # Check if fully verified (shortener 1 within 24 hours)
+                        if verified_time_1:
+                            try:
+                                if isinstance(verified_time_1, datetime) and current_time < verified_time_1 + timedelta(hours=24):
+                                    time_left = timedelta(hours=24) - (current_time - verified_time_1)
+                                    hours_left = time_left.seconds // 3600
+                                    minutes_left = (time_left.seconds % 3600) // 60
+                                    
+                                    await message.reply_text(
+                                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                                        f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                                        reply_markup=InlineKeyboardMarkup([[
+                                            InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                                        ]])
+                                    )
+                                    return
+                            except Exception as e:
+                                logger.error(f"Error checking verified_time_1: {e}")
+
+                        # Check if fully verified (shortener 2 within 24 hours)
+                        if verified_time_2:
+                            try:
+                                if isinstance(verified_time_2, datetime) and current_time < verified_time_2 + timedelta(hours=24):
+                                    time_left = timedelta(hours=24) - (current_time - verified_time_2)
+                                    hours_left = time_left.seconds // 3600
+                                    minutes_left = (time_left.seconds % 3600) // 60
+                                    
+                                    await message.reply_text(
+                                        f"✅ Yᴏᴜ ᴀʀᴇ ᴀʟʀᴇᴀᴅʏ ᴠᴇʀɪғɪᴇᴅ!\n\n"
+                                        f"⏰ Tɪᴍᴇ ʟᴇғᴛ: {hours_left}ʜ {minutes_left}ᴍ",
+                                        reply_markup=InlineKeyboardMarkup([[
+                                            InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+                                        ]])
+                                    )
+                                    return
+                            except Exception as e:
+                                logger.error(f"Error checking verified_time_2: {e}")
+                                
+                    except Exception as e:
+                        logger.error(f"Error checking verification status: {e}")
             except Exception as e:
-                logger.error(f"Error checking verification status: {e}")
-                
-    # User not verified - generate and send verification link
-    try:
-        await send_verification_message(client, message)
-    except Exception as e:
-        logger.error(f"Error sending verification message: {e}")
-        await message.reply_text(
-            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
-            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
-        )
-        return
+                logger.error(f"Error in is_user_verified check: {e}")
+
+            
+            # Step 4: User is NOT verified - send verification message
+            logger.debug(f"User {user_id} is not verified, sending verification prompt")
+
+            try:
+                await send_verification_message(client, message)
+            except Exception as e:
+                logger.error(f"Error sending verification message in decorator: {e}")
+                await message.reply_text(
+                    f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                    f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+                )
+            return
+            
+        except Exception as e:
+            logger.error(f"FATAL ERROR in check_verification decorator: {e}")
+            await message.reply_text(
+                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+            )
+            return
     
     return wrapper
         
