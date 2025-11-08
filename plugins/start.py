@@ -439,110 +439,139 @@ async def handle_verification_callback(client, message: Message, token: str):
     user_id = message.from_user.id
     current_time = datetime.utcnow()
     
-    # Get verification settings to check if verification is enabled
-    settings = await codeflixbots.get_verification_settings()
-    verify_status_1 = settings.get("verify_status_1", False)
-    verify_status_2 = settings.get("verify_status_2", False)
-    verified_time_1 = settings.get("verified_time_1")
-    verified_time_2 = settings.get("verified_time_2")
+    logger.info(f"[VERIFY] Starting verification callback for user {user_id} with token {token}")
     
-    # Check if verification is disabled - if so, just return
-    if not verify_status_1 and not verify_status_2:
-        await show_start_message(client, message)
-        return 
-    
-    # Find the user who owns this token
-    token_owner = await codeflixbots.col.find_one({
-        "_id" : user_id,
-        "verification.pending_token": token})
-    
-    if not token_owner:
-        await message.reply_text(
-            "❌ Iɴᴠᴀʟɪᴅ ᴏʀ ᴇxᴘɪʀᴇᴅ ᴛᴏᴋᴇɴ!\n\n"
-            "Pʟᴇᴀsᴇ ɢᴇɴᴇʀᴀᴛᴇ ᴀ ɴᴇᴡ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ʟɪɴᴋ ʙʏ ᴜsɪɴɢ /verify"
-        )
-        return
-    
-    token_user_id = token_owner.get("verification", {}).get("token_user_id")
-    token_created_at = token_owner.get("verification", {}).get("token_created_at")
-    
-    # Check if token belongs to this user
-    if token_user_id != user_id:
-        await message.reply_text(
-            "❌ Tʜɪs ɪs ɴᴏᴛ ʏᴏᴜʀ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ʟɪɴᴋ!\n\n"
-            "Pʟᴇᴀsᴇ ɢᴇɴᴇʀᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ʟɪɴᴋ ᴜsɪɴɢ /verify"
-        )
-        return
-    
-    # Check if token has expired (24 hours)
-    if token_created_at:
-        time_diff = current_time - token_created_at
-        if time_diff > timedelta(hours=24):
+    try:
+        # Get verification settings
+        settings = await codeflixbots.get_verification_settings()
+        verify_status_1 = settings.get("verify_status_1", False)
+        verify_status_2 = settings.get("verify_status_2", False)
+        
+        logger.info(f"[VERIFY] Settings - verify_status_1: {verify_status_1}, verify_status_2: {verify_status_2}")
+        
+        # If verification is disabled, just show start message
+        if not verify_status_1 and not verify_status_2:
+            logger.info(f"[VERIFY] Verification disabled, showing start message")
+            await show_start_message(client, message)
+            return 
+        
+        # Find the user who owns this token
+        logger.info(f"[VERIFY] Looking up token in database for user {user_id}")
+        token_owner = await codeflixbots.col.find_one({
+            "_id": user_id,
+            "verification.pending_token": token
+        })
+        
+        if not token_owner:
+            logger.warning(f"[VERIFY] Token not found in database!")
             await message.reply_text(
-                "❌ Yᴏᴜʀ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴛᴏᴋᴇɴ ʜᴀs ᴇxᴘɪʀᴇᴅ!\n\n"
-                "Pʟᴇᴀsᴇ ɢᴇɴᴇʀᴀᴛᴇ ᴀ ɴᴇᴡ ʟɪɴᴋ ᴜsɪɴɢ /verify"
-            )
-            # Clear expired token
-            await codeflixbots.col.update_one(
-                {"_id": user_id},
-                {"$unset": {
-                    "verification.pending_token": token,
-                    "verification.token_created_at": current_time,
-                    "verification.token_user_id": user_id
-                }}
+                "❌ Iɴᴠᴀʟɪᴅ ᴏʀ ᴇxᴘɪʀᴇᴅ ᴛᴏᴋᴇɴ!\n\n"
+                "Pʟᴇᴀsᴇ ɢᴇɴᴇʀᴀᴛᴇ ᴀ ɴᴇᴡ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ʟɪɴᴋ ʙʏ ᴜsɪɴɢ /verify"
             )
             return
-    
-    # Check for bypass (verification completed too quickly - under 1 minute)
-    if token_created_at:
-        time_taken = current_time - token_created_at
-        if time_taken < timedelta(minutes=1):
+        
+        logger.info(f"[VERIFY] Token found! Extracting verification data...")
+        verification_data = token_owner.get("verification", {})
+        token_user_id = verification_data.get("token_user_id")
+        token_created_at = verification_data.get("token_created_at")
+        
+        logger.info(f"[VERIFY] token_user_id: {token_user_id}, token_created_at: {token_created_at}")
+        
+        # Check if token belongs to this user
+        if token_user_id != user_id:
+            logger.warning(f"[VERIFY] Token mismatch! Expected {user_id}, got {token_user_id}")
             await message.reply_text(
-                f"⚠️ Bʏᴘᴀss Dᴇᴛᴇᴄᴛᴇᴅ!\n\n"
-                f"• Yᴏᴜ ᴄᴏᴍᴘʟᴇᴛᴇᴅ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴛᴏᴏ ǫᴜɪᴄᴋʟʏ ({int(time_taken.total_seconds())} sᴇᴄᴏɴᴅs).\n\n"
-                f"Pʟᴇᴀsᴇ ᴄᴏᴍᴘʟᴇᴛᴇ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴘᴇʀʟʏ.",
-                reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("• Vᴇʀɪғʏ Aɢᴀɪɴ •", url=shortlink)
-                ]])
-            )
-            # Clear the token so they have to verify again
-            await codeflixbots.col.update_one(
-                {"_id": user_id},
-                {"$unset": {
-                    "verification.pending_token": token,
-                    "verification.token_created_at": current_time,
-                    "verification.token_user_id": user_id
-                }}
+                "❌ Tʜɪs ɪs ɴᴏᴛ ʏᴏᴜʀ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ʟɪɴᴋ!\n\n"
+                "Pʟᴇᴀsᴇ ɢᴇɴᴇʀᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ʟɪɴᴋ ᴜsɪɴɢ /verify"
             )
             return
-    
-    # All checks passed - Update verification time (24 hour validity)
-    await codeflixbots.col.update_one(
-        {"_id": user_id},
-        {"$set": {"verification.verified_time_1": current_time,
-                  "verification.verified_time_2": current_time},
-         "$unset": {
-            "verification.pending_token": token,
-            "verification.token_created_at": current_time,
-            "verification.token_user_id": user_id
-         }},
-        upsert=True
-    )
-    
-    # Calculate time taken for verification
-    time_taken = current_time - token_created_at if token_created_at else timedelta(0)
-    minutes_taken = int(time_taken.total_seconds() // 60)
-    seconds_taken = int(time_taken.total_seconds() % 60)
-    
-    # Send success message
-    await message.reply_text(
-        f"✅ Vᴇʀɪғɪᴄᴀᴛɪᴏɴ Sᴜᴄᴄᴇssғᴜʟ!\n\n"
-        f"›› ʏᴏᴜʀ ᴛᴏᴋᴇɴ ʜᴀs ʙᴇᴇɴ sᴜᴄᴄᴇssғᴜʟʟʏ ᴠᴇʀɪғɪᴇᴅ ᴀɴᴅ ɪs ᴠᴀʟɪᴅ ғᴏʀ 24ʜᴏᴜʀs ‼️\n\n"
-        f"⏱️ Tɪᴍᴇ ᴛᴀᴋᴇɴ: {minutes_taken}m {seconds_taken}s",
-        reply_markup=InlineKeyboardMarkup([[
-            InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
-        ]])
-    )
+        
+        # Check if token has expired (24 hours)
+        if token_created_at:
+            time_diff = current_time - token_created_at
+            logger.info(f"[VERIFY] Time difference: {time_diff.total_seconds()} seconds")
+            
+            if time_diff > timedelta(hours=24):
+                logger.warning(f"[VERIFY] Token expired!")
+                await message.reply_text(
+                    "❌ Yᴏᴜʀ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴛᴏᴋᴇɴ ʜᴀs ᴇxᴘɪʀᴇᴅ!\n\n"
+                    "Pʟᴇᴀsᴇ ɢᴇɴᴇʀᴀᴛᴇ ᴀ ɴᴇᴡ ʟɪɴᴋ ᴜsɪɴɢ /verify"
+                )
+                # Clear expired token
+                await codeflixbots.col.update_one(
+                    {"_id": user_id},
+                    {"$unset": {
+                        "verification.pending_token": "",
+                        "verification.token_created_at": "",
+                        "verification.token_user_id": ""
+                    }}
+                )
+                return
+            
+            # Check for bypass (verification completed too quickly - under 10 seconds)
+            if time_diff < timedelta(seconds=10):
+                logger.warning(f"[VERIFY] Bypass detected! Completed in {time_diff.total_seconds()} seconds")
+                await message.reply_text(
+                    f"⚠️ Bʏᴘᴀss Dᴇᴛᴇᴄᴛᴇᴅ!\n\n"
+                    f"• Yᴏᴜ ᴄᴏᴍᴘʟᴇᴛᴇᴅ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴛᴏᴏ ǫᴜɪᴄᴋʟʏ ({int(time_diff.total_seconds())} sᴇᴄᴏɴᴅs).\n\n"
+                    f"Pʟᴇᴀsᴇ ᴄᴏᴍᴘʟᴇᴛᴇ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴘᴇʀʟʏ. Usᴇ /verify ᴛᴏ ɢᴇɴᴇʀᴀᴛᴇ ᴀ ɴᴇᴡ ʟɪɴᴋ."
+                )
+                # Clear the token
+                await codeflixbots.col.update_one(
+                    {"_id": user_id},
+                    {"$unset": {
+                        "verification.pending_token": "",
+                        "verification.token_created_at": "",
+                        "verification.token_user_id": ""
+                    }}
+                )
+                return
+        
+        # All checks passed - Update verification time (24 hour validity)
+        logger.info(f"[VERIFY] All checks passed! Updating database...")
+        
+        update_result = await codeflixbots.col.update_one(
+            {"_id": user_id},
+            {"$set": {
+                "verification.verified_time_1": current_time,
+                "verification.verified_time_2": current_time
+            },
+             "$unset": {
+                "verification.pending_token": "",
+                "verification.token_created_at": "",
+                "verification.token_user_id": ""
+             }},
+            upsert=True
+        )
+        
+        logger.info(f"[VERIFY] Database update result: matched={update_result.matched_count}, modified={update_result.modified_count}")
+        
+        # Calculate time taken
+        time_taken = current_time - token_created_at if token_created_at else timedelta(0)
+        minutes_taken = int(time_taken.total_seconds() // 60)
+        seconds_taken = int(time_taken.total_seconds() % 60)
+        
+        logger.info(f"[VERIFY] Sending success message to user {user_id}")
+        
+        # Send success message
+        await message.reply_text(
+            f"✅ Vᴇʀɪғɪᴄᴀᴛɪᴏɴ Sᴜᴄᴄᴇssғᴜʟ!\n\n"
+            f"›› ʏᴏᴜʀ ᴛᴏᴋᴇɴ ʜᴀs ʙᴇᴇɴ sᴜᴄᴄᴇssғᴜʟʟʏ ᴠᴇʀɪғɪᴇᴅ ᴀɴᴅ ɪs ᴠᴀʟɪᴅ ғᴏʀ 24ʜᴏᴜʀs ‼️\n\n"
+            f"⏱️ Tɪᴍᴇ ᴛᴀᴋᴇɴ: {minutes_taken}m {seconds_taken}s\n\n"
+            f"Nᴏᴡ ʏᴏᴜ ᴄᴀɴ ᴜsᴇ ᴛʜᴇ ʙᴏᴛ!",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("•Sᴇᴇ ᴘʟᴀɴs •", callback_data="seeplan")
+            ]])
+        )
+        
+        logger.info(f"[VERIFY] Verification complete for user {user_id}!")
+        
+    except Exception as e:
+        logger.error(f"[VERIFY] FATAL ERROR in handle_verification_callback: {e}", exc_info=True)
+        await message.reply_text(
+            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
+            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+        )
 
 async def send_verification_message(client, message: Message):
     """Generate and send verification shortlink to user"""
