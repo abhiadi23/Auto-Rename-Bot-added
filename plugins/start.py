@@ -496,8 +496,8 @@ async def handle_verification_callback(client, message: Message, token: str):
                 )
                 return
             
-            # Check for bypass (verification completed too quickly - under 10 seconds)
-            if time_diff < timedelta(seconds=10):
+            # Check for bypass (verification completed too quickly
+            if time_diff < timedelta(minutes=1):
                 logger.warning(f"[VERIFY] Bypass detected! Completed in {time_diff.total_seconds()} seconds")
                 await message.reply_text(
                     f"⚠️ Bʏᴘᴀss Dᴇᴛᴇᴄᴛᴇᴅ!\n\n"
@@ -508,9 +508,9 @@ async def handle_verification_callback(client, message: Message, token: str):
                 await codeflixbots.col.update_one(
                     {"_id": user_id},
                     {"$unset": {
-                        "verification.pending_token": token,
-                        "verification.token_created_at": current_time,
-                        "verification.token_user_id": user_id
+                        "verification.pending_token": "",
+                        "verification.token_created_at": "",
+                        "verification.token_user_id": ""
                     }}
                 )
                 return
