@@ -49,10 +49,20 @@ class Database:
             )
         )
 
-    async def save_verification(self, user_id):
+    async def save_verification(self, user_id, verification_type=1):
+        """
+        Save verification event to verification_data collection
+        This creates a separate record for each verification event
+        """
         now = datetime.now(self.timezone)
-        verification = {"user_id": user_id, "verified_at": now}
+        verification = {
+            "user_id": int(user_id),
+            "verified_at": now,
+            "verification_type": verification_type,  # 1 or 2
+            "date": now.date().isoformat()  # Store date for easier querying
+        }
         await self.verification_data.insert_one(verification)
+        logging.info(f"Verification event saved for user {user_id}, type {verification_type} at {now}")
 
     def get_start_end_dates_verification(self, time_period, year=None):
         """Get start and end dates for verification counting"""
@@ -86,8 +96,8 @@ class Database:
 
     async def get_vr_count_combined(self, time_period, year=None):
         """
-        Get verification count from users collection by checking verified timestamps
-        This counts users who verified in the given time period
+        Get verification count from verification_data collection
+        This counts verification events that occurred in the given time period
         """
         try:
             start_datetime, end_datetime = self.get_start_end_dates_verification(time_period, year)
@@ -98,27 +108,18 @@ class Database:
             if end_datetime.tzinfo is None:
                 end_datetime = end_datetime.replace(tzinfo=self.timezone)
             
-            # Count users who verified during this time period
-            count = await self.col.count_documents({
-                '$or': [
-                    {
-                        'verify_status_1.is_verified_1': True,
-                        'verify_status_1.verified_time_1': {
-                            '$gte': start_datetime, 
-                            '$lte': end_datetime
-                        }
-                    },
-                    {
-                        'verify_status_2.is_verified_2': True,
-                        'verify_status_2.verified_time_2': {
-                            '$gte': start_datetime, 
-                            '$lte': end_datetime
-                        }
-                    }
-                ]
+            # Count verification events in the time period
+            count = await self.verification_data.count_documents({
+                'verified_at': {
+                    '$gte': start_datetime,
+                    '$lte': end_datetime
+                }
             })
             
-            logging.info(f"Verification count for {time_period}: {count} (from {start_datetime} to {end_datetime})")
+            # Debug: Show total verifications ever
+            total_verifications = await self.verification_data.count_documents({})
+            
+            logging.info(f"Verification count for {time_period}: {count} (Total ever: {total_verifications}) (from {start_datetime} to {end_datetime})")
             return count
             
         except Exception as e:
@@ -144,17 +145,31 @@ class Database:
         return await self.db_verify_status(user_id)
 
     async def update_verify_status(self, user_id, is_verified_1=False, verified_time_1=None, is_verified_2=False, verified_time_2=None):
+        # Ensure user exists first
+        await self.ensure_user_exists(user_id)
+        
+        # Use current time if not provided
+        current_time = datetime.now(self.timezone)
+        
         verify_data = {
             'verify_status_1': {
                 'is_verified_1': is_verified_1,
-                'verified_time_1': verified_time_1 or datetime.now(self.timezone),
+                'verified_time_1': verified_time_1 if verified_time_1 else current_time,
             },
             'verify_status_2': {
                 'is_verified_2': is_verified_2,
-                'verified_time_2': verified_time_2 or datetime.now(self.timezone),
+                'verified_time_2': verified_time_2 if verified_time_2 else current_time,
             }
         }
+        
+        logging.info(f"Updating verification status for user {user_id}: {verify_data}")
         await self.db_update_verify_status(user_id, verify_data)
+        
+        # Save verification event to verification_data collection
+        if is_verified_1:
+            await self.save_verification(user_id, verification_type=1)
+        if is_verified_2:
+            await self.save_verification(user_id, verification_type=2)
 
     async def db_update_verify_status(self, user_id, verify_data):
         await self.col.update_one({'_id': user_id}, {'$set': verify_data})
