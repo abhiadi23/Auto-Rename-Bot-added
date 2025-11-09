@@ -21,7 +21,6 @@ def generate_random_alphanumeric():
 async def cb_handler(client, query: CallbackQuery):
     data = query.data
     user_id = query.from_user.id
-    mention = query.from_user.mention
 
     try:
         user = await codeflixbots.col.find_one({"_id": user_id})
@@ -45,8 +44,8 @@ async def cb_handler(client, query: CallbackQuery):
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs •", callback_data='help')],
-                    [InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/botskingdoms'), InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/botskingdomsgroup')],
-                    [InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about'), InlineKeyboardButton('Dᴇᴠᴇʟᴏᴘᴇʀ •', url='https://t.me/botskingdoms')]
+                    [InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/RexBots_Official'), InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/+diDK3GRvvvlhZTQ1')],
+                    [InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about'), InlineKeyboardButton('Dᴇᴠᴇʟᴏᴘᴇʀ •', url='https://t.me/seishiro_obito')]
                 ])
             )
         elif data == "caption":
@@ -54,7 +53,7 @@ async def cb_handler(client, query: CallbackQuery):
                 text=Config.CAPTION_TXT,
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("• sᴜᴘᴘᴏʀᴛ", url='https://t.me/botskingdomsgroup'), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
+                    [InlineKeyboardButton("• sᴜᴘᴘᴏʀᴛ", url='https://t.me/+diDK3GRvvvlhZTQ1'), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
                 ])
             )
         elif data == "help":
@@ -90,7 +89,7 @@ async def cb_handler(client, query: CallbackQuery):
                 text=Config.DONATE_TXT,
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="help"), InlineKeyboardButton("ᴏᴡɴᴇʀ •", url='https://t.me/botskingdoms')]
+                    [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="help"), InlineKeyboardButton("ᴏᴡɴᴇʀ •", url='https://t.me/RexBots_Official')]
                 ])
             )
         elif data == "file_names":
@@ -430,7 +429,7 @@ async def cb_handler(client, query: CallbackQuery):
 
         elif data == "seeplan":
             await query.message.edit_text(
-                "<b>👋 ʜᴇʏ {mention}\n\n🎁 ᴘʀᴇᴍɪᴜᴍ ғᴇᴀᴛᴜʀᴇ ʙᴇɴɪꜰɪᴛꜱ:</blockquote>\n\n›› ɴᴏ ɴᴇᴇᴅ ᴛᴏ ᴏᴘᴇɴ ʟɪɴᴋꜱ\n❏ Gᴇᴛ ᴅɪʀᴇᴄᴛ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ ғᴇᴀᴛᴜʀᴇ ɴᴏ ɴᴇᴇᴅ ғᴏʀ ᴠᴇʀɪғʏ\n›› ᴀᴅ-ғʀᴇᴇ ᴇxᴘᴇʀɪᴇɴᴄᴇ\n❏ Uɴʟɪᴍɪᴛᴇᴅ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ\n\n›› ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴀᴄᴛɪᴠᴇ ᴘʟᴀɴ: /myplan\n\n • ₹80 - 1 ᴡᴇᴇᴋ\n • ₹100 - 1 ᴍᴏɴᴛʜ\n • ₹750 - 1 ʏᴇᴀʀ\n\n Cᴜsᴛᴏᴍ ᴘʟᴀɴ ᴀʟsᴏ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏɴᴛᴀᴄᴛ ᴀᴛ :- @RexBots_Official</b>",
+                "<b>👋 ʜᴇʏ Dᴜᴅᴇ, \n\n🎁 ᴘʀᴇᴍɪᴜᴍ ғᴇᴀᴛᴜʀᴇ ʙᴇɴɪꜰɪᴛꜱ:</blockquote>\n\n›› ɴᴏ ɴᴇᴇᴅ ᴛᴏ ᴏᴘᴇɴ ʟɪɴᴋꜱ\n❏ Gᴇᴛ ᴅɪʀᴇᴄᴛ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ ғᴇᴀᴛᴜʀᴇ ɴᴏ ɴᴇᴇᴅ ғᴏʀ ᴠᴇʀɪғʏ\n›› ᴀᴅ-ғʀᴇᴇ ᴇxᴘᴇʀɪᴇɴᴄᴇ\n❏ Uɴʟɪᴍɪᴛᴇᴅ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ\n\n›› ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴀᴄᴛɪᴠᴇ ᴘʟᴀɴ: /myplan\n\n • ₹80 - 1 ᴡᴇᴇᴋ\n • ₹100 - 1 ᴍᴏɴᴛʜ\n • ₹750 - 1 ʏᴇᴀʀ\n\n Cᴜsᴛᴏᴍ ᴘʟᴀɴ ᴀʟsᴏ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏɴᴛᴀᴄᴛ ᴀᴛ :- @RexBots_Official</b>",
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('⇋ ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ ⇋', callback_data='home')]]))
 
