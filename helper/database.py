@@ -4,7 +4,7 @@ import logging
 from config import Config
 from datetime import timedelta, datetime, date, timezone
 
-class Database:
+class Seishiro:
     def __init__(self, uri, database_name):
         try:
             self._client = motor.motor_asyncio.AsyncIOMotorClient(uri)
@@ -548,58 +548,58 @@ class Database:
 
     async def get_title(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('title', 'Botskingdom')
+        return user.get('title', 'Rex Bots')
 
     async def set_title(self, user_id, title):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'title': title}})
 
     async def get_author(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('author', 'Botskingdom')
+        return user.get('author', 'Rex Bots')
 
     async def set_author(self, user_id, author):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'author': author}})
 
     async def get_artist(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('artist', 'Botskingdom')
+        return user.get('artist', 'Rex Bots')
 
     async def set_artist(self, user_id, artist):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'artist': artist}})
 
     async def get_audio(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('audio', 'Botskingdom')
+        return user.get('audio', 'Rex Bots')
 
     async def set_audio(self, user_id, audio):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'audio': audio}})
 
     async def get_subtitle(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('subtitle', "Botskingdom")
+        return user.get('subtitle', "Rex Bots")
 
     async def set_subtitle(self, user_id, subtitle):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'subtitle': subtitle}})
 
     async def get_video(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('video', 'Botskingdom')
+        return user.get('video', 'Rex Bots')
 
     async def set_video(self, user_id, video):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'video': video}})
 
     async def get_encoded_by(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('encoded_by', "Botskingdom")
+        return user.get('encoded_by', "Rex Bots")
 
     async def set_encoded_by(self, user_id, encoded_by):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'encoded_by': encoded_by}})
         
     async def get_custom_tag(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('custom_tag', "Botskingdom")
+        return user.get('custom_tag', "Rex Bots")
 
     async def set_custom_tag(self, user_id, custom_tag):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'custom_tag': custom_tag}})
         
-codeflixbots = Database(Config.DB_URL, Config.DB_NAME)
+rexbots = Seishiro(Config.DB_URL, Config.DB_NAME)
