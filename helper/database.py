@@ -50,10 +50,9 @@ class Database:
         )
 
     async def save_verification(self, user_id):
-    """Save verification timestamp when user completes shortlink"""
-    now = datetime.now(self.timezone)
-    verification = {"user_id": user_id, "verified_at": now}
-    await self.verification_data.insert_one(verification)
+        now = datetime.now(self.timezone)
+        verification = {"user_id": user_id, "verified_at": now}
+        await self.verification_data.insert_one(verification)
 
 def get_start_end_dates_verification(self, time_period, year=None):
     """Get start and end dates for verification counting"""
