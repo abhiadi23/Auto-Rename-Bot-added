@@ -508,9 +508,9 @@ async def handle_verification_callback(client, message: Message, token: str):
                 await codeflixbots.col.update_one(
                     {"_id": user_id},
                     {"$unset": {
-                        "verification.pending_token": "",
-                        "verification.token_created_at": "",
-                        "verification.token_user_id": ""
+                        "verification.pending_token": token,
+                        "verification.token_created_at": current_time,
+                        "verification.token_user_id": user_id
                     }}
                 )
                 return
