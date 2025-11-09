@@ -21,6 +21,7 @@ def generate_random_alphanumeric():
 async def cb_handler(client, query: CallbackQuery):
     data = query.data
     user_id = query.from_user.id
+    mention = query.from_user.mention
 
     try:
         user = await codeflixbots.col.find_one({"_id": user_id})
@@ -429,9 +430,34 @@ async def cb_handler(client, query: CallbackQuery):
 
         elif data == "seeplan":
             await query.message.edit_text(
-                "<b>👋 ʜᴇʏ {query.from_user.mention}\n\n🎁 ᴘʀᴇᴍɪᴜᴍ ғᴇᴀᴛᴜʀᴇ ʙᴇɴɪꜰɪᴛꜱ:</blockquote>\n\n›› ɴᴏ ɴᴇᴇᴅ ᴛᴏ ᴏᴘᴇɴ ʟɪɴᴋꜱ\n❏ Gᴇᴛ ᴅɪʀᴇᴄᴛ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ ғᴇᴀᴛᴜʀᴇ ɴᴏ ɴᴇᴇᴅ ғᴏʀ ᴠᴇʀɪғʏ\n›› ᴀᴅ-ғʀᴇᴇ ᴇxᴘᴇʀɪᴇɴᴄᴇ\n❏ Uɴʟɪᴍɪᴛᴇᴅ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ\n\n›› ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴀᴄᴛɪᴠᴇ ᴘʟᴀɴ: /myplan\n\n • ₹80 - 1 ᴡᴇᴇᴋ\n • ₹100 - 1 ᴍᴏɴᴛʜ\n • ₹750 - 1 ʏᴇᴀʀ\n\n Cᴜsᴛᴏᴍ ᴘʟᴀɴ ᴀʟsᴏ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏɴᴛᴀᴄᴛ ᴀᴛ :- @RexBots_Official</b>",
+                "<b>👋 ʜᴇʏ {mention}\n\n🎁 ᴘʀᴇᴍɪᴜᴍ ғᴇᴀᴛᴜʀᴇ ʙᴇɴɪꜰɪᴛꜱ:</blockquote>\n\n›› ɴᴏ ɴᴇᴇᴅ ᴛᴏ ᴏᴘᴇɴ ʟɪɴᴋꜱ\n❏ Gᴇᴛ ᴅɪʀᴇᴄᴛ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ ғᴇᴀᴛᴜʀᴇ ɴᴏ ɴᴇᴇᴅ ғᴏʀ ᴠᴇʀɪғʏ\n›› ᴀᴅ-ғʀᴇᴇ ᴇxᴘᴇʀɪᴇɴᴄᴇ\n❏ Uɴʟɪᴍɪᴛᴇᴅ ᴀᴜᴛᴏ ʀᴇɴᴀᴍɪɴɢ\n\n›› ᴄʜᴇᴄᴋ ʏᴏᴜʀ ᴀᴄᴛɪᴠᴇ ᴘʟᴀɴ: /myplan\n\n • ₹80 - 1 ᴡᴇᴇᴋ\n • ₹100 - 1 ᴍᴏɴᴛʜ\n • ₹750 - 1 ʏᴇᴀʀ\n\n Cᴜsᴛᴏᴍ ᴘʟᴀɴ ᴀʟsᴏ ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏɴᴛᴀᴄᴛ ᴀᴛ :- @RexBots_Official</b>",
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('⇋ ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ ⇋', callback_data='home')]]))
+
+        elif data == "refresh_verify_count":
+            await query.answer("Rᴇғʀᴇsʜɪɴɢ...!!")
+            await query.message.edit_text ("Cᴏᴜɴᴛɪɴɢ ᴀɢᴀɪɴ...!!")
+            today = await codeflixbots.get_vr_count_combined('today')
+            yesterday = await codeflixbots.get_vr_count_combined('yesterday')
+            this_week = await codeflixbots.get_vr_count_combined('this_week')
+            this_month = await codeflixbots.get_vr_count_combined('this_month')
+            last_month = await codeflixbots.get_vr_count_combined('last_month')
+            
+            count_text = (
+                "<b>📊 ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴛᴀᴛɪsᴛɪᴄs:\n\n"
+                f"👥 ᴛᴏᴅᴀʏ: {today} ᴜsᴇʀs\n"
+                f"📊 ʏᴇsᴛᴇʀᴅᴀʏ: {yesterday} ᴜsᴇʀs\n"
+                f"📅 ᴛʜɪs ᴡᴇᴇᴋ: {this_week} ᴜsᴇʀs\n"
+                f"📆 ᴛʜɪs ᴍᴏɴᴛʜ: {this_month} ᴜsᴇʀs\n"
+                f"📋 ʟᴀsᴛ ᴍᴏɴᴛʜ: {last_month} ᴜsᴇʀs</b>"
+            )
+            
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔄 ʀᴇғʀᴇsʜ", callback_data="refresh_verify_count")],
+                [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="verify_settings")]
+            ])
+            
+            await query.message.edit_text(count_text, reply_markup=keyboard)
         
         elif data == "verify_count":
             today = await codeflixbots.get_vr_count_combined('today')
@@ -450,7 +476,7 @@ async def cb_handler(client, query: CallbackQuery):
             )
             
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔄 ʀᴇғʀᴇsʜ", callback_data="verify_count")],
+                [InlineKeyboardButton("🔄 ʀᴇғʀᴇsʜ", callback_data="refresh_verify_count")],
                 [InlineKeyboardButton("‹ ʙᴀᴄᴋ", callback_data="verify_settings")]
             ])
             
