@@ -50,54 +50,81 @@ class Database:
         )
 
     async def save_verification(self, user_id):
-        now = datetime.now(self.timezone)
-        verification = {"user_id": user_id, "verified_at": now}
-        await self.verification_data.insert_one(verification)
+    """Save verification timestamp when user completes shortlink"""
+    now = datetime.now(self.timezone)
+    verification = {"user_id": user_id, "verified_at": now}
+    await self.verification_data.insert_one(verification)
 
-    def get_start_end_dates_verification(self, time_period, year=None):
-        now = datetime.now(self.timezone)
-        
-        if time_period == 'today':
-            start_datetime = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            end_datetime = now
-        elif time_period == 'yesterday':
-            start_datetime = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-            end_datetime = start_datetime + timedelta(days=1)
-        elif time_period == 'this_week':
-            start_datetime = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-            end_datetime = now
-        elif time_period == 'this_month':
-            start_datetime = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            end_datetime = now
-        elif time_period == 'last_month':
-            first_day_of_current_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            last_month_end_datetime = first_day_of_current_month - timedelta(microseconds=1)
-            start_datetime = last_month_end_datetime.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            end_datetime = last_month_end_datetime
-        elif time_period == 'year' and year:
-            start_datetime = datetime(year, 1, 1, tzinfo=self.timezone)
-            end_datetime = datetime(year + 1, 1, 1, tzinfo=self.timezone) - timedelta(microseconds=1)
-        else:
-            raise ValueError("Invalid time period")
-        
-        return start_datetime, end_datetime
+def get_start_end_dates_verification(self, time_period, year=None):
+    """Get start and end dates for verification counting"""
+    now = datetime.now(self.timezone)
+    
+    if time_period == 'today':
+        start_datetime = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_datetime = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif time_period == 'yesterday':
+        yesterday = now - timedelta(days=1)
+        start_datetime = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_datetime = yesterday.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif time_period == 'this_week':
+        start_datetime = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_datetime = now
+    elif time_period == 'this_month':
+        start_datetime = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_datetime = now
+    elif time_period == 'last_month':
+        first_day_of_current_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_day_of_last_month = first_day_of_current_month - timedelta(microseconds=1)
+        start_datetime = last_day_of_last_month.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_datetime = last_day_of_last_month.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif time_period == 'year' and year:
+        start_datetime = datetime(year, 1, 1, tzinfo=self.timezone)
+        end_datetime = datetime(year, 12, 31, 23, 59, 59, 999999, tzinfo=self.timezone)
+    else:
+        raise ValueError("Invalid time period")
+    
+    return start_datetime, end_datetime
 
-    async def get_vr_count(self, time_period, year=None):
+async def get_vr_count_combined(self, time_period, year=None):
+    """
+    Get verification count from users collection by checking verified timestamps
+    This counts users who verified in the given time period
+    """
+    try:
         start_datetime, end_datetime = self.get_start_end_dates_verification(time_period, year)
-        count = await self.verification_data.count_documents({
-            'verified_at': {'$gte': start_datetime, '$lt': end_datetime}
-        })
-        return count
-
-    async def get_vr_count_combined(self, time_period, year=None):
-        start_datetime, end_datetime = self.get_start_end_dates_verification(time_period, year)
+        
+        # Make sure both datetimes are timezone-aware
+        if start_datetime.tzinfo is None:
+            start_datetime = start_datetime.replace(tzinfo=self.timezone)
+        if end_datetime.tzinfo is None:
+            end_datetime = end_datetime.replace(tzinfo=self.timezone)
+        
+        # Count users who verified during this time period
         count = await self.col.count_documents({
             '$or': [
-                {'verify_status_1.verified_time_1': {'$gte': start_datetime, '$lt': end_datetime}},
-                {'verify_status_2.verified_time_2': {'$gte': start_datetime, '$lt': end_datetime}}
+                {
+                    'verify_status_1.is_verified_1': True,
+                    'verify_status_1.verified_time_1': {
+                        '$gte': start_datetime, 
+                        '$lte': end_datetime
+                    }
+                },
+                {
+                    'verify_status_2.is_verified_2': True,
+                    'verify_status_2.verified_time_2': {
+                        '$gte': start_datetime, 
+                        '$lte': end_datetime
+                    }
+                }
             ]
         })
+        
+        logging.info(f"Verification count for {time_period}: {count} (from {start_datetime} to {end_datetime})")
         return count
+        
+    except Exception as e:
+        logging.error(f"Error getting verification count for {time_period}: {e}")
+        return 0
 
     async def db_verify_status(self, user_id):
         default_verify = {
