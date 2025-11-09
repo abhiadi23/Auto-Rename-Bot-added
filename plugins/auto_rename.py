@@ -3,7 +3,7 @@ from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, 
 from pyrogram.enums import ChatAction, ChatMemberStatus
 from pyrogram.errors import UserNotParticipant
 from datetime import datetime, timedelta
-from helper.database import codeflixbots
+from helper.database import rexbots
 import logging
 from functools import wraps
 from config import Config
@@ -20,7 +20,7 @@ def check_ban(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
-        user = await codeflixbots.col.find_one({"_id": user_id})
+        user = await rexbots.col.find_one({"_id": user_id})
         if user and user.get("ban_status", {}).get("is_banned", False):
             keyboard = InlineKeyboardMarkup(
                 [[InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ ʜᴇʀᴇ...!!", url=ADMIN_URL)]]
@@ -48,9 +48,9 @@ def check_fsub(func):
                     ChatMemberStatus.MEMBER
                 }
             except UserNotParticipant:
-                mode = await codeflixbots.get_channel_mode(channel_id)
+                mode = await rexbots.get_channel_mode(channel_id)
                 if mode == "on":
-                    exists = await codeflixbots.req_user_exist(channel_id, user_id)
+                    exists = await rexbots.req_user_exist(channel_id, user_id)
                     return exists
                 return False
             except Exception as e:
@@ -58,14 +58,14 @@ def check_fsub(func):
                 return False
 
         async def is_subscribed(client, user_id):
-            channel_ids = await codeflixbots.show_channels()
+            channel_ids = await rexbots.show_channels()
             if not channel_ids:
                 return True
             if user_id == OWNER_ID:
                 return True
             for cid in channel_ids:
                 if not await is_sub(client, user_id, cid):
-                    mode = await codeflixbots.get_channel_mode(cid)
+                    mode = await rexbots.get_channel_mode(cid)
                     if mode == "on":
                         await asyncio.sleep(2)
                         if await is_sub(client, user_id, cid):
@@ -94,7 +94,7 @@ def check_fsub(func):
 async def check_admin(filter, client, update):
     try:
         user_id = update.from_user.id
-        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
+        return any([user_id == OWNER_ID, await rexbots.admin_exist(user_id)])
     except Exception as e:
         print(f"! Exception in check_admin: {e}")
         return False
@@ -108,7 +108,7 @@ async def not_joined(client: Client, message: Message):
     count = 0
 
     try:
-        all_channels = await codeflixbots.show_channels()
+        all_channels = await rexbots.show_channels()
         for chat_id in all_channels:
             await message.reply_chat_action(ChatAction.TYPING)
 
