@@ -26,7 +26,7 @@ def check_ban(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
-        user = await codeflixbots.col.find_one({"_id": user_id})
+        user = await rexbots.col.find_one({"_id": user_id})
         if user and user.get("ban_status", {}).get("is_banned", False):
             keyboard = InlineKeyboardMarkup(
                 [[InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ ʜᴇʀᴇ...!!", url=ADMIN_URL)]]
@@ -45,18 +45,14 @@ def check_ban(func):
 async def add_admins(client: Client, message: Message):
     pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
     check = 0
-    admin_ids = await codeflixbots.get_all_admins()
+    admin_ids = await rexbots.get_all_admins()
     admins = message.text.split()[1:]
 
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
 
     if not admins:
         return await pro.edit(
-            "<b>You need to provide user ID(s) to add as admin.</b>\n\n"
-            "<b>Usage:</b>\n"
-            "<code>/add_admin [user_id]</code> — Add one or more user IDs\n\n"
-            "<b>Example:</b>\n"
-            "<code>/add_admin 1234567890 9876543210</code>",
+            "Usᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /add_admin 1234567890,
             reply_markup=reply_markup
         )
 
@@ -74,15 +70,15 @@ async def add_admins(client: Client, message: Message):
 
         id = str(id)
         if id.isdigit() and len(id) == 10:
-            admin_list += f"<b><blockquote>(ID: <code>{id}</code>) added.</blockquote></b>\n"
+            admin_list += f"<b>• Nᴀᴍᴇ: {user.mention} \nIᴅ: <code>{id}</code></b>\n"
             check += 1
         else:
             admin_list += f"<blockquote><b>Invalid ID: <code>{id}</code></b></blockquote>\n"
 
     if check == len(admins):
         for id in admins:
-            await codeflixbots.add_admin(int(id))
-        await pro.edit(f"<b>✅ Admin(s) added successfully:</b>\n\n{admin_list}", reply_markup=reply_markup)
+            await rexbots.add_admin(int(id))
+        await pro.edit(f"<b><u>Aᴅᴍɪɴ(s) ᴀᴅᴅᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ...!!</u></b>\n\n{admin_list}", reply_markup=reply_markup)
     else:
         await pro.edit(
             f"<b>❌ Some errors occurred while adding admins:</b>\n\n{admin_list.strip()}\n\n"
@@ -94,26 +90,23 @@ async def add_admins(client: Client, message: Message):
 @Client.on_message(filters.command('deladmin') & filters.private & admin)
 async def delete_admins(client: Client, message: Message):
     pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
-    admin_ids = await codeflixbots.get_all_admins()
+    admin_ids = await rexbots.get_all_admins()
     admins = message.text.split()[1:]
 
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
 
     if not admins:
         return await pro.edit(
-            "<b>Please provide valid admin ID(s) to remove.</b>\n\n"
-            "<b>Usage:</b>\n"
-            "<code>/deladmin [user_id]</code> — Remove specific IDs\n"
-            "<code>/deladmin all</code> — Remove all admins",
+            "Usᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /deladmin 1234567890",
             reply_markup=reply_markup
         )
 
     if len(admins) == 1 and admins[0].lower() == "all":
         if admin_ids:
             for id in admin_ids:
-                await codeflixbots.del_admin(id)
+                await rexbots.del_admin(id)
             ids = "\n".join(f"<blockquote><code>{admin}</code> ✅</blockquote>" for admin in admin_ids)
-            return await pro.edit(f"<b>⛔️ All admin IDs have been removed:</b>\n{ids}", reply_markup=reply_markup)
+            return await pro.edit(f"<b><u>Rᴇᴍᴏᴠᴇᴅ ᴀᴅᴍɪɴ ɪᴅ:</u></b>\n • Nᴀᴍᴇ: {user.mention} \nIᴅ: <code>{id}</code></b>", reply_markup=reply_markup)
         else:
             return await pro.edit("<b><blockquote>No admin IDs to remove.</blockquote></b>", reply_markup=reply_markup)
 
@@ -127,12 +120,12 @@ async def delete_admins(client: Client, message: Message):
                 continue
 
             if id in admin_ids:
-                await codeflixbots.del_admin(id)
-                passed += f"<blockquote><code>{id}</code> ✅ Removed</blockquote>\n"
+                await rexbots.del_admin(id)
+                passed += f"<b>• Nᴀᴍᴇ: {user.mention} \nIᴅ: <code>{id}</code></b>\n"
             else:
                 passed += f"<blockquote><b>ID <code>{id}</code> not found in admin list.</b></blockquote>\n"
 
-        await pro.edit(f"<b>⛔️ Admin removal result:</b>\n\n{passed}", reply_markup=reply_markup)
+        await pro.edit(f"<b><u>Rᴇᴍᴏᴠᴇᴅ ᴀᴅᴍɪɴ ɪᴅ:</u></b>\n\n{passed}", reply_markup=reply_markup)
     else:
         await pro.edit("<b><blockquote>No admin IDs available to delete.</blockquote></b>", reply_markup=reply_markup)
 
@@ -140,15 +133,15 @@ async def delete_admins(client: Client, message: Message):
 @Client.on_message(filters.command('admins') & filters.private & admin)
 async def get_admins(client: Client, message: Message):
     pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
-    admin_ids = await codeflixbots.get_all_admins()
+    admin_ids = await rexbots.get_all_admins()
 
     if not admin_ids:
         admin_list = "<b><blockquote>❌ No admins found.</blockquote></b>"
     else:
-        admin_list = "\n".join(f"<b><blockquote>ID: <code>{id}</code></blockquote></b>" for id in admin_ids)
+        admin_list = "\n".join(f"• Nᴀᴍᴇ: {user.mention} \nIᴅ: <code>{id}</code></b>" for id in admin_ids)
 
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
-    await pro.edit(f"<b>⚡ Current Admin List:</b>\n\n{admin_list}", reply_markup=reply_markup)
+    await pro.edit(f"<b>⚡ Cᴜʀʀᴇɴᴛ ᴀᴅᴍɪɴ ʟɪsᴛ:</b>\n\n{admin_list}", reply_markup=reply_markup)
 
 #============== Premium commands ====================
 
@@ -158,8 +151,8 @@ async def remove_premium(client, message):
         if len(message.command) == 2:
             user_id = int(message.command[1])
             user = await client.get_users(user_id)
-            if hasattr(codeflixbots, "remove_premium_access"):
-                if await codeflixbots.remove_premium_access(user_id):
+            if hasattr(rexbots, "remove_premium_access"):
+                if await rexbots.remove_premium_access(user_id):
                     await message.reply_text("ᴜꜱᴇʀ ʀᴇᴍᴏᴠᴇᴅ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ✅")
                     await client.send_message(
                         chat_id=user_id,
@@ -178,7 +171,7 @@ async def remove_premium(client, message):
 async def myplan(client, message):
     user = message.from_user.mention
     user_id = message.from_user.id
-    data = await codeflixbots.get_user(message.from_user.id)
+    data = await rexbots.get_user(message.from_user.id)
     if data and data.get("expiry_time"):
         expiry = data.get("expiry_time")
         expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
@@ -207,7 +200,7 @@ async def get_premium(client, message):
         if len(message.command) == 2:
             user_id = int(message.command[1])
             user = await client.get_users(user_id)
-            data = await codeflixbots.get_user(user_id)
+            data = await rexbots.get_user(user_id)
             if data and data.get("expiry_time"):
                 expiry = data.get("expiry_time") 
                 expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
@@ -243,8 +236,8 @@ async def give_premium_cmd_handler(client, message):
             if seconds > 0:
                 expiry_time = datetime.now() + timedelta(seconds=seconds)
                 user_data = {"_id": user_id, "expiry_time": expiry_time}  
-                await codeflixbots.update_user(user_data)
-                data = await codeflixbots.get_user(user_id)
+                await rexbots.update_user(user_data)
+                data = await rexbots.get_user(user_id)
                 expiry = data.get("expiry_time")    
                 expiry_str_in_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%d-%m-%Y\n⏱️ ᴇxᴘɪʀʏ ᴛɪᴍᴇ : %I:%M:%S %p")
                 
@@ -274,11 +267,11 @@ async def premium_user(client, message):
         new = f" ᴘʀᴇᴍɪᴜᴍ ᴜꜱᴇʀꜱ ʟɪꜱᴛ :\n\n"
         user_count = 1
         found_premium_users = False
-        users = await codeflixbots.get_all_users()
+        users = await rexbots.get_all_users()
         current_time = datetime.now(pytz.timezone("Asia/Kolkata"))
         
         async for user in users:
-            data = await codeflixbots.get_user(user['_id'])
+            data = await rexbots.get_user(user['_id'])
             if data and data.get("expiry_time"):
                 expiry = data.get("expiry_time")
                 expiry_ist = expiry.astimezone(pytz.timezone("Asia/Kolkata"))
@@ -349,7 +342,7 @@ async def restart_bot(b, m):
 @Client.on_message(filters.private & filters.command(["tutorial"]))
 async def tutorial(bot, message):
     user_id = message.from_user.id
-    format_template = await codeflixbots.get_format_template(user_id)
+    format_template = await rexbots.get_format_template(user_id)
     await message.reply_text(
         text=Config.FILE_NAME_TXT.format(format_template=format_template),
         disable_web_page_preview=True,
@@ -360,7 +353,7 @@ async def tutorial(bot, message):
 
 @Client.on_message(filters.command(["stats", "status"]) & filters.private & admin)
 async def get_stats(bot, message):
-    total_users = await codeflixbots.total_users_count()
+    total_users = await rexbots.total_users_count()
     uptime = time.strftime("%Hh%Mm%Ss", time.gmtime(time.time() - bot.uptime))
     start_t = time.time()
     st = await message.reply('<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>')
@@ -371,14 +364,14 @@ async def get_stats(bot, message):
 @Client.on_message(filters.command("broadcast") & filters.private & admin & filters.reply)
 async def broadcast_handler(bot: Client, m: Message):
     await bot.send_message(Config.LOG_CHANNEL, f"Bʀᴏᴀᴅᴄᴀsᴛ Sᴛᴀʀᴛᴇᴅ Bʏ {m.from_user.mention}")
-    all_users = await codeflixbots.get_all_users()
+    all_users = await rexbots.get_all_users()
     broadcast_msg = m.reply_to_message
     sts_msg = await m.reply_text("**Bʀᴏᴀᴅᴄᴀsᴛ Sᴛᴀʀᴛᴇᴅ...!!**")
     done = 0
     failed = 0
     success = 0
     start_time = time.time()
-    total_users = await codeflixbots.total_users_count()
+    total_users = await rexbots.total_users_count()
     async for user in all_users:
         sts = await send_msg(user['_id'], broadcast_msg)
         if sts == 200:
@@ -386,7 +379,7 @@ async def broadcast_handler(bot: Client, m: Message):
         else:
             failed += 1
         if sts == 400:
-            await codeflixbots.delete_user(user['_id'])
+            await rexbots.delete_user(user['_id'])
         done += 1
         if not done % 20:
             await sts_msg.edit(f"Broadcast In Progress: \n\nTotal Users {total_users} \nCompleted : {done} / {total_users}\nSuccess : {success}\nFailed : {failed}")
@@ -430,7 +423,7 @@ async def ban_user(bot, message):
             
         user_id = int(user_id_str)
             
-        await codeflixbots.col.update_one(
+        await rexbots.col.update_one(
             {"_id": user_id},
             {"$set": {
                 "ban_status.is_banned": True,
@@ -447,7 +440,7 @@ async def ban_user(bot, message):
 async def unban_user(bot, message):
     try:
         user_id = int(message.text.split()[1])
-        await codeflixbots.col.update_one(
+        await rexbots.col.update_one(
             {"_id": user_id},
             {"$set": {
                 "ban_status.is_banned": False,
@@ -462,7 +455,7 @@ async def unban_user(bot, message):
 @Client.on_message(filters.command("banned") & filters.private & admin)
 async def banned_list(bot, message):
     msg = await message.reply("**Pʟᴇᴀsᴇ ᴡᴀɪᴛ...**")
-    cursor = codeflixbots.col.find({"ban_status.is_banned": True})
+    cursor = rexbots.col.find({"ban_status.is_banned": True})
     lines = []
     async for user in cursor:
         uid = user['_id']
