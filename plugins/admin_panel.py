@@ -508,11 +508,11 @@ async def leaderboard_handler(bot: Client, message: Message):
                 ])
 
             if pipeline and filter_type != "lifetime":
-                users = await codeflixbots.col.aggregate(pipeline).to_list(10)
+                users = await rexbots.col.aggregate(pipeline).to_list(10)
             elif filter_type == "lifetime":
-                users = await codeflixbots.col.find().sort("rename_count", -1).limit(10).to_list(10)
+                users = await rexbots.col.find().sort("rename_count", -1).limit(10).to_list(10)
             else:
-                users = await codeflixbots.col.find().sort("rename_count", -1).limit(10).to_list(10)
+                users = await rexbots.col.find().sort("rename_count", -1).limit(10).to_list(10)
 
             if not users:
                 return None
@@ -532,7 +532,7 @@ async def leaderboard_handler(bot: Client, message: Message):
                         }}
                     ])
 
-                    user_data = await codeflixbots.col.aggregate(user_data_pipeline_for_current_user).to_list(1)
+                    user_data = await rexbots.col.aggregate(user_data_pipeline_for_current_user).to_list(1)
 
                     if user_data:
                         user_count = user_data[0].get("rename_count", 0)
@@ -548,13 +548,13 @@ async def leaderboard_handler(bot: Client, message: Message):
                             {"$match": {"rename_count": {"$gt": user_count}}}
                         ])
 
-                        higher_count_docs = await codeflixbots.col.aggregate(higher_count_pipeline).to_list(None)
+                        higher_count_docs = await rexbots.col.aggregate(higher_count_pipeline).to_list(None)
                         user_rank = len(higher_count_docs) + 1
                 else:
-                    user_data = await codeflixbots.col.find_one({"_id": user_id})
+                    user_data = await rexbots.col.find_one({"_id": user_id})
                     if user_data:
                         user_count = user_data.get("rename_count", 0)
-                        higher_count = await codeflixbots.col.count_documents({"rename_count": {"$gt": user_count}})
+                        higher_count = await rexbots.col.count_documents({"rename_count": {"$gt": user_count}})
                         user_rank = higher_count + 1
 
             filter_title = {
