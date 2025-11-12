@@ -37,112 +37,315 @@ def check_ban(func):
             )
         return await func(client, message, *args, **kwargs)
     return wrapper
-
+    
 #============== Admin commands =============================
 
 # Commands for adding admins by owner
 @Client.on_message(filters.command('add_admin') & filters.private & admin)
 async def add_admins(client: Client, message: Message):
-    pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
-    check = 0
-    admin_ids = await rexbots.get_all_admins()
-    admins = message.text.split()[1:]
+    try:
+        pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
+        admin_ids = await rexbots.get_all_admins()
+        admins = message.text.split()[1:]
 
-    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
+        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
 
-    if not admins:
-        return await pro.edit(
-            "Usᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /add_admin 1234567890,
-            reply_markup=reply_markup
-        )
+        if not admins:
+            return await pro.edit(
+                "<b>Usᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs:</b> <code>/add_admin 1234567890</code>\n<b>Oʀ:</b> <code>/add_admin 1234567890 9876543210</code>",
+                reply_markup=reply_markup
+            )
 
-    admin_list = ""
-    for id in admins:
-        try:
-            id = int(id)
-        except:
-            admin_list += f"<blockquote><b>Invalid ID: <code>{id}</code></b></blockquote>\n"
-            continue
+        successfully_added = []
+        admin_list = ""
+        
+        for admin_id in admins:
+            try:
+                user_id = int(admin_id)
+            except:
+                admin_list += f"<blockquote><b>❌ Iɴᴠᴀʟɪᴅ ID: <code>{admin_id}</code></b></blockquote>\n"
+                continue
 
-        if id in admin_ids:
-            admin_list += f"<blockquote><b>ID <code>{id}</code> already exists.</b></blockquote>\n"
-            continue
+            if user_id in admin_ids:
+                try:
+                    user = await client.get_users(user_id)
+                    admin_list += f"<blockquote><b>⚠️ {user.mention} (<code>{user_id}</code>) ᴀʟʀᴇᴀᴅʏ ᴇxɪsᴛs.</b></blockquote>\n"
+                except:
+                    admin_list += f"<blockquote><b>⚠️ ID <code>{user_id}</code> ᴀʟʀᴇᴀᴅʏ ᴇxɪsᴛs.</b></blockquote>\n"
+                continue
 
-        id = str(id)
-        if id.isdigit() and len(id) == 10:
-            admin_list += f"<b>• Nᴀᴍᴇ: {user.mention} \nIᴅ: <code>{id}</code></b>\n"
-            check += 1
+            try:
+                user = await client.get_users(user_id)
+                await rexbots.add_admin(user_id)
+                successfully_added.append(user_id)
+                admin_list += f"<b>• Nᴀᴍᴇ: {user.mention}\n⚡ Iᴅ: <code>{user_id}</code></b>\n\n"
+            except Exception as e:
+                admin_list += f"<blockquote><b>❌ Cᴀɴ'ᴛ ғᴇᴛᴄʜ ᴜsᴇʀ: <code>{user_id}</code></b></blockquote>\n"
+
+        if successfully_added:
+            await pro.edit(
+                f"<b><u>✅ Aᴅᴍɪɴ(s) ᴀᴅᴅᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ</u></b>\n\n{admin_list}",
+                reply_markup=reply_markup
+            )
         else:
-            admin_list += f"<blockquote><b>Invalid ID: <code>{id}</code></b></blockquote>\n"
-
-    if check == len(admins):
-        for id in admins:
-            await rexbots.add_admin(int(id))
-        await pro.edit(f"<b><u>Aᴅᴍɪɴ(s) ᴀᴅᴅᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ...!!</u></b>\n\n{admin_list}", reply_markup=reply_markup)
-    else:
-        await pro.edit(
-            f"<b>❌ Some errors occurred while adding admins:</b>\n\n{admin_list.strip()}\n\n"
-            "<b><i>Please check and try again.</i></b>",
-            reply_markup=reply_markup
-        )
+            await pro.edit(
+                f"<b>❌ Nᴏ ᴀᴅᴍɪɴs ᴡᴇʀᴇ ᴀᴅᴅᴇᴅ:</b>\n\n{admin_list.strip()}",
+                reply_markup=reply_markup
+            )
+    except Exception as e:
+        await pro.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{str(e)}</code>")
 
 
 @Client.on_message(filters.command('deladmin') & filters.private & admin)
 async def delete_admins(client: Client, message: Message):
-    pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
-    admin_ids = await rexbots.get_all_admins()
-    admins = message.text.split()[1:]
+    try:
+        pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
+        admin_ids = await rexbots.get_all_admins()
+        admins = message.text.split()[1:]
 
-    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
+        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
 
-    if not admins:
-        return await pro.edit(
-            "Usᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /deladmin 1234567890",
-            reply_markup=reply_markup
-        )
+        if not admins:
+            return await pro.edit(
+                "<b>Usᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs:</b> <code>/deladmin 1234567890</code>\n<b>Oʀ ᴜsᴇ:</b> <code>/deladmin all</code> <b>ᴛᴏ ʀᴇᴍᴏᴠᴇ ᴀʟʟ ᴀᴅᴍɪɴs</b>",
+                reply_markup=reply_markup
+            )
 
-    if len(admins) == 1 and admins[0].lower() == "all":
-        if admin_ids:
-            for id in admin_ids:
-                await rexbots.del_admin(id)
-            ids = "\n".join(f"<blockquote><code>{admin}</code> ✅</blockquote>" for admin in admin_ids)
-            return await pro.edit(f"<b><u>Rᴇᴍᴏᴠᴇᴅ ᴀᴅᴍɪɴ ɪᴅ:</u></b>\n • Nᴀᴍᴇ: {user.mention} \nIᴅ: <code>{id}</code></b>", reply_markup=reply_markup)
-        else:
-            return await pro.edit("<b><blockquote>No admin IDs to remove.</blockquote></b>", reply_markup=reply_markup)
-
-    if admin_ids:
-        passed = ''
-        for admin_id in admins:
-            try:
-                id = int(admin_id)
-            except:
-                passed += f"<blockquote><b>Invalid ID: <code>{admin_id}</code></b></blockquote>\n"
-                continue
-
-            if id in admin_ids:
-                await rexbots.del_admin(id)
-                passed += f"<b>• Nᴀᴍᴇ: {user.mention} \nIᴅ: <code>{id}</code></b>\n"
+        if len(admins) == 1 and admins[0].lower() == "all":
+            if admin_ids:
+                removed_list = ""
+                for id in admin_ids:
+                    try:
+                        user = await client.get_users(id)
+                        removed_list += f"<b>• Nᴀᴍᴇ: {user.mention}\n⚡ Iᴅ: <code>{id}</code></b>\n\n"
+                    except:
+                        removed_list += f"<b>• Iᴅ: <code>{id}</code></b>\n\n"
+                    await rexbots.del_admin(id)
+                return await pro.edit(
+                    f"<b><u>✅ Rᴇᴍᴏᴠᴇᴅ ᴀʟʟ ᴀᴅᴍɪɴs:</u></b>\n\n{removed_list}",
+                    reply_markup=reply_markup
+                )
             else:
-                passed += f"<blockquote><b>ID <code>{id}</code> not found in admin list.</b></blockquote>\n"
+                return await pro.edit(
+                    "<b><blockquote>⚠️ Nᴏ ᴀᴅᴍɪɴ IDs ᴛᴏ ʀᴇᴍᴏᴠᴇ.</blockquote></b>",
+                    reply_markup=reply_markup
+                )
 
-        await pro.edit(f"<b><u>Rᴇᴍᴏᴠᴇᴅ ᴀᴅᴍɪɴ ɪᴅ:</u></b>\n\n{passed}", reply_markup=reply_markup)
-    else:
-        await pro.edit("<b><blockquote>No admin IDs available to delete.</blockquote></b>", reply_markup=reply_markup)
+        if admin_ids:
+            passed = ''
+            for admin_id in admins:
+                try:
+                    id = int(admin_id)
+                except:
+                    passed += f"<blockquote><b>❌ Iɴᴠᴀʟɪᴅ ID: <code>{admin_id}</code></b></blockquote>\n"
+                    continue
+
+                if id in admin_ids:
+                    try:
+                        user = await client.get_users(id)
+                        passed += f"<b>• Nᴀᴍᴇ: {user.mention}\n⚡ Iᴅ: <code>{id}</code></b>\n\n"
+                    except:
+                        passed += f"<b>• Iᴅ: <code>{id}</code></b>\n\n"
+                    await rexbots.del_admin(id)
+                else:
+                    passed += f"<blockquote><b>⚠️ ID <code>{id}</code> ɴᴏᴛ ғᴏᴜɴᴅ ɪɴ ᴀᴅᴍɪɴ ʟɪsᴛ.</b></blockquote>\n"
+
+            await pro.edit(
+                f"<b><u>✅ Rᴇᴍᴏᴠᴇᴅ ᴀᴅᴍɪɴ ɪᴅ:</u></b>\n\n{passed}",
+                reply_markup=reply_markup
+            )
+        else:
+            await pro.edit(
+                "<b><blockquote>⚠️ Nᴏ ᴀᴅᴍɪɴ IDs ᴀᴠᴀɪʟᴀʙʟᴇ ᴛᴏ ᴅᴇʟᴇᴛᴇ.</blockquote></b>",
+                reply_markup=reply_markup
+            )
+    except Exception as e:
+        await pro.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{str(e)}</code>")
 
 
 @Client.on_message(filters.command('admins') & filters.private & admin)
 async def get_admins(client: Client, message: Message):
-    pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
-    admin_ids = await rexbots.get_all_admins()
+    try:
+        pro = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>", quote=True)
+        admin_ids = await rexbots.get_all_admins()
 
-    if not admin_ids:
-        admin_list = "<b><blockquote>❌ No admins found.</blockquote></b>"
-    else:
-        admin_list = "\n".join(f"• Nᴀᴍᴇ: {user.mention} \nIᴅ: <code>{id}</code></b>" for id in admin_ids)
+        if not admin_ids:
+            admin_list = "<b><blockquote>❌ Nᴏ ᴀᴅᴍɪɴs ғᴏᴜɴᴅ.</blockquote></b>"
+        else:
+            admin_list = ""
+            for idx, id in enumerate(admin_ids, 1):
+                try:
+                    user = await client.get_users(id)
+                    admin_list += f"<b>{idx}. Nᴀᴍᴇ: {user.mention}\n⚡ Iᴅ: <code>{id}</code></b>\n\n"
+                except:
+                    admin_list += f"<b>{idx}. Iᴅ: <code>{id}</code></b>\n\n"
 
-    reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
-    await pro.edit(f"<b>⚡ Cᴜʀʀᴇɴᴛ ᴀᴅᴍɪɴ ʟɪsᴛ:</b>\n\n{admin_list}", reply_markup=reply_markup)
+        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
+        await pro.edit(
+            f"<b>⚡ Cᴜʀʀᴇɴᴛ ᴀᴅᴍɪɴ ʟɪsᴛ:</b>\n\n{admin_list}",
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        await pro.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{str(e)}</code>")
 
+@Client.on_message(filters.command("ban") & filters.private & admin)
+async def ban_user(bot, message):
+    try:
+        command_parts = message.text.split(maxsplit=2)
+        if len(command_parts) < 2:
+            await message.reply_text(
+                "<b>Usᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs:</b> <code>/ban &lt;ᴜsᴇʀ_ɪᴅ&gt; [ʀᴇᴀsᴏɴ]</code>"
+            )
+            return
+
+        user_id_str = command_parts[1]
+        reason = command_parts[2] if len(command_parts) > 2 else "Nᴏ ʀᴇᴀsᴏɴ ᴘʀᴏᴠɪᴅᴇᴅ"
+
+        if not user_id_str.isdigit():
+            await message.reply_text(
+                "<b>Usᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs:</b> <code>/ban &lt;ᴜsᴇʀ_ɪᴅ&gt; [ʀᴇᴀsᴏɴ]</code>"
+            )
+            return
+            
+        user_id = int(user_id_str)
+        
+        try:
+            user = await bot.get_users(user_id)
+            user_mention = user.mention
+        except:
+            user_mention = f"<code>{user_id}</code>"
+            
+        await rexbots.col.update_one(
+            {"_id": user_id},
+            {"$set": {
+                "ban_status.is_banned": True,
+                "ban_status.ban_reason": reason,
+                "ban_status.banned_on": date.today().isoformat()
+            }},
+            upsert=True
+        )
+        
+        await message.reply_text(
+            f"<b>🚫 Usᴇʀ ʙᴀɴɴᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ</b>\n\n"
+            f"<b>• Usᴇʀ: {user_mention}\n"
+            f"⚡ Usᴇʀ ID: <code>{user_id}</code>\n"
+            f"📝 Rᴇᴀsᴏɴ: {reason}\n"
+            f"📅 Bᴀɴɴᴇᴅ ᴏɴ: {date.today().strftime('%d-%m-%Y')}</b>"
+        )
+        
+        # Notify user
+        try:
+            await bot.send_message(
+                chat_id=user_id,
+                text=f"<b>🚫 Yᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ʙᴀɴɴᴇᴅ</b>\n\n"
+                     f"<blockquote><b>Rᴇᴀsᴏɴ: {reason}\n"
+                     f"Dᴀᴛᴇ: {date.today().strftime('%d-%m-%Y')}</b></blockquote>",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ Aᴅᴍɪɴ", url=ADMIN_URL)]])
+            )
+        except:
+            pass
+            
+    except Exception as e:
+        await message.reply_text(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{str(e)}</code>")
+
+
+@Client.on_message(filters.command("unban") & filters.private & admin)
+async def unban_user(bot, message):
+    try:
+        if len(message.text.split()) < 2:
+            await message.reply_text(
+                "<b>Usᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs:</b> <code>/unban &lt;ᴜsᴇʀ_ɪᴅ&gt;</code>"
+            )
+            return
+            
+        user_id = int(message.text.split()[1])
+        
+        try:
+            user = await bot.get_users(user_id)
+            user_mention = user.mention
+        except:
+            user_mention = f"<code>{user_id}</code>"
+            
+        await rexbots.col.update_one(
+            {"_id": user_id},
+            {"$set": {
+                "ban_status.is_banned": False,
+                "ban_status.ban_reason": "",
+                "ban_status.banned_on": None
+            }}
+        )
+        
+        await message.reply_text(
+            f"<b>✅ Usᴇʀ ᴜɴʙᴀɴɴᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ</b>\n\n"
+            f"<b>• Usᴇʀ: {user_mention}\n"
+            f"⚡ Usᴇʀ ID: <code>{user_id}</code>\n"
+            f"📅 Uɴʙᴀɴɴᴇᴅ ᴏɴ: {date.today().strftime('%d-%m-%Y')}</b>"
+        )
+        
+        # Notify user
+        try:
+            await bot.send_message(
+                chat_id=user_id,
+                text=f"<b>✅ Yᴏᴜ ʜᴀᴠᴇ ʙᴇᴇɴ ᴜɴʙᴀɴɴᴇᴅ</b>\n\n"
+                     f"<blockquote><b>Yᴏᴜ ᴄᴀɴ ɴᴏᴡ ᴜsᴇ ᴛʜᴇ ʙᴏᴛ ᴀɢᴀɪɴ!\n"
+                     f"Dᴀᴛᴇ: {date.today().strftime('%d-%m-%Y')}</b></blockquote>"
+            )
+        except:
+            pass
+            
+    except Exception as e:
+        await message.reply_text(
+            "<b>Usᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs:</b> <code>/unban &lt;ᴜsᴇʀ_ɪᴅ&gt;</code>\n\n"
+            f"<b>❌ Eʀʀᴏʀ:</b> <code>{str(e)}</code>"
+        )
+
+
+@Client.on_message(filters.command("banned") & filters.private & admin)
+async def banned_list(bot, message):
+    try:
+        msg = await message.reply("<b><i>ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ..</i></b>")
+        cursor = rexbots.col.find({"ban_status.is_banned": True})
+        lines = []
+        count = 0
+        
+        async for user in cursor:
+            count += 1
+            uid = user['_id']
+            reason = user.get('ban_status', {}).get('ban_reason', 'Nᴏ ʀᴇᴀsᴏɴ')
+            banned_date = user.get('ban_status', {}).get('banned_on', 'Uɴᴋɴᴏᴡɴ')
+            
+            try:
+                user_obj = await bot.get_users(uid)
+                name = user_obj.mention
+            except PeerIdInvalid:
+                name = f"<code>{uid}</code>"
+            except:
+                name = f"<code>{uid}</code>"
+                
+            lines.append(
+                f"<b>{count}. {name}\n"
+                f"⚡ ID: <code>{uid}</code>\n"
+                f"📝 Rᴇᴀsᴏɴ: {reason}\n"
+                f"📅 Dᴀᴛᴇ: {banned_date}</b>\n"
+            )
+
+        if not lines:
+            await msg.edit(
+                "<b><blockquote>✅ Nᴏ ᴜsᴇʀ(s) ɪs ᴄᴜʀʀᴇɴᴛʟʏ ʙᴀɴɴᴇᴅ</blockquote></b>",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
+            )
+        else:
+            banned_text = f"<b>🚫 Bᴀɴɴᴇᴅ Usᴇʀs Lɪsᴛ</b>\n\n{''.join(lines[:50])}"
+            if len(lines) > 50:
+                banned_text += f"\n<i>...ᴀɴᴅ {len(lines) - 50} ᴍᴏʀᴇ</i>"
+                
+            await msg.edit(
+                banned_text,
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
+            )
+    except Exception as e:
+        await msg.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{str(e)}</code>")
+        
 #============== Premium commands ====================
 
 @Client.on_message(filters.command("remove_premium") & admin)
@@ -405,73 +608,7 @@ async def send_msg(user_id, message):
     except Exception as e:
         logger.error(f"{user_id} : {e}")
         return 500
-
-@Client.on_message(filters.command("ban") & filters.private & admin)
-async def ban_user(bot, message):
-    try:
-        command_parts = message.text.split(maxsplit=2)
-        if len(command_parts) < 2:
-            await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs `/ban <ᴜsᴇʀ_ɪᴅ> [ʀᴇᴀsᴏɴ]`")
-            return
-
-        user_id_str = command_parts[1]
-        reason = command_parts[2] if len(command_parts) > 2 else "No reason provided"
-
-        if not user_id_str.isdigit():
-            await message.reply_text("Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs `/ban <ᴜsᴇʀ_ɪᴅ> [ʀᴇᴀsᴏɴ]`")
-            return
-            
-        user_id = int(user_id_str)
-            
-        await rexbots.col.update_one(
-            {"_id": user_id},
-            {"$set": {
-                "ban_status.is_banned": True,
-                "ban_status.ban_reason": reason,
-                "ban_status.banned_on": date.today().isoformat()
-            }},
-            upsert=True
-        )
-        await message.reply_text(f"**Usᴇʀ - `{user_id}` Is sᴜᴄᴄᴇssғᴜʟʟʏ ʙᴀɴɴᴇᴅ.\nRᴇᴀsᴏɴ:- {reason}**")
-    except Exception as e:
-        await message.reply_text(f"An unexpected error occurred: `{e}`")
-
-@Client.on_message(filters.command("unban") & filters.private & admin)
-async def unban_user(bot, message):
-    try:
-        user_id = int(message.text.split()[1])
-        await rexbots.col.update_one(
-            {"_id": user_id},
-            {"$set": {
-                "ban_status.is_banned": False,
-                "ban_status.ban_reason": "",
-                "ban_status.banned_on": None
-            }}
-        )
-        await message.reply_text(f"**Usᴇʀ - `{user_id}` Is sᴜᴄᴄᴇssғᴜʟʟʏ ᴜɴʙᴀɴɴᴇᴅ.**")
-    except Exception as e:
-        await message.reply_text(f"Dᴜᴅᴇ ᴜsᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs /unban <ᴜsᴇʀ_ɪᴅ>")
-
-@Client.on_message(filters.command("banned") & filters.private & admin)
-async def banned_list(bot, message):
-    msg = await message.reply("**Pʟᴇᴀsᴇ ᴡᴀɪᴛ...**")
-    cursor = rexbots.col.find({"ban_status.is_banned": True})
-    lines = []
-    async for user in cursor:
-        uid = user['_id']
-        reason = user.get('ban_status', {}).get('ban_reason', '')
-        try:
-            user_obj = await bot.get_users(uid)
-            name = user_obj.mention
-        except PeerIdInvalid:
-            name = f"`{uid}` (Name not found)"
-        lines.append(f"• {name} - {reason}")
-
-    if not lines:
-        await msg.edit("**Nᴏ ᴜsᴇʀ(s) ɪs ᴄᴜʀʀᴇɴᴛʟʏ ʙᴀɴɴᴇᴅ**")
-    else:
-        await msg.edit("🚫 **Bᴀɴɴᴇᴅ ᴜsᴇʀ(s)**\n\n" + "\n".join(lines[:50]))
-
+        
 @Client.on_message((filters.group | filters.private) & filters.command("leaderboard"))
 async def leaderboard_handler(bot: Client, message: Message):
     try:
