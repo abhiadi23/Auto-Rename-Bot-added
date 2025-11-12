@@ -134,7 +134,7 @@ async def not_joined(client: Client, message: Message):
                         chat_data_cache[chat_id] = data
                     name = data.title
 
-                    mode = await codeflixbots.get_channel_mode(chat_id)
+                    mode = await rexbots.get_channel_mode(chat_id)
                     if mode == "on" and not data.username:
                         invite = await client.create_chat_invite_link(
                             chat_id=chat_id,
@@ -211,7 +211,7 @@ async def auto_rename_command(client, message):
     format_template = command_parts[1].strip()
 
     # Save the format template in the database
-    await codeflixbots.set_format_template(user_id, format_template)
+    await rexbots.set_format_template(user_id, format_template)
 
     # Send confirmation message with the template in monospaced font
     await message.reply_text(
@@ -243,7 +243,7 @@ async def handle_media_selection(client, callback_query):
     media_type = callback_query.data.split("_", 1)[1]  # Extract media type from callback data
 
     # Save the preferred media type in the database
-    await codeflixbots.set_media_preference(user_id, media_type)
+    await rexbots.set_media_preference(user_id, media_type)
 
     # Acknowledge the callback and send confirmation
     await callback_query.answer(f"Media preference set to: {media_type} ✅")
