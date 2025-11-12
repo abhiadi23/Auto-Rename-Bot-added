@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor  # Added missing import
 from plugins.antinsfw import check_anti_nsfw
 from helper.utils import progress_for_pyrogram, humanbytes, convert
-from helper.database import codeflixbots
+from helper.database import rexbots
 from plugins.start import *
 from config import Config
 from functools import wraps
@@ -38,7 +38,7 @@ def check_ban(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
-        user = await codeflixbots.col.find_one({"_id": user_id})
+        user = await rexbots.col.find_one({"_id": user_id})
         if user and user.get("ban_status", {}).get("is_banned", False):
             keyboard = InlineKeyboardMarkup(
                 [[InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ ʜᴇʀᴇ...!!", url=ADMIN_URL)]]
@@ -55,11 +55,11 @@ async def check_user_premium(user_id):
     """Check if user has premium access - handles missing method gracefully"""
     try:
         # First check if the method exists
-        if hasattr(codeflixbots, 'has_premium_access'):
-            return await codeflixbots.has_premium_access(user_id)
+        if hasattr(rexbots, 'has_premium_access'):
+            return await rexbots.has_premium_access(user_id)
         else:
             # Fallback: Check database directly
-            user_data = await codeflixbots.col.find_one({"_id": user_id})
+            user_data = await rexbots.col.find_one({"_id": user_id})
             if not user_data:
                 return False
             
@@ -111,7 +111,7 @@ def check_verification(func):
                 # Continue with verification check even if premium check fails
             
             # Step 2: Get verification settings to check if verification is enabled
-            settings = await codeflixbots.get_verification_settings()
+            settings = await rexbots.get_verification_settings()
             verify_status_1 = settings.get("verify_status_1", False)
             verify_status_2 = settings.get("verify_status_2", False)
             
@@ -124,7 +124,7 @@ def check_verification(func):
             try:
                 if await is_user_verified(user_id):
                     try:
-                        user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+                        user_data = await rexbots.col.find_one({"_id": user_id}) or {}
                         verification_data = user_data.get("verification", {})
                         
                         verified_time_1 = verification_data.get("verified_time_1")
@@ -199,9 +199,9 @@ def check_fsub(func):
                     ChatMemberStatus.MEMBER
                 }
             except UserNotParticipant:
-                mode = await codeflixbots.get_channel_mode(channel_id)
+                mode = await rexbots.get_channel_mode(channel_id)
                 if mode == "on":
-                    exists = await codeflixbots.req_user_exist(channel_id, user_id)
+                    exists = await rexbots.req_user_exist(channel_id, user_id)
                     return exists
                 return False
             except Exception as e:
@@ -209,14 +209,14 @@ def check_fsub(func):
                 return False
 
         async def is_subscribed(client, user_id):
-            channel_ids = await codeflixbots.show_channels()
+            channel_ids = await rexbots.show_channels()
             if not channel_ids:
                 return True
             if user_id == OWNER_ID:
                 return True
             for cid in channel_ids:
                 if not await is_sub(client, user_id, cid):
-                    mode = await codeflixbots.get_channel_mode(cid)
+                    mode = await rexbots.get_channel_mode(cid)
                     if mode == "on":
                         await asyncio.sleep(2)
                         if await is_sub(client, user_id, cid):
@@ -245,7 +245,7 @@ def check_fsub(func):
 async def check_admin(filter, client, update):
     try:
         user_id = update.from_user.id
-        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
+        return any([user_id == OWNER_ID, await rexbots.admin_exist(user_id)])
     except Exception as e:
         print(f"! Exception in check_admin: {e}")
         return False
@@ -259,9 +259,9 @@ async def not_joined(client: Client, message: Message):
     count = 0
 
     try:
-        all_channels = await codeflixbots.show_channels()
+        all_channels = await rexbots.show_channels()
         for chat_id in all_channels:
-            mode = await codeflixbots.get_channel_mode(chat_id)
+            mode = await rexbots.get_channel_mode(chat_id)
 
             await message.reply_chat_action(ChatAction.TYPING)
 
@@ -618,8 +618,8 @@ async def auto_rename_files(client, message):
         try:
             user_id = message.from_user.id
             user = message.from_user
-            format_template = await codeflixbots.get_format_template(user_id)
-            media_preference = await codeflixbots.get_media_preference(user_id)
+            format_template = await rexbots.get_format_template(user_id)
+            media_preference = await rexbots.get_media_preference(user_id)
         
             if not format_template:
                 await message.reply_text("Pʟᴇᴀsᴇ Sᴇᴛ Aɴ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ Fɪʀsᴛ Usɪɴɢ /autorename")
@@ -811,7 +811,7 @@ async def auto_rename_files(client, message):
             await message.reply_chat_action(ChatAction.PLAYING)
             
             try:
-                await codeflixbots.col.update_one(
+                await rexbots.col.update_one(
                     {"_id": user_id},
                     {
                         "$inc": {"rename_count": 1},
@@ -825,7 +825,7 @@ async def auto_rename_files(client, message):
             except Exception as e:
                 logger.error(f"Failed to update database: {e}")
 
-            c_caption = await codeflixbots.get_caption(message.chat.id)
+            c_caption = await rexbots.get_caption(message.chat.id)
             
             if c_caption:
                 caption = c_caption.format(
@@ -836,7 +836,7 @@ async def auto_rename_files(client, message):
             else:
                 caption = f"**{new_file_name}**"
                 
-            c_thumb = await codeflixbots.get_thumbnail(message.chat.id)
+            c_thumb = await rexbots.get_thumbnail(message.chat.id)
 
             ph_path = None
             if c_thumb:
@@ -950,7 +950,7 @@ async def show_format_cmd(client, message: Message):
     # 1. Fetch the format template from the database
     # This calls the same function used in your auto_rename_files handler
     try:
-        format_template = await codeflixbots.get_format_template(user_id)
+        format_template = await rexbots.get_format_template(user_id)
     except Exception as e:
         # Handle potential database errors (optional but recommended)
         await message.reply_text(f"❌ Eʀʀᴏʀ ғᴇᴛᴄʜɪɴɢ ғᴏʀᴍᴀᴛ: {e}")
@@ -960,7 +960,7 @@ async def show_format_cmd(client, message: Message):
     if format_template:
         response_text = (
             f"✨ Yᴏᴜʀ ᴄᴜʀʀᴇɴᴛ Aᴜᴛᴏ Rᴇɴᴀᴍᴇ Fᴏʀᴍᴀᴛ ɪs:\n\n"
-            f"`{format_template}`\n\n"
+            f"/autorename `{format_template}`\n\n"
             "Uꜱᴇ /autorename ᴛᴏ ᴄʜᴀɴɢᴇ ɪᴛ."
         )
     else:
@@ -1032,14 +1032,14 @@ async def add_metadata(input_path, output_path, user_id):
     metadata_command = [
         ffmpeg_cmd,
         '-i', input_path,
-        '-metadata', f'title={await codeflixbots.get_title(user_id)}',
-        '-metadata', f'artist={await codeflixbots.get_artist(user_id)}',
-        '-metadata', f'author={await codeflixbots.get_author(user_id)}',
-        '-metadata:s:v', f'title={await codeflixbots.get_video(user_id)}',
-        '-metadata:s:a', f'title={await codeflixbots.get_audio(user_id)}',
-        '-metadata:s:s', f'title={await codeflixbots.get_subtitle(user_id)}',
-        '-metadata', f'encoded_by={await codeflixbots.get_encoded_by(user_id)}',
-        '-metadata', f'custom_tag={await codeflixbots.get_custom_tag(user_id)}',
+        '-metadata', f'title={await rexbots.get_title(user_id)}',
+        '-metadata', f'artist={await rexbots.get_artist(user_id)}',
+        '-metadata', f'author={await rexbots.get_author(user_id)}',
+        '-metadata:s:v', f'title={await rexbots.get_video(user_id)}',
+        '-metadata:s:a', f'title={await rexbots.get_audio(user_id)}',
+        '-metadata:s:s', f'title={await rexbots.get_subtitle(user_id)}',
+        '-metadata', f'encoded_by={await rexbots.get_encoded_by(user_id)}',
+        '-metadata', f'custom_tag={await rexbots.get_custom_tag(user_id)}',
         '-map', '0',
         '-c', 'copy',
         '-loglevel', 'error',
@@ -1067,14 +1067,14 @@ async def convert_to_mkv(input_path, output_path, user_id):
         ffmpeg_cmd,
         '-hide_banner',
         '-i', input_path,
-        '-metadata', f'title={await codeflixbots.get_title(user_id)}',
-        '-metadata', f'artist={await codeflixbots.get_artist(user_id)}',
-        '-metadata', f'author={await codeflixbots.get_author(user_id)}',
-        '-metadata:s:v', f'title={await codeflixbots.get_video(user_id)}',
-        '-metadata:s:a', f'title={await codeflixbots.get_audio(user_id)}',
-        '-metadata:s:s', f'title={await codeflixbots.get_subtitle(user_id)}',
-        '-metadata', f'encoded_by={await codeflixbots.get_encoded_by(user_id)}',
-        '-metadata', f'custom_tag={await codeflixbots.get_custom_tag(user_id)}',
+        '-metadata', f'title={await rexbots.get_title(user_id)}',
+        '-metadata', f'artist={await rexbots.get_artist(user_id)}',
+        '-metadata', f'author={await rexbots.get_author(user_id)}',
+        '-metadata:s:v', f'title={await rexbots.get_video(user_id)}',
+        '-metadata:s:a', f'title={await rexbots.get_audio(user_id)}',
+        '-metadata:s:s', f'title={await rexbots.get_subtitle(user_id)}',
+        '-metadata', f'encoded_by={await rexbots.get_encoded_by(user_id)}',
+        '-metadata', f'custom_tag={await rexbots.get_custom_tag(user_id)}',
         '-map', '0',
         '-c', 'copy',
         '-f', 'matroska',
