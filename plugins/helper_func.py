@@ -32,13 +32,13 @@ async def decode(base64_string):
 async def check_admin(filter, client, update):
     try:
         user_id = update.from_user.id       
-        return any([user_id == Config.OWNER_ID, await codeflixbots.admin_exist(user_id)])
+        return any([user_id == Config.OWNER_ID, await rexbots.admin_exist(user_id)])
     except Exception as e:
         print(f"! Exception in check_admin: {e}")
         return False
 
 async def is_subscribed(client, user_id):
-    channel_ids = await codeflixbots.show_channels()
+    channel_ids = await rexbots.show_channels()
 
     if not channel_ids:
         return True
@@ -49,7 +49,7 @@ async def is_subscribed(client, user_id):
     for cid in channel_ids:
         if not await is_sub(client, user_id, cid):
             # Retry once if join request might be processing
-            mode = await db.get_channel_mode(cid)
+            mode = await rexbots.get_channel_mode(cid)
             if mode == "on":
                 await asyncio.sleep(2)  # give time for @on_chat_join_request to process
                 if await is_sub(client, user_id, cid):
@@ -71,9 +71,9 @@ async def is_sub(client, user_id, channel_id):
         }
 
     except UserNotParticipant:
-        mode = await codeflixbots.get_channel_mode(channel_id)
+        mode = await rexbots.get_channel_mode(channel_id)
         if mode == "on":
-            exists = await codeflixbots.req_user_exist(channel_id, user_id)
+            exists = await rexbots.req_user_exist(channel_id, user_id)
             #print(f"[REQ] User {user_id} join request for {channel_id}: {exists}")
             return exists
         #print(f"[NOT SUB] User {user_id} not in {channel_id} and mode != on")
