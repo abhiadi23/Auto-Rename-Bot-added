@@ -208,7 +208,7 @@ async def cb_handler(client, query: CallbackQuery):
             await query.message.edit_text(f"<b>ᴠᴇʀɪꜰʏ 𝟷 ꜱᴇᴛᴛɪɴɢꜱ:\n\nꜱʜᴏʀᴛɴᴇʀ: {api_link_1}\nAPI: {verify_token_1}\n\nꜱᴛᴀᴛᴜꜱ:</b> {current_status}", reply_markup=keyboard)
 
         elif data == "verify_2_cbb":
-            settings = await codeflixbots.get_verification_settings()
+            settings = await rexbots.get_verification_settings()
             verify_status_2 = settings.get("verify_status_2", False)
             verify_token_2 = settings.get("verify_token_2", "Not set")
             api_link_2 = settings.get("api_link_2", "Not set")
@@ -229,11 +229,11 @@ async def cb_handler(client, query: CallbackQuery):
 
         elif data == "on_vrfy_1":
             try:
-                await codeflixbots.set_verification_mode_1(True)
+                await rexbots.set_verification_mode_1(True)
                 await query.answer("Verification 1 turned ON", show_alert=True)
                 
                 # Refresh the display to show updated tick mark
-                settings = await codeflixbots.get_verification_settings()
+                settings = await rexbots.get_verification_settings()
                 verify_status_1 = settings.get("verify_status_1", False)
                 verify_token_1 = settings.get("verify_token_1", "Not set")
                 api_link_1 = settings.get("api_link_1", "Not set")
@@ -256,11 +256,11 @@ async def cb_handler(client, query: CallbackQuery):
 
         elif data == "off_vrfy_1":
             try:
-                await codeflixbots.set_verification_mode_1(False)
+                await rexbots.set_verification_mode_1(False)
                 await query.answer("Verification 1 turned OFF", show_alert=True)
                 
                 # Refresh the display to show updated tick mark
-                settings = await codeflixbots.get_verification_settings()
+                settings = await rexbots.get_verification_settings()
                 verify_status_1 = settings.get("verify_status_1", False)
                 verify_token_1 = settings.get("verify_token_1", "Not set")
                 api_link_1 = settings.get("api_link_1", "Not set")
@@ -283,11 +283,11 @@ async def cb_handler(client, query: CallbackQuery):
                 
         elif data == "on_vrfy_2":
             try:
-                await codeflixbots.set_verification_mode_2(True)
+                await rexbots.set_verification_mode_2(True)
                 await query.answer("Verification 2 turned ON", show_alert=True)
                 
                 # Refresh the display to show updated tick mark
-                settings = await codeflixbots.get_verification_settings()
+                settings = await rexbots.get_verification_settings()
                 verify_status_2 = settings.get("verify_status_2", False)
                 verify_token_2 = settings.get("verify_token_2", "Not set")
                 api_link_2 = settings.get("api_link_2", "Not set")
@@ -310,11 +310,11 @@ async def cb_handler(client, query: CallbackQuery):
 
         elif data == "off_vrfy_2":
             try:
-                await codeflixbots.set_verification_mode_2(False)
+                await rexbots.set_verification_mode_2(False)
                 await query.answer("Verification 2 turned OFF", show_alert=True)
                 
                 # Refresh the display to show updated tick mark
-                settings = await codeflixbots.get_verification_settings()
+                settings = await rexbots.get_verification_settings()
                 verify_status_2 = settings.get("verify_status_2", False)
                 verify_token_2 = settings.get("verify_token_2", "Not set")
                 api_link_2 = settings.get("api_link_2", "Not set")
@@ -347,7 +347,7 @@ async def cb_handler(client, query: CallbackQuery):
                 await msg.delete()
                 verify_token_1_s = verify_data_1.text.strip()
 
-                await codeflixbots.set_verify_1(api_link_1_s, verify_token_1_s)
+                await rexbots.set_verify_1(api_link_1_s, verify_token_1_s)
                 await query.message.reply_text(
                     "<b>ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ 1 ꜱᴇᴛᴛɪɴɢꜱ ᴜᴘᴅᴀᴛᴇᴅ!</b>",
                     reply_markup=InlineKeyboardMarkup([
@@ -372,7 +372,7 @@ async def cb_handler(client, query: CallbackQuery):
                 await msg.delete()
                 verify_token_2_s = verify_data_2.text.strip()
                 
-                await codeflixbots.set_verify_2(api_link_2_s, verify_token_2_s)
+                await rexbots.set_verify_2(api_link_2_s, verify_token_2_s)
                 await query.message.reply_text(
                     "<b>ᴠᴇʀɪꜰɪᴄᴀᴛɪᴏɴ 2 ꜱᴇᴛᴛɪɴɢꜱ ᴜᴘᴅᴀᴛᴇᴅ!</b>",
                     reply_markup=InlineKeyboardMarkup([
@@ -389,7 +389,7 @@ async def cb_handler(client, query: CallbackQuery):
             user_id = query.from_user.id
             current_time = datetime.utcnow()
             
-            user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+            user_data = await rexbots.col.find_one({"_id": user_id}) or {}
             verification_data = user_data.get("verification", {})
             
             shortener1_time = verification_data.get("shortener1_time")
@@ -401,7 +401,7 @@ async def cb_handler(client, query: CallbackQuery):
                         "Verification complete! You are verified for 24 hours."
                     )
                 else:
-                    await codeflixbots.col.update_one(
+                    await rexbots.col.update_one(
                         {"_id": user_id},
                         {"$unset": {"verification": ""}}
                     )
@@ -409,7 +409,7 @@ async def cb_handler(client, query: CallbackQuery):
                         "Verification expired. Please use /verify to start again."
                     )
             elif shortener1_time:
-                await codeflixbots.col.update_one(
+                await rexbots.col.update_one(
                     {"_id": user_id},
                     {"$set": {"verification.shortener2_time": current_time}}
                 )
@@ -417,7 +417,7 @@ async def cb_handler(client, query: CallbackQuery):
                     "Shortener 2 verified! You are now fully verified for 24 hours."
                 )
             else:
-                await codeflixbots.col.update_one(
+                await rexbots.col.update_one(
                     {"_id": user_id},
                     {"$set": {"verification.shortener1_time": current_time}}
                 )
@@ -436,11 +436,11 @@ async def cb_handler(client, query: CallbackQuery):
         elif data == "refresh_verify_count":
             await query.answer("Rᴇғʀᴇsʜɪɴɢ...!!")
             await query.message.edit_text ("Cᴏᴜɴᴛɪɴɢ ᴀɢᴀɪɴ...!!")
-            today = await codeflixbots.get_vr_count_combined('today')
-            yesterday = await codeflixbots.get_vr_count_combined('yesterday')
-            this_week = await codeflixbots.get_vr_count_combined('this_week')
-            this_month = await codeflixbots.get_vr_count_combined('this_month')
-            last_month = await codeflixbots.get_vr_count_combined('last_month')
+            today = await rexbots.get_vr_count_combined('today')
+            yesterday = await rexbots.get_vr_count_combined('yesterday')
+            this_week = await rexbots.get_vr_count_combined('this_week')
+            this_month = await rexbots.get_vr_count_combined('this_month')
+            last_month = await rexbots.get_vr_count_combined('last_month')
             
             count_text = (
                 "<b>📊 ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴛᴀᴛɪsᴛɪᴄs:\n\n"
@@ -459,11 +459,11 @@ async def cb_handler(client, query: CallbackQuery):
             await query.message.edit_text(count_text, reply_markup=keyboard)
         
         elif data == "verify_count":
-            today = await codeflixbots.get_vr_count_combined('today')
-            yesterday = await codeflixbots.get_vr_count_combined('yesterday')
-            this_week = await codeflixbots.get_vr_count_combined('this_week')
-            this_month = await codeflixbots.get_vr_count_combined('this_month')
-            last_month = await codeflixbots.get_vr_count_combined('last_month')
+            today = await rexbots.get_vr_count_combined('today')
+            yesterday = await rexbots.get_vr_count_combined('yesterday')
+            this_week = await rexbots.get_vr_count_combined('this_week')
+            this_month = await rexbots.get_vr_count_combined('this_month')
+            last_month = await rexbots.get_vr_count_combined('last_month')
             
             count_text = (
                 "<b>📊 ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ sᴛᴀᴛɪsᴛɪᴄs:\n\n"
