@@ -885,7 +885,7 @@ async def auto_rename_files(client, message):
                     if message.from_user.last_name:
                         full_name += f" {user.last_name}"
                     username = f"@{message.from_user.username}" if message.from_user.username else "N/A"
-                    has_premium_accesss = await check_user_premium
+                    has_premium_accesss = await check_user_premium(user_id)
                     premium_status = '🗸' if has_premium_accesss else '✘'
                     
                     dump_caption = (
@@ -925,6 +925,8 @@ async def auto_rename_files(client, message):
                 except Exception as e:
                     logger.error(f"Error sending to dump channel: {e}")
                     await msg.edit(f"❌ Eʀʀᴏʀ: {str(e)}")
+
+        await msg.delete()
 
         except Exception as e:
             await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
