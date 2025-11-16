@@ -925,8 +925,6 @@ async def auto_rename_files(client, message):
                 except Exception as e:
                     logger.error(f"Error sending to dump channel: {e}")
                     await msg.edit(f"❌ Eʀʀᴏʀ: {str(e)}")
-                    
-            await msg.delete()
 
         except Exception as e:
             await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
