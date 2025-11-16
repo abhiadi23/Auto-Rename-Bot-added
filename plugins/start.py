@@ -31,7 +31,7 @@ def check_ban(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
-        user = await codeflixbots.col.find_one({"_id": user_id})
+        user = await rexbots.col.find_one({"_id": user_id})
         if user and user.get("ban_status", {}).get("is_banned", False):
             keyboard = InlineKeyboardMarkup(
                 [[InlineKeyboardButton("Cᴏɴᴛᴀᴄᴛ ʜᴇʀᴇ...!!", url=ADMIN_URL)]]
@@ -47,11 +47,11 @@ async def check_user_premium(user_id):
     """Check if user has premium access - handles missing method gracefully"""
     try:
         # First check if the method exists
-        if hasattr(codeflixbots, 'has_premium_access'):
-            return await codeflixbots.has_premium_access(user_id)
+        if hasattr(rexbots, 'has_premium_access'):
+            return await rexbots.has_premium_access(user_id)
         else:
             # Fallback: Check database directly
-            user_data = await codeflixbots.col.find_one({"_id": user_id})
+            user_data = await rexbots.col.find_one({"_id": user_id})
             if not user_data:
                 return False
             
@@ -102,7 +102,7 @@ def check_verification(func):
                 # Continue with verification check even if premium check fails
             
             # Step 2: Get verification settings to check if verification is enabled
-            settings = await codeflixbots.get_verification_settings()
+            settings = await rexbots.get_verification_settings()
             verify_status_1 = settings.get("verify_status_1", False)
             verify_status_2 = settings.get("verify_status_2", False)
             
@@ -115,7 +115,7 @@ def check_verification(func):
             try:
                 if await is_user_verified(user_id):
                     try:
-                        user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+                        user_data = await rexbots.col.find_one({"_id": user_id}) or {}
                         verification_data = user_data.get("verification", {})
                         
                         verified_time_1 = verification_data.get("verified_time_1")
@@ -181,7 +181,7 @@ def check_verification(func):
 async def check_admin(filter, client, update):
     try:
         user_id = update.from_user.id
-        return any([user_id == OWNER_ID, await codeflixbots.admin_exist(user_id)])
+        return any([user_id == OWNER_ID, await rexbots.admin_exist(user_id)])
     except Exception as e:
         logger.error(f"Exception in check_admin: {e}")
         return False
@@ -203,9 +203,9 @@ def check_fsub(func):
                     ChatMemberStatus.MEMBER
                 }
             except UserNotParticipant:
-                mode = await codeflixbots.get_channel_mode(channel_id)
+                mode = await rexbots.get_channel_mode(channel_id)
                 if mode == "on":
-                    exists = await codeflixbots.req_user_exist(channel_id, user_id)
+                    exists = await rexbots.req_user_exist(channel_id, user_id)
                     return exists
                 return False
             except Exception as e:
@@ -213,14 +213,14 @@ def check_fsub(func):
                 return False
 
         async def is_subscribed(client, user_id):
-            channel_ids = await codeflixbots.show_channels()
+            channel_ids = await rexbots.show_channels()
             if not channel_ids:
                 return True
             if user_id == OWNER_ID:
                 return True
             for cid in channel_ids:
                 if not await is_sub(client, user_id, cid):
-                    mode = await codeflixbots.get_channel_mode(cid)
+                    mode = await rexbots.get_channel_mode(cid)
                     if mode == "on":
                         await asyncio.sleep(2)
                         if await is_sub(client, user_id, cid):
@@ -254,7 +254,7 @@ async def not_joined(client: Client, message: Message):
     count = 0
 
     try:
-        all_channels = await codeflixbots.show_channels()
+        all_channels = await rexbots.show_channels()
         for chat_id in all_channels:
             await message.reply_chat_action(ChatAction.TYPING)
 
@@ -281,7 +281,7 @@ async def not_joined(client: Client, message: Message):
                         chat_data_cache[chat_id] = data
 
                     name = data.title
-                    mode = await codeflixbots.get_channel_mode(chat_id)
+                    mode = await rexbots.get_channel_mode(chat_id)
 
                     if mode == "on" and not data.username:
                         invite = await client.create_chat_invite_link(
@@ -364,7 +364,7 @@ async def start(client, message: Message):
             logger.error(f"Error processing start parameter: {e}")
     
     # Normal start command - show welcome message
-    await codeflixbots.add_user(client, message)
+    await rexbots.add_user(client, message)
     await show_start_message(client, message)
 
 async def show_start_message(client, message: Message):
@@ -431,7 +431,7 @@ async def handle_verification_callback(client, message: Message, token: str):
     
     try:
         # Get verification settings
-        settings = await codeflixbots.get_verification_settings()
+        settings = await rexbots.get_verification_settings()
         verify_status_1 = settings.get("verify_status_1", False)
         verify_status_2 = settings.get("verify_status_2", False)
         
@@ -445,7 +445,7 @@ async def handle_verification_callback(client, message: Message, token: str):
         
         # Find the user who owns this token
         logger.info(f"[VERIFY] Looking up token in database for user {user_id}")
-        token_owner = await codeflixbots.col.find_one({
+        token_owner = await rexbots.col.find_one({
             "_id": user_id,
             "verification.pending_token": token
         })
@@ -486,7 +486,7 @@ async def handle_verification_callback(client, message: Message, token: str):
                     "Pʟᴇᴀsᴇ ɢᴇɴᴇʀᴀᴛᴇ ᴀ ɴᴇᴡ ʟɪɴᴋ ᴜsɪɴɢ /verify"
                 )
                 # Clear expired token
-                await codeflixbots.col.update_one(
+                await rexbots.col.update_one(
                     {"_id": user_id},
                     {"$unset": {
                         "verification.pending_token": "",
@@ -505,7 +505,7 @@ async def handle_verification_callback(client, message: Message, token: str):
                     f"Pʟᴇᴀsᴇ ᴄᴏᴍᴘʟᴇᴛᴇ ᴛʜᴇ ᴠᴇʀɪғɪᴄᴀᴛɪᴏɴ ᴘʀᴏᴘᴇʀʟʏ. Usᴇ /verify ᴛᴏ ɢᴇɴᴇʀᴀᴛᴇ ᴀ ɴᴇᴡ ʟɪɴᴋ."
                 )
                 # Clear the token
-                await codeflixbots.col.update_one(
+                await rexbots.col.update_one(
                     {"_id": user_id},
                     {"$unset": {
                         "verification.pending_token": "",
@@ -518,7 +518,7 @@ async def handle_verification_callback(client, message: Message, token: str):
         # All checks passed - Update verification time (24 hour validity)
         logger.info(f"[VERIFY] All checks passed! Updating database...")
         
-        update_result = await codeflixbots.col.update_one(
+        update_result = await rexbots.col.update_one(
             {"_id": user_id},
             {"$set": {
                 "verification.verified_time_1": current_time,
@@ -577,7 +577,7 @@ async def send_verification_message(client, message: Message):
         return
 
     # Get verification settings
-    settings = await codeflixbots.get_verification_settings()
+    settings = await rexbots.get_verification_settings()
     verify_status_1 = settings.get("verify_status_1", False)
     verify_status_2 = settings.get("verify_status_2", False)
     verified_time_1 = settings.get("verified_time_1")
@@ -602,7 +602,7 @@ async def send_verification_message(client, message: Message):
     
     # Store token with user_id and creation time (for expiry and ownership check)
     current_time = datetime.utcnow()
-    await codeflixbots.col.update_one(
+    await rexbots.col.update_one(
         {"_id": user_id},
         {"$set": {
             "verification.pending_token": token,
@@ -674,7 +674,7 @@ async def get_shortlink(link, shortener_num):
     Returns:
         Shortened URL (e.g., https://lksfy.com/eARog)
     """
-    settings = await codeflixbots.get_verification_settings()
+    settings = await rexbots.get_verification_settings()
     
     if shortener_num == 1:
         api = settings.get("verify_token_1", "Not set")
@@ -706,7 +706,7 @@ async def get_shortlink(link, shortener_num):
 async def is_user_verified(user_id):
     """Check if user is verified (either verified_time_1 or verified_time_2 is valid)"""
     try:
-        user_data = await codeflixbots.col.find_one({"_id": user_id})
+        user_data = await rexbots.col.find_one({"_id": user_id})
         if not user_data:
             return False
         
@@ -756,11 +756,11 @@ async def verify_command(client, message: Message):
         # Check if user is already verified
         if await is_user_verified(user_id):
             try:
-                user_data = await codeflixbots.col.find_one({"_id": user_id}) or {}
+                user_data = await rexbots.col.find_one({"_id": user_id}) or {}
                 verification_data = user_data.get("verification", {})
                 
                 # Get verification settings
-                settings = await codeflixbots.get_verification_settings()
+                settings = await rexbots.get_verification_settings()
                 verified_time_1 = verification_data.get("verified_time_1")
                 verified_time_2 = verification_data.get("verified_time_2")
                 
