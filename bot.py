@@ -12,7 +12,6 @@ import pyrogram.utils
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 pyrogram.utils.MIN_CHANNEL_ID = -1002964099736
-SUPPORT_CHAT = os.environ.get("SUPPORT_CHAT", "https://t.me/+CAfdSCPjXehkYWQ1")
 
 PORT = Config.PORT
 
@@ -42,7 +41,7 @@ class Bot(Client):
         print(f"{me.first_name} Is Started.....✨️")
         uptime_seconds = int(time.time() - self.start_time)
         uptime_string = str(timedelta(seconds=uptime_seconds))
-        for chat_id in [Config.LOG_CHANNEL, SUPPORT_CHAT]:
+        for chat_id in [Config.LOG_CHANNEL, Config.SUPPORT_CHAT]:
             try:
                 curr = datetime.now(timezone("Asia/Kolkata"))
                 date = curr.strftime('%d %B, %Y')
