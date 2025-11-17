@@ -553,6 +553,7 @@ async def handle_verification_callback(client, message: Message, token: str):
         )
         
         logger.info(f"[VERIFY] Verification complete for user {user_id}!")
+        await rexbots.save_verification(user_id, available_shortners)
         
     except Exception as e:
         logger.error(f"[VERIFY] FATAL ERROR in handle_verification_callback: {e}", exc_info=True)
@@ -560,9 +561,7 @@ async def handle_verification_callback(client, message: Message, token: str):
             f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
             f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
         )
-
-await rexbots.save_verification(user_id, available_shortners)
-
+        
 async def send_verification_message(client, message: Message):
     """Generate and send verification shortlink to user"""
     user_id = message.from_user.id
