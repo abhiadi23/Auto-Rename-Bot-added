@@ -58,7 +58,7 @@ class Seishiro:
         verification = {
             "user_id": int(user_id),
             "verified_at": now,
-            "verification_type": verification_type,  # 1 or 2
+            "verification_type": available_shortners,
             "date": now.date().isoformat()  # Store date for easier querying
         }
         await self.verification_data.insert_one(verification)
