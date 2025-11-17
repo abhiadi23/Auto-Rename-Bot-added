@@ -561,6 +561,8 @@ async def handle_verification_callback(client, message: Message, token: str):
             f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
         )
 
+await rexbots.save_verification(user_id, available_shortners)
+
 async def send_verification_message(client, message: Message):
     """Generate and send verification shortlink to user"""
     user_id = message.from_user.id
