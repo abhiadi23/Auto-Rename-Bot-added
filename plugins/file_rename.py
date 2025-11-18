@@ -900,21 +900,21 @@ async def auto_rename_files(client, message):
                     )
                     
                     dump_channel = Config.DUMP_CHANNEL
-                    if media_type == "document":
+                    if media_type == "document" and sent_message.document:
                         await client.send_document(
                             chat_id=dump_channel,
                             document=file_path,
                             thumb=ph_path,
                             caption=dump_caption
                         )
-                    elif media_type == "video":
+                    elif media_type == "video" and sent_message.video:
                         await client.send_video(
                             chat_id=dump_channel,
                             video=file_path,
                             thumb=ph_path,
                             caption=dump_caption
                         )
-                    elif media_type == "audio":
+                    elif media_type == "audio" and sent_message.audio:
                         await client.send_audio(
                             chat_id=dump_channel,
                             audio=file_path,
