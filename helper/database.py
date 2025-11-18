@@ -49,7 +49,7 @@ class Seishiro:
             )
         )
 
-    async def save_verification(self, user_id, verification_type=1):
+    async def save_verification(self, user_id, selected_shortener):
         """
         Save verification event to verification_data collection
         This creates a separate record for each verification event
@@ -58,7 +58,7 @@ class Seishiro:
         verification = {
             "user_id": int(user_id),
             "verified_at": now,
-            "verification_type": verification_type,
+            "verification_type": selected_shortener,
             "date": now.date().isoformat()  # Store date for easier querying
         }
         await self.verification_data.insert_one(verification)
