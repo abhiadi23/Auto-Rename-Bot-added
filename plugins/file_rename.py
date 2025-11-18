@@ -900,7 +900,6 @@ async def auto_rename_files(client, message):
                     )
                     
                     dump_channel = Config.DUMP_CHANNEL
-                    await asyncio.sleep(2)
                     if media_type == "document":
                         await client.send_document(
                             chat_id=dump_channel,
