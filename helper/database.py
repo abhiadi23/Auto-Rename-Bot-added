@@ -38,7 +38,7 @@ class Seishiro:
             verification_mode_1=True,
             verification_mode_2=True,
             metadata=True,
-            metadata_code="Telegram : @codeflixbots",
+            metadata_code="Telegram : @RexBots_Official",
             format_template=None,
             rename_count=0,
             ban_status=dict(
@@ -58,7 +58,7 @@ class Seishiro:
         verification = {
             "user_id": int(user_id),
             "verified_at": now,
-            "verification_type": selected_shortener,
+            "verification_type": verification_type,
             "date": now.date().isoformat()  # Store date for easier querying
         }
         await self.verification_data.insert_one(verification)
