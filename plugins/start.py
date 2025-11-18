@@ -553,7 +553,7 @@ async def handle_verification_callback(client, message: Message, token: str):
         )
         
         logger.info(f"[VERIFY] Verification complete for user {user_id}!")
-        await rexbots.save_verification(user_id, verification_type)
+        await rexbots.save_verification(user_id, selected_shortener)
         
     except Exception as e:
         logger.error(f"[VERIFY] FATAL ERROR in handle_verification_callback: {e}", exc_info=True)
