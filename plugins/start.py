@@ -491,7 +491,8 @@ async def handle_verification_callback(client, message: Message, token: str):
                     {"$unset": {
                         "verification.pending_token": "",
                         "verification.token_created_at": "",
-                        "verification.token_user_id": ""
+                        "verification.token_user_id": "",
+                        "verification.selected_shortener": ""
                     }}
                 )
                 return
@@ -510,7 +511,8 @@ async def handle_verification_callback(client, message: Message, token: str):
                     {"$unset": {
                         "verification.pending_token": "",
                         "verification.token_created_at": "",
-                        "verification.token_user_id": ""
+                        "verification.token_user_id": "",
+                        "verification.selected_shortener": ""
                     }}
                 )
                 return
@@ -527,7 +529,8 @@ async def handle_verification_callback(client, message: Message, token: str):
              "$unset": {
                 "verification.pending_token": "",
                 "verification.token_created_at": "",
-                "verification.token_user_id": ""
+                "verification.token_user_id": "",
+                 "verification.selected_shortener": ""
              }},
             upsert=True
         )
@@ -553,7 +556,7 @@ async def handle_verification_callback(client, message: Message, token: str):
         )
         
         logger.info(f"[VERIFY] Verification complete for user {user_id}!")
-        await rexbots.save_verification(user_id, selected_shortner)
+        await rexbots.save_verification(user_id, selected_shortener)
         
     except Exception as e:
         logger.error(f"[VERIFY] FATAL ERROR in handle_verification_callback: {e}", exc_info=True)
@@ -608,7 +611,8 @@ async def send_verification_message(client, message: Message):
         {"$set": {
             "verification.pending_token": token,
             "verification.token_created_at": current_time,
-            "verification.token_user_id": user_id
+            "verification.token_user_id": user_id,
+            "verification.selected_shortener": selected_shortener
         }},
         upsert=True
     )
